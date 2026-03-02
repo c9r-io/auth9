@@ -346,7 +346,7 @@ export default function RolesPage() {
                           </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-6 w-6 p-0">
+                              <Button variant="ghost" className="h-11 w-11 min-h-[44px] min-w-[44px] p-0">
                                 <span className="sr-only">Open menu</span>
                                 <DotsHorizontalIcon className="h-3.5 w-3.5" />
                               </Button>

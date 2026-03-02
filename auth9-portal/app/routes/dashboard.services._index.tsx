@@ -118,7 +118,7 @@ export default function ServicesPage() {
               <PlusIcon className="mr-2 h-4 w-4" /> Register Service
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Register Service</DialogTitle>
               <DialogDescription>

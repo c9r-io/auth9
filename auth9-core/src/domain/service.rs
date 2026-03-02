@@ -142,8 +142,9 @@ pub struct CreateServiceInput {
     pub tenant_id: Option<Uuid>,
     #[validate(length(min = 1, max = 255))]
     pub name: String,
+    #[serde(default)]
     #[validate(length(min = 1, max = 255))]
-    pub client_id: String, // Keep for initial client creation
+    pub client_id: String,
     #[validate(url)]
     pub base_url: Option<String>,
     #[validate(custom(function = "validate_redirect_uris"))]

@@ -40,10 +40,10 @@ export default function AuditLogsPage() {
             <table className="min-w-full divide-y divide-[var(--glass-border-subtle)] text-sm">
               <thead className="bg-[var(--sidebar-item-hover)] text-left text-[var(--text-secondary)]">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Action</th>
-                  <th className="px-4 py-3 font-medium">Resource</th>
-                  <th className="px-4 py-3 font-medium">Actor</th>
-                  <th className="px-4 py-3 font-medium">Time</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.04em]">Action</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.04em]">Resource</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.04em]">Actor</th>
+                  <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.04em]">Time</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--glass-border-subtle)]">

@@ -120,7 +120,7 @@ SELECT display_name, avatar_url, updated_at FROM users WHERE id = '{user_id}';
 SELECT action, resource_type, resource_id FROM audit_logs
 WHERE resource_type = 'user' AND resource_id = '{user_id}'
 ORDER BY created_at DESC LIMIT 1;
--- 预期: action = 'update'
+-- 预期: action = 'user.update'
 ```
 
 ---

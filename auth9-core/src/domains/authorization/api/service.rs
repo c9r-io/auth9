@@ -303,8 +303,9 @@ pub async fn create<S: HasServices>(
     State(state): State<S>,
     auth: AuthUser,
     headers: HeaderMap,
-    Json(input): Json<CreateServiceInput>,
+    Json(mut input): Json<CreateServiceInput>,
 ) -> Result<impl IntoResponse> {
+    input.client_id = uuid::Uuid::new_v4().to_string();
     input.validate()?;
     require_service_access(state.config(), &auth, input.tenant_id)?;
     let keycloak_client = build_keycloak_client_from_create_input(&input);

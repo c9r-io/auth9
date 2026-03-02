@@ -20,6 +20,8 @@
 
 ### 初始状态
 - 存在普通用户 Token：`{normal_user_token}`
+- **Token 对应的邮箱不能在 `PLATFORM_ADMIN_EMAILS` 配置中**（默认仅 `admin@auth9.local`），否则 `enforce()` 会直接放行
+- 推荐使用 `gen-test-tokens.js tenant-access`（不带 `--user-id`），自动使用非管理员用户
 - 存在目标用户 id：`{target_user_id}`，且有至少 1 条活跃会话
 
 ### 目的
@@ -37,6 +39,13 @@
 ### 预期结果
 - 第 2 步返回 `403 Forbidden`
 - 不执行会话撤销
+
+### 常见误报原因
+
+| 症状 | 原因 | 解决 |
+|------|------|------|
+| 返回 200 而非 403 | Token 的 email 在 `PLATFORM_ADMIN_EMAILS` 中（如 admin@auth9.local） | 使用非平台管理员邮箱的 Token |
+| 返回 200 而非 403 | Token 的 user_id 在 auth9-platform 租户中有 admin 角色 | 使用 `gen-test-tokens.js` 生成非管理员 Token |
 
 ### 预期数据状态
 ```sql
