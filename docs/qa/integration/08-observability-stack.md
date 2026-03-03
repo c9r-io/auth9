@@ -47,15 +47,30 @@ docker-compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 验证可观测性栈所有服务能正常启动并保持健康
 
 ### 测试操作流程
-1. 启动完整栈：
+1. 启动完整栈（**必须确保 auth9-core 容器使用可观测性配置重建**）：
    ```bash
+   # 推荐：先停止再启动，确保环境变量正确注入
+   docker-compose -f docker-compose.yml -f docker-compose.observability.yml down
    docker-compose -f docker-compose.yml -f docker-compose.observability.yml up -d
+
+   # 或者：如果基础栈已运行，强制重建 auth9-core
+   docker-compose -f docker-compose.yml -f docker-compose.observability.yml up -d --force-recreate auth9-core
    ```
+   > **注意**：如果 auth9-core 已通过 `docker-compose -f docker-compose.yml up -d` 启动，直接叠加可观测性 Compose 可能**不会重建 auth9-core**，导致 `OTEL_METRICS_ENABLED`、`LOG_FORMAT` 等环境变量未注入。必须使用 `--force-recreate` 或先 `down` 再 `up`。
 2. 等待服务就绪（约 30 秒），检查容器状态：
    ```bash
    docker-compose -f docker-compose.yml -f docker-compose.observability.yml ps
    ```
-3. 验证各服务可访问：
+3. **验证 auth9-core 环境变量已注入**：
+   ```bash
+   docker inspect auth9-core --format '{{range .Config.Env}}{{println .}}{{end}}' | grep -E 'OTEL|LOG_FORMAT|METRICS_TOKEN'
+   # 预期输出:
+   # OTEL_METRICS_ENABLED=true
+   # OTEL_TRACING_ENABLED=true
+   # LOG_FORMAT=json
+   # METRICS_TOKEN=dev-metrics-token
+   ```
+4. 验证各服务可访问：
    ```bash
    curl -s http://localhost:9090/-/ready       # Prometheus
    curl -s http://localhost:3001/api/health     # Grafana
@@ -70,6 +85,15 @@ docker-compose -f docker-compose.yml -f docker-compose.observability.yml up -d
 - Loki: 返回 `ready`
 - Tempo: 返回 `ready`
 - auth9-core 服务环境变量自动注入 `OTEL_METRICS_ENABLED=true`
+
+### 常见误报
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| `docker inspect` 未显示 OTEL 环境变量 | auth9-core 容器未使用可观测性 Compose 重建 | `docker-compose ... up -d --force-recreate auth9-core` |
+| `/metrics` 返回 "Metrics not enabled" | `OTEL_METRICS_ENABLED` 未注入到 auth9-core | 检查步骤 3 验证环境变量 |
+| Prometheus target 为 `down` | auth9-core 未暴露 `/metrics` 端点（因未启用） | 同上 |
+| 日志为 pretty 格式而非 JSON | `LOG_FORMAT=json` 未注入 | 同上 |
 
 ---
 

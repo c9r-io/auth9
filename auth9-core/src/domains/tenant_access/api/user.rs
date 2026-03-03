@@ -397,15 +397,23 @@ pub async fn create<S: HasServices + HasBranding>(
         }
     }
 
+    // Block user creation on non-active tenants (explicit tenant_id or token's tenant)
+    let effective_tenant_id = input
+        .tenant_id
+        .or_else(|| auth_user.as_ref().and_then(|a| a.tenant_id));
+    if let Some(tenant_id) = effective_tenant_id {
+        state
+            .tenant_service()
+            .require_active(StringUuid::from(tenant_id))
+            .await?;
+    }
+
     // Validate input before calling Keycloak (catches invalid emails early)
     input.user.validate()?;
 
     // Validate password against tenant password policy if provided
     if let Some(ref password) = input.password {
         // Determine tenant for policy: explicit tenant_id > caller's token tenant > default
-        let effective_tenant_id = input
-            .tenant_id
-            .or_else(|| auth_user.as_ref().and_then(|a| a.tenant_id));
         let policy = if let Some(tenant_id) = effective_tenant_id {
             let tenant = state
                 .tenant_service()
@@ -445,6 +453,16 @@ pub async fn create<S: HasServices + HasBranding>(
         .user_service()
         .create(&keycloak_id, input.user)
         .await?;
+
+    // Auto-add user to the tenant if created in a tenant context
+    if let Some(tenant_id) = effective_tenant_id {
+        let add_input = AddUserToTenantInput {
+            user_id: *user.id,
+            tenant_id,
+            role_in_tenant: "member".to_string(),
+        };
+        state.user_service().add_to_tenant(add_input).await?;
+    }
 
     let _ = write_audit_log_generic(
         &state,

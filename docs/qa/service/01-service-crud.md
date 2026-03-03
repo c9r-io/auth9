@@ -38,17 +38,19 @@
 3. 点击「注册服务」
 4. 填写：
    - 服务名称：`My Web App`
-   - Client ID：`my-web-app`
    - Base URL：`https://myapp.example.com`
    - Redirect URIs：`https://myapp.example.com/callback`
    - Logout URIs：`https://myapp.example.com/logout`
 5. 点击「创建」
+
+> **注意**: Client ID 由系统自动生成 UUID，用户无需也无法手动指定。这是安全设计，防止 ID 碰撞攻击。
 
 ### 预期结果
 - 显示创建成功
 - 显示初始 Client Secret（仅此一次）
 - 侧边栏入口可见且可点击进入
 - 服务出现在列表中
+- Client ID 显示为系统生成的 UUID 格式
 
 ### 预期数据状态
 ```sql
@@ -56,9 +58,9 @@ SELECT id, name, base_url, redirect_uris, status FROM services WHERE name = 'My 
 -- 预期: 存在记录
 
 SELECT client_id FROM clients c JOIN services s ON s.id = c.service_id WHERE s.name = 'My Web App';
--- 预期: my-web-app
+-- 预期: UUID 格式字符串 (例如: eed5a23a-a3b4-4ee6-88f1-b6f3725b1584)
 
--- Keycloak 验证：存在 client_id = 'my-web-app' 的客户端
+-- Keycloak 验证：存在对应 UUID client_id 的客户端
 ```
 
 ---

@@ -55,7 +55,7 @@ describe('UI Components', () => {
       render(<Button size="sm">Small</Button>);
 
       const button = screen.getByRole('button', { name: /small/i });
-      expect(button).toHaveClass('h-8');
+      expect(button).toHaveClass('h-10');
     });
 
     it('should render with large size', () => {
@@ -69,7 +69,7 @@ describe('UI Components', () => {
       render(<Button size="icon">+</Button>);
 
       const button = screen.getByRole('button', { name: /\+/i });
-      expect(button).toHaveClass('h-9', 'w-9');
+      expect(button).toHaveClass('h-11', 'w-11');
     });
 
     it('should be disabled when disabled prop is true', () => {
@@ -210,7 +210,7 @@ describe('UI Components', () => {
       render(<Label>Test Label</Label>);
       const label = screen.getByText('Test Label');
       expect(label).toBeInTheDocument();
-      expect(label).toHaveClass('text-sm', 'font-medium');
+      expect(label).toHaveClass('text-[13px]', 'font-medium');
     });
 
     it('should accept custom className', () => {

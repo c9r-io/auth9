@@ -254,7 +254,7 @@ impl RbacRepository for RbacRepositoryImpl {
 
     async fn find_role_by_id(&self, id: StringUuid) -> Result<Option<Role>> {
         let role = sqlx::query_as::<_, Role>(
-            "SELECT id, service_id, name, description, parent_role_id, created_at, updated_at FROM roles WHERE REPLACE(id, '-', '') = REPLACE(?, '-', '')",
+            "SELECT id, service_id, name, description, NULLIF(TRIM(parent_role_id), '') AS parent_role_id, created_at, updated_at FROM roles WHERE REPLACE(id, '-', '') = REPLACE(?, '-', '')",
         )
         .bind(id)
         .fetch_optional(&self.pool)
@@ -265,7 +265,7 @@ impl RbacRepository for RbacRepositoryImpl {
 
     async fn find_roles_by_service(&self, service_id: StringUuid) -> Result<Vec<Role>> {
         let roles = sqlx::query_as::<_, Role>(
-            "SELECT id, service_id, name, description, parent_role_id, created_at, updated_at FROM roles WHERE service_id = ?",
+            "SELECT id, service_id, name, description, NULLIF(TRIM(parent_role_id), '') AS parent_role_id, created_at, updated_at FROM roles WHERE service_id = ?",
         )
         .bind(service_id)
         .fetch_all(&self.pool)

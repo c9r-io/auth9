@@ -176,6 +176,8 @@ grpcurl -cert deploy/dev-certs/grpc/client.crt -key deploy/dev-certs/grpc/client
 | 自签名证书连接成功 | 直接连接了 `auth9-core:50051`（明文），绕过了 nginx mTLS 代理 | 确保连接 `localhost:50051`（nginx） |
 | 连接被拒但不是 400 | 可能是 TLS 握手失败，`-cacert` 参数使用了错误的 CA 证书 | 使用 `deploy/dev-certs/grpc/ca.crt` |
 | 从 Docker 容器内测试通过 | 容器内 `auth9-grpc-tls:50051` 指向 nginx，但 `auth9-core:50051` 是明文端口 | 测试必须使用 `auth9-grpc-tls:50051` 而非 `auth9-core:50051` |
+| `-plaintext` 连接 nginx 成功 | 实际连接了 `auth9-core:50051`（明文）而非 `auth9-grpc-tls:50051`（nginx mTLS） | nginx 配置 `listen 50051 ssl http2;` 会拒绝明文连接；确认目标主机名正确 |
+| 宿主机 `-plaintext localhost:50051` 成功 | 不可能，`localhost:50051` 映射到 nginx（强制 SSL） | 如确实成功，检查是否有其他进程占用 50051 端口：`lsof -i :50051` |
 
 ### 修复建议
 - 使用 `tonic` 的 TLS 配置：
@@ -401,29 +403,34 @@ netstat -an | grep 50051 | wc -l  # 连接数
 
 ### 前置条件
 - gRPC 服务启用了反射 (gRPC Server Reflection)
+- **重要：反射测试需从 Docker 网络内部连接 `auth9-core:50051`（明文 gRPC），而非 `localhost:50051`（nginx mTLS 代理）**
+- `localhost:50051` 映射到 nginx mTLS 代理，使用 `-plaintext` 会被 SSL 握手拒绝（这是 nginx 正常行为，不是 Bug）
 
 ### 攻击目标
 验证 gRPC 反射是否泄露敏感信息
 
 ### 攻击步骤
+
+> **注意**：以下命令使用 `grpcurl-docker.sh` 从 Docker 网络内部连接 `auth9-core:50051`（明文 gRPC）。
+
 1. 列出所有可用服务：
    ```bash
-   grpcurl -plaintext localhost:50051 list
+   .claude/skills/tools/grpcurl-docker.sh -plaintext -import-path /proto -proto auth9.proto auth9-core:50051 list
    ```
 
 2. 获取服务方法定义：
    ```bash
-   grpcurl -plaintext localhost:50051 describe auth9.Auth9Service
+   .claude/skills/tools/grpcurl-docker.sh -plaintext -import-path /proto -proto auth9.proto auth9-core:50051 describe auth9.TokenExchange
    ```
 
 3. 获取完整的 proto 定义：
    ```bash
-   grpcurl -plaintext localhost:50051 describe auth9.CreateUserRequest
+   .claude/skills/tools/grpcurl-docker.sh -plaintext -import-path /proto -proto auth9.proto auth9-core:50051 describe auth9.ExchangeTokenRequest
    ```
 
 4. 发现未文档化的 API：
    ```bash
-   grpcurl -plaintext localhost:50051 list | grep -i "admin\|internal\|debug"
+   .claude/skills/tools/grpcurl-docker.sh -plaintext -import-path /proto -proto auth9.proto auth9-core:50051 list | grep -i "admin\|internal\|debug"
    ```
 
 ### 预期安全行为（生产环境）

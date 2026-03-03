@@ -175,12 +175,20 @@ headers.forEach((th, index) => {
   console.log(`Column ${index + 1} (${th.textContent}): ${width}px`);
 });
 
-// 验证间距
-// 注意: 24px 间距由父容器 space-y-6 提供，作用于标题容器（非 h1 元素本身）。
-// 应检查标题区域的父 div 的 margin-bottom，而非 h1 的 margin-bottom。
-const titleContainer = document.querySelector('h1')?.closest('div')?.parentElement;
-const titleMargin = getComputedStyle(titleContainer).marginBottom;
-console.log('Title container margin-bottom:', titleMargin); // 应为 24px (来自 space-y-6)
+// 验证头部布局
+// 注意: h1 被包在一个内层 div 中（用于分组标题和副标题），该 div 本身是 block 布局。
+// 外层容器才是 flex + justify-between 布局。检查时应定位到正确的容器层级。
+// DOM 结构: <div class="flex ... justify-between"> → <div>(h1+p) + <button>
+const headerContainer = document.querySelector('h1')?.closest('div')?.parentElement;
+const headerStyle = getComputedStyle(headerContainer);
+console.log('Header Container Style:', {
+  display: headerStyle.display,           // 应为 'flex'
+  justifyContent: headerStyle.justifyContent, // 应为 'space-between'
+  flexDirection: headerStyle.flexDirection,    // 应为 'row'（桌面端）或 'column'（移动端）
+});
+// 内层 div（h1 的直接父元素）是 block 布局，这是正确的
+const innerDiv = document.querySelector('h1')?.closest('div');
+console.log('Inner div display:', getComputedStyle(innerDiv).display); // 'block' 是预期行为
 ```
 
 ---

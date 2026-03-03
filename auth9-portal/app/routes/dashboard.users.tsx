@@ -44,6 +44,8 @@ import {
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
 import { DotsHorizontalIcon, Pencil2Icon, PersonIcon, GearIcon, TrashIcon, ExitIcon } from "@radix-ui/react-icons";
+import { Avatar, AvatarFallback } from "~/components/ui/avatar";
+import { Badge } from "~/components/ui/badge";
 import { useEffect, useState } from "react";
 import { useConfirm } from "~/hooks/useConfirm";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
@@ -465,9 +467,20 @@ export default function UsersPage() {
               <tbody className="divide-y divide-[var(--glass-border-subtle)]">
                 {users.data.map((user: User) => (
                   <tr key={user.id} className="text-[var(--text-secondary)] hover:bg-[var(--sidebar-item-hover)]/50">
-                    <td className="px-4 py-3 font-medium text-[var(--text-primary)]">{user.email}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8 text-xs">
+                          <AvatarFallback>{user.email.charAt(0).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-[var(--text-primary)]">{user.email}</span>
+                      </div>
+                    </td>
                     <td className="px-4 py-3">{user.display_name || "-"}</td>
-                    <td className="px-4 py-3">{user.mfa_enabled ? "Enabled" : "Disabled"}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant={user.mfa_enabled ? "success" : "secondary"}>
+                        {user.mfa_enabled ? "Enabled" : "Disabled"}
+                      </Badge>
+                    </td>
                     <td className="px-4 py-3">
                       <FormattedDate date={user.updated_at} />
                     </td>
@@ -639,9 +652,11 @@ export default function UsersPage() {
                 }}
                 onBlur={(e) => validateEmail(e.target.value)}
                 className={createEmailError ? "border-[var(--accent-red)]" : ""}
+                aria-invalid={createEmailError ? true : undefined}
+                aria-errormessage={createEmailError ? "create-email-error" : undefined}
               />
               {createEmailError && (
-                <p className="text-sm text-[var(--accent-red)]">{createEmailError}</p>
+                <p id="create-email-error" role="alert" className="text-sm text-[var(--accent-red)]">{createEmailError}</p>
               )}
             </div>
             <div className="space-y-1.5">
@@ -676,7 +691,7 @@ export default function UsersPage() {
               </Select>
             </div>
             {actionData && "error" in actionData && actionData.intent === "create_user" && (
-              <p className="text-sm text-[var(--accent-red)]">{formatErrorMessage(String(actionData.error))}</p>
+              <p role="alert" className="text-sm text-[var(--accent-red)]">{formatErrorMessage(String(actionData.error))}</p>
             )}
             <DialogFooter>
               <Button type="button" variant="outline" className="bg-[var(--glass-bg)]" onClick={() => {

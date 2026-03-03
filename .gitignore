@@ -60,3 +60,4 @@ sdk/.turbo/
 
 # QA runner progress file
 scripts/qa/.run-qa-test.json
+.playwright-cli

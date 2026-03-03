@@ -53,7 +53,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-[8px] p-1 opacity-70 transition-opacity hover:opacity-100 hover:bg-[var(--sidebar-item-hover)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-blue)] disabled:pointer-events-none text-[var(--text-secondary)]">
+      <DialogPrimitive.Close className="absolute right-4 top-4 rounded-[8px] p-1 opacity-70 transition-opacity hover:opacity-100 hover:bg-[var(--sidebar-item-hover)] focus-visible:outline-2 focus-visible:outline-[var(--accent-blue)] focus-visible:outline-offset-2 disabled:pointer-events-none text-[var(--text-secondary)]">
         <Cross2Icon className="h-4 w-4" />
         <span className="sr-only">Close</span>
       </DialogPrimitive.Close>
@@ -82,7 +82,7 @@ const DialogFooter = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 pt-2",
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:gap-3 pt-2",
       className
     )}
     {...props}

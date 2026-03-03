@@ -167,17 +167,27 @@ redis-cli KEYS "auth9:ratelimit:ip:10.0.0.2:*"
    ```bash
    docker stop auth9-redis
    ```
-2. 发送 API 请求：
+2. 发送 API 请求到**非认证端点**（避免其他 Redis 依赖干扰）：
    ```bash
-   curl -v http://localhost:8080/api/v1/tenants
+   curl -v http://localhost:8080/health
    ```
 3. 检查响应
 
+> **重要**：必须使用非认证端点（如 `/health`）测试限流降级行为。认证端点（如 `/api/v1/tenants`）的 `require_auth` 中间件也依赖 Redis（token 黑名单检查），Redis 不可用时会返回 503 或触发请求超时（408），这不是限流中间件的问题。
+
 ### 预期结果
-- 请求正常通过（Fail Open 策略）
+- `/health` 请求正常通过（Fail Open 策略）
 - 不返回 429（降级放行）
 - 响应中可能不包含 `X-RateLimit-Remaining` 头
-- 应用日志中记录 Redis 连接错误
+- 应用日志中记录 Redis 连接错误：`"Redis unavailable for rate limiting, using in-memory fallback"`
+
+### 常见误报
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| 认证端点返回 408 Request Timeout | `require_auth` 中间件的 token 黑名单检查也依赖 Redis，重试后超时 | 使用非认证端点（`/health`）测试限流降级 |
+| 认证端点返回 503 | `require_auth` 中间件 Redis 黑名单检查失败后 fail-closed | 预期行为：安全中间件 fail-closed，限流中间件 fail-open |
+| 日志显示 fallback 但请求失败 | 限流正确降级，但其他 Redis 依赖（缓存、认证）导致请求失败 | 分别验证各组件的 Redis 降级行为 |
 
 ### 恢复操作
 ```bash

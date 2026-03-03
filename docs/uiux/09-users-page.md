@@ -34,6 +34,9 @@
 - **下边距**: 每个角色项之间的间距应为 12px（`gap-3`），确保清晰可分。
 - **滚动容器**: 角色列表在 Checkbox 超过容器高度时支持垂直滚动（`max-h-64 overflow-y-auto`）。
 
+### 验证要点
+- `gap-3`、`max-h-64`、`overflow-y-auto` 样式位于角色 Checkbox 列表的**直接容器**上（带有 `border` 和 `rounded-xl` 的 `<div>`），而非外层的 `space-y-4` 布局容器。自动化测试应定位到包含 Checkbox 项的滚动容器元素（CSS 选择器示例：`[class*="overflow-y-auto"]`），而非其父级。
+
 ---
 
 ## 3. 表格头部文字大小与间距

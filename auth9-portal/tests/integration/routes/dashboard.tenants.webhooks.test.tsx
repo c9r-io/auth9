@@ -1078,7 +1078,7 @@ describe("Webhooks Page", () => {
         },
         "test-token",
       );
-      expect(response).toEqual({ success: true, message: "Webhook created" });
+      expect(response).toEqual({ success: true, message: "Webhook created", createdSecret: "my-secret" });
     });
 
     it("creates webhook without secret", async () => {
@@ -1103,7 +1103,7 @@ describe("Webhooks Page", () => {
         expect.objectContaining({ secret: undefined }),
         "test-token",
       );
-      expect(response).toEqual({ success: true, message: "Webhook created" });
+      expect(response).toEqual({ success: true, message: "Webhook created", createdSecret: "my-secret" });
     });
 
     it("creates webhook with enabled=false", async () => {
@@ -1128,7 +1128,7 @@ describe("Webhooks Page", () => {
         expect.objectContaining({ enabled: false }),
         "test-token",
       );
-      expect(response).toEqual({ success: true, message: "Webhook created" });
+      expect(response).toEqual({ success: true, message: "Webhook created", createdSecret: null });
     });
 
     it("returns error when create API call fails", async () => {
@@ -1428,7 +1428,7 @@ describe("Webhooks Page", () => {
         expect.objectContaining({ events: [] }),
         "test-token",
       );
-      expect(response).toEqual({ success: true, message: "Webhook created" });
+      expect(response).toEqual({ success: true, message: "Webhook created", createdSecret: "my-secret" });
     });
   });
 });

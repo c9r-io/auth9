@@ -195,9 +195,9 @@ FROM invitations WHERE id = '{invitation_id}';
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | 创建邀请 | PASS | 2026-02-06 | Codex | 邮件发送成功 |
-| 2 | 邀请已存在成员 | FAIL | 2026-02-06 | Codex | 见 `docs/ticket/invitation_01-create-send_scenario2_260206_194614.md` |
-| 3 | 重复邀请同一邮箱 | PASS | 2026-02-06 | Codex | 返回“已存在”错误 |
-| 4 | 重新发送邀请 | FAIL | 2026-02-06 | Codex | 见 `docs/ticket/invitation_01-create-send_scenario4_260206_194834.md` |
-| 5 | 不同过期时间 | PASS | 2026-02-06 | Codex | 24/48/72/168 小时符合预期 |
-| 6 | 认证状态检查 | NOT RUN |  |  |  |
+| 1 | 创建邀请 | PASS | 2026-03-03 | opencode | 邮件发送成功,数据库正确 |
+| 2 | 邀请已存在成员 | PASS | 2026-03-03 | opencode | 显示"User is already a member" |
+| 3 | 重复邀请同一邮箱 | PASS | 2026-03-03 | opencode | 显示"An invitation already exists" |
+| 4 | 重新发送邀请 | PASS | 2026-03-03 | opencode | 邮件成功重发 |
+| 5 | 不同过期时间 | PASS | 2026-03-03 | opencode | 24/48/72/168 小时符合预期 |
+| 6 | 认证状态检查 | PASS | 2026-03-03 | opencode | 未登录自动重定向到/login |

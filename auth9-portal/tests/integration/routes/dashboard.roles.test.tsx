@@ -1723,7 +1723,7 @@ describe("Roles Page", () => {
                     Component: WrappedPage,
                     loader: () => mockLoaderData,
                     action: async () => {
-                        return Response.json({ error: "Role name already exists" }, { status: 400 });
+                        return { error: "Role name already exists", intent: "create_role" };
                     },
                 },
             ]);
@@ -2050,19 +2050,15 @@ describe("Roles Page", () => {
                 parent_role_id: "",
             });
 
-            const response = await action({ request, params: {}, context: {} });
-            expect(response).toBeInstanceOf(Response);
-            const data = await (response as Response).json();
-            expect(data.error).toBe("Role already exists");
+            const result = await action({ request, params: {}, context: {} });
+            expect(result).toEqual({ error: "Role already exists", intent: "create_role" });
         });
 
         it("returns error for invalid intent", async () => {
             const request = createFormRequest({ intent: "invalid" });
 
-            const response = await action({ request, params: {}, context: {} });
-            expect(response).toBeInstanceOf(Response);
-            const data = await (response as Response).json();
-            expect(data.error).toBe("Invalid intent");
+            const result = await action({ request, params: {}, context: {} });
+            expect(result).toEqual({ error: "Invalid intent", intent: "invalid" });
         });
     });
 });

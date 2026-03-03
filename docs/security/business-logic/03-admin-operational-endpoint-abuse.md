@@ -238,7 +238,10 @@ curl -i -X DELETE "http://localhost:8080/api/v1/tenants/$OTHER_TENANT_ID/webhook
 | 现象 | 原因 | 解决 |
 |------|------|------|
 | 返回 200 而非 403 | Token 的 `tenant_id` 与 `OTHER_TENANT_ID` 相同 | 确保 token 属于不同租户 |
+| 返回 200 而非 403 | **使用了 Platform Admin 的 Identity Token** 而非普通用户的 Tenant Access Token | Platform Admin 在 policy 层有跨租户 bypass，这是设计行为。**必须使用非管理员邮箱的 Tenant Access Token** 进行测试 |
 | PUT 返回 403 但 DELETE 返回 200 | 不应发生；两者均有 policy + handler 双重检查 | 检查 token 是否过期后重新生成 |
+
+> **⚠️ 关键提醒**: 本场景测试的是 **普通用户** 的跨租户越权，**不是** Platform Admin 的跨租户访问。Platform Admin（`is_platform_admin_email` 匹配的邮箱）拥有跨租户管理权限，这是设计行为。测试时务必使用 `gen-test-tokens.js tenant-access` 生成非管理员邮箱的 token。
 
 ---
 

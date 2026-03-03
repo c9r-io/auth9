@@ -129,12 +129,13 @@ WHERE id = '{action_id}';
 ### 初始状态
 - 存在 Error Action（会抛出错误）
 - Action 处于启用状态
+- **Action 的 `strict_mode` 必须设置为 `true`**（默认为 `false`，不会阻止登录）
 
 ### 目的
 验证 Action 失败时阻止认证流程（严格模式）
 
 ### 测试操作流程
-1. 确保 Error Action 已启用
+1. 确保 Error Action 已启用，**且 `strict_mode` 已开启**（通过 Portal 编辑 Action 勾选 Strict Mode，或通过 API 设置 `"strict_mode": true`）
 2. 尝试登录
 3. 观察登录流程是否中断
 
@@ -170,6 +171,14 @@ WHERE user_id = '{test_user_id}'
   AND created_at > NOW() - INTERVAL 1 MINUTE;
 -- 预期: COUNT = 0（登录被阻止）
 ```
+
+### 常见误报
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| Action 失败但登录成功 | Error Action 的 `strict_mode` 为 `false`（默认值） | 编辑 Action，将 `strict_mode` 设为 `true` |
+| Action 未执行 | Error Action 未启用或未绑定到正确的 service/trigger | 检查 Action 的 `enabled` 状态和 `trigger_id` 为 `post-login` |
+| 登录正常但无执行日志 | Action 绑定的 service_id 与当前登录的 service 不匹配 | 确认 Action 属于登录使用的 Service |
 
 ---
 

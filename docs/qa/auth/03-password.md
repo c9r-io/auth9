@@ -62,13 +62,23 @@ ORDER BY created_at DESC LIMIT 1;
 
 ### 初始状态
 - 用户有有效的密码重置令牌
+- Mailpit 已配置为 Keycloak 的 SMTP 服务（开发环境自动配置）
 
 ### 目的
 验证密码重置流程
 
 ### 测试操作流程
-1. 点击邮件中的重置链接
-2. 输入新密码：`NewSecurePass123!`
+1. 从 Mailpit 获取重置链接：
+   - **方法 A（Web UI）**：打开 `http://localhost:8025`，找到最新的重置邮件，点击邮件中的链接
+   - **方法 B（API）**：
+     ```bash
+     # 获取最新邮件中的重置链接
+     curl -s http://localhost:8025/api/v1/messages | \
+       python3 -c "import sys,json; msgs=json.load(sys.stdin)['messages']; print(msgs[0]['ID'])" | \
+       xargs -I{} curl -s http://localhost:8025/api/v1/message/{} | \
+       python3 -c "import sys,json,re; msg=json.load(sys.stdin); links=re.findall(r'http[s]?://[^\s\"<>]+action-token[^\s\"<>]+', msg.get('HTML','')); print(links[0] if links else 'No reset link found')"
+     ```
+2. 在 Keycloak 重置页面输入新密码：`NewSecurePass123!`
 3. 确认新密码
 4. 提交
 
@@ -97,7 +107,11 @@ SELECT used_at FROM password_reset_tokens WHERE id = '{token_id}';
 验证过期令牌处理
 
 ### 测试操作流程
-1. 使用过期的重置链接
+1. 从场景 2 获取重置链接，但**不立即使用**
+2. 等待令牌过期（Keycloak 默认 5 分钟），或通过 Keycloak Admin API 缩短过期时间
+3. 使用过期的重置链接
+
+> **提示**：可通过修改链接中的 URL 参数或等待足够时间来测试过期场景。
 
 ### 预期结果
 - 显示错误：「链接已过期，请重新申请」
@@ -135,13 +149,25 @@ SELECT used_at FROM password_reset_tokens WHERE id = '{token_id}';
 ## 场景 5：密码强度验证
 
 ### 初始状态
-- 系统配置了密码策略
+- **Keycloak 密码策略已由 Seeder 配置**（auth9-core 启动时自动执行）
+- 策略要求：最少 12 字符、至少 1 个大写字母、1 个小写字母、1 个数字、1 个特殊字符
+- 验证策略是否生效（**必须使用 Bearer Token，`-u admin:admin` 基础认证可能返回不完整数据**）：
+  ```bash
+  KC_TOKEN=$(curl -s -X POST "http://localhost:8081/realms/master/protocol/openid-connect/token" \
+    -d "client_id=admin-cli" -d "username=admin" -d "password=admin" -d "grant_type=password" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+  curl -s "http://localhost:8081/admin/realms/auth9" -H "Authorization: Bearer $KC_TOKEN" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin).get('passwordPolicy','NULL'))"
+  # 预期: 非 null，包含 "length(12) and upperCase(1) and ..."
+  ```
+
+> **注意**：如果 `passwordPolicy` 为 `null`，说明 auth9-core 的 Seeder 尚未完成初始化。请确保 auth9-core 已成功启动并完成数据库迁移和 Keycloak 配置同步。可检查日志：`docker logs auth9-init 2>&1 | grep -i "password\|policy\|seeder"`。注意：seeder 运行在 `auth9-init` 容器中，不是 `auth9-core`。
 
 ### 目的
 验证密码强度验证
 
 ### 测试操作流程
-测试以下弱密码：
+通过 Keycloak 登录页的「忘记密码」流程重置密码时测试以下弱密码：
 1. 太短：`abc123`
 2. 无大写：`password123!`
 3. 无数字：`Password!`
@@ -150,6 +176,14 @@ SELECT used_at FROM password_reset_tokens WHERE id = '{token_id}';
 ### 预期结果
 - 每种情况显示相应的密码强度错误
 - 密码不被接受
+
+### 常见误报
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| `passwordPolicy` 为 `null` | Seeder 未完成或 auth9-core 未正常启动 | 检查 `docker logs auth9-core` 确认启动完成 |
+| 注册页面显示 "Registration not allowed" | Auth9 禁用了 Keycloak 直接注册（设计如此） | 通过「忘记密码」流程或 Portal 修改密码页面测试 |
+| 弱密码被接受 | 密码策略未同步到 Keycloak realm | 重启 auth9-core 或手动运行 `./scripts/reset-docker.sh` |
 
 ---
 

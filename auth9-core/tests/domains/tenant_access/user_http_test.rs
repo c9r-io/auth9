@@ -1101,7 +1101,11 @@ async fn test_create_user_admin_can_create_without_registration() {
 
     let state = TestAppState::with_mock_keycloak(&mock_kc);
     // Don't enable public registration - admin can always create
-    let token = create_test_tenant_access_token();
+    // Add active tenant matching the token's tenant_id (require_active check)
+    let tenant_id = Uuid::new_v4();
+    let tenant = create_test_tenant(Some(tenant_id));
+    state.tenant_repo.add_tenant(tenant).await;
+    let token = create_test_tenant_access_token_for_tenant(tenant_id);
     let app = build_test_router(state);
 
     let input = json!({

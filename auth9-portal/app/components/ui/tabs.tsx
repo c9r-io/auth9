@@ -32,7 +32,7 @@ const TabsTrigger = forwardRef<
       "inline-flex items-center justify-center whitespace-nowrap px-3 py-2.5 min-h-[44px] rounded-[8px]",
       "text-[13px] font-medium",
       "ring-offset-transparent transition-all duration-200",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2",
+      "focus-visible:outline-2 focus-visible:outline-[var(--accent-blue)] focus-visible:outline-offset-2",
       "disabled:pointer-events-none disabled:opacity-50",
       "data-[state=active]:bg-[var(--sidebar-item-hover)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:shadow-sm",
       "hover:text-[var(--text-primary)]",
@@ -51,7 +51,7 @@ const TabsContent = forwardRef<
     ref={ref}
     className={cn(
       "mt-2 ring-offset-transparent",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2",
+      "focus-visible:outline-2 focus-visible:outline-[var(--accent-blue)] focus-visible:outline-offset-2",
       className
     )}
     {...props}

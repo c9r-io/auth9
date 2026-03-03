@@ -13,7 +13,7 @@ const Checkbox = React.forwardRef<
       "peer h-4 w-4 shrink-0 rounded-[4px] shadow",
       "border border-[var(--glass-border-subtle)]",
       "bg-[var(--sidebar-item-hover)]",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-blue)] focus-visible:ring-offset-2",
+      "focus-visible:outline-2 focus-visible:outline-[var(--accent-blue)] focus-visible:outline-offset-2",
       "disabled:cursor-not-allowed disabled:opacity-50",
       "data-[state=checked]:bg-[var(--accent-blue)] data-[state=checked]:border-[var(--accent-blue)] data-[state=checked]:text-white",
       className

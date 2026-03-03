@@ -1,4 +1,4 @@
-import { createRoutesStub } from "react-router";
+import { createRoutesStub, Outlet } from "react-router";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -53,6 +53,10 @@ function WrappedPage() {
             <UsersPage />
         </ConfirmProvider>
     );
+}
+
+function DashboardLayout() {
+    return <Outlet context={{ activeTenant: { tenant_id: "t1", tenant: { id: "t1", name: "Tenant 1" } } }} />;
 }
 
 describe("Users Page", () => {
@@ -122,10 +126,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -144,10 +152,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -169,10 +181,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -195,10 +211,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -216,10 +236,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -238,10 +262,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -262,10 +290,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -287,10 +319,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -317,11 +353,15 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
-                action,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                    action,
+                }],
             },
         ]);
 
@@ -357,11 +397,15 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
-                action,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                    action,
+                }],
             },
         ]);
 
@@ -387,11 +431,15 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
-                action,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                    action,
+                }],
             },
         ]);
 
@@ -414,10 +462,14 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
             },
         ]);
 
@@ -447,11 +499,15 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
-                action,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                    action,
+                }],
             },
         ]);
 
@@ -493,11 +549,15 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
-                action,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                    action,
+                }],
             },
         ]);
 
@@ -540,11 +600,15 @@ describe("Users Page", () => {
 
         const RoutesStub = createRoutesStub([
             {
-                path: "/dashboard/users",
-                Component: WrappedPage,
-                HydrateFallback: () => null,
-                loader,
-                action,
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                    action,
+                }],
             },
         ]);
 
@@ -576,12 +640,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -605,12 +673,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -637,13 +709,17 @@ describe("Users Page", () => {
             vi.mocked(userApi.update).mockResolvedValue({ data: { ...mockUsers.data[0], display_name: "Alice Updated" } });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -674,12 +750,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -701,12 +781,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -732,12 +816,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -762,12 +850,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -798,12 +890,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -841,13 +937,17 @@ describe("Users Page", () => {
             vi.mocked(userApi.create).mockResolvedValue({ data: { id: "u3", email: "new@example.com", display_name: "New User", mfa_enabled: false, created_at: "", updated_at: "" } });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -864,7 +964,7 @@ describe("Users Page", () => {
 
             await waitFor(() => {
                 expect(userApi.create).toHaveBeenCalledWith(
-                    { email: "new@example.com", display_name: "New User", password: "SecurePass123!" },
+                    { email: "new@example.com", display_name: "New User", password: "SecurePass123!", tenant_id: "t1" },
                     "test-token"
                 );
             });
@@ -876,13 +976,17 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -916,13 +1020,17 @@ describe("Users Page", () => {
             vi.mocked(userApi.delete).mockResolvedValue(undefined);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -952,13 +1060,17 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -990,13 +1102,17 @@ describe("Users Page", () => {
             vi.mocked(sessionApi.forceLogoutUser).mockResolvedValue({ message: "ok" });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -1026,13 +1142,17 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -1074,13 +1194,17 @@ describe("Users Page", () => {
             vi.mocked(userApi.getTenants).mockResolvedValue({ data: userTenantsData });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -1109,13 +1233,17 @@ describe("Users Page", () => {
             vi.mocked(userApi.getTenants).mockResolvedValue({ data: userTenantsData });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();
@@ -1138,13 +1266,17 @@ describe("Users Page", () => {
             vi.mocked(userApi.getTenants).mockResolvedValue({ data: [] });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup({ pointerEventsCheck: 0 });
@@ -1202,13 +1334,17 @@ describe("Users Page", () => {
             vi.mocked(rbacApi.getUserAssignedRoles).mockResolvedValue({ data: [] });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup({ pointerEventsCheck: 0 });
@@ -1229,13 +1365,17 @@ describe("Users Page", () => {
             vi.mocked(rbacApi.getUserAssignedRoles).mockResolvedValue({ data: [] });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup({ pointerEventsCheck: 0 });
@@ -1257,13 +1397,17 @@ describe("Users Page", () => {
             vi.mocked(rbacApi.getUserAssignedRoles).mockResolvedValue({ data: [] });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup({ pointerEventsCheck: 0 });
@@ -1286,13 +1430,17 @@ describe("Users Page", () => {
             vi.mocked(rbacApi.getUserAssignedRoles).mockResolvedValue({ data: [] });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup({ pointerEventsCheck: 0 });
@@ -1312,13 +1460,17 @@ describe("Users Page", () => {
             vi.mocked(rbacApi.getUserAssignedRoles).mockResolvedValue({ data: assignedRoles });
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
                     action,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup({ pointerEventsCheck: 0 });
@@ -1342,12 +1494,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             render(<RoutesStub initialEntries={["/dashboard/users"]} />);
@@ -1366,12 +1522,16 @@ describe("Users Page", () => {
             vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
 
             const RoutesStub = createRoutesStub([
-                {
-                    path: "/dashboard/users",
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
                     Component: WrappedPage,
-                HydrateFallback: () => null,
+                    HydrateFallback: () => null,
                     loader,
-                },
+                }],
+            },
             ]);
 
             const user = userEvent.setup();

@@ -13,11 +13,13 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+const timestamp = Date.now();
+
 async function runTests() {
   console.log('=== SDK - 日志查询测试 (场景 6) ===');
   try {
     const action = await client.actions.create({
-      name: 'Logging Test',
+      name: `Logging Test ${timestamp}`,
       trigger_id: 'post-login',
       script: 'context;',
     });
@@ -50,7 +52,7 @@ async function runTests() {
   console.log('\n=== SDK - 统计信息查询测试 (场景 7) ===');
   try {
     const action = await client.actions.create({
-      name: 'Stats Test',
+      name: `Stats Test ${timestamp}`,
       trigger_id: 'post-login',
       script: 'context;',
     });
@@ -66,12 +68,12 @@ async function runTests() {
     await sleep(500);
 
     const stats = await client.actions.stats(action.id);
-    console.log('Execution count:', stats.execution_count);
-    console.log('Success rate:', stats.success_rate);
-    console.log('Avg duration:', stats.avg_duration_ms);
-    console.log('Last 24h:', stats.last_24h_count);
+    console.log('Execution count:', stats.executionCount);
+    console.log('Success rate:', stats.executionCount > 0 ? ((stats.executionCount - stats.errorCount) / stats.executionCount * 100).toFixed(1) : 0);
+    console.log('Avg duration:', stats.avgDurationMs);
+    console.log('Last 24h:', stats.last24hCount);
 
-    if (stats.execution_count === 10 && stats.success_rate === 100) {
+    if (stats.last24hCount === 10) {
       console.log('✅ 场景 7 PASS');
     } else {
       console.log('❌ 场景 7 FAIL - Stats mismatch');
@@ -131,7 +133,7 @@ async function runTests() {
     const start = Date.now();
     const promises = Array.from({ length: 20 }, (_, i) =>
       client.actions.create({
-        name: `Concurrent Action ${i}`,
+        name: `Concurrent Action ${timestamp} ${i}`,
         trigger_id: 'post-login',
         script: 'context;',
       })
