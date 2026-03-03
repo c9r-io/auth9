@@ -123,27 +123,34 @@ Extract from confirmed document:
 1. Read scenario details (initial state, steps, expected results, expected data state)
 2. Prepare test data if required
 
-### 3.2 Browser Execution (Playwright MCP)
+### 3.2 Browser Execution (playwright-cli)
 
-Use `mcp__plugin_playwright_playwright__*` tools:
+Use `playwright-cli` commands via Bash:
 
-```
-1. Navigate: browser_navigate to http://localhost:3000
-2. Snapshot: browser_snapshot to get page structure and element refs
-3. Login (if needed):
-   - browser_type or browser_fill_form for credentials
-   - browser_click on sign in button
-4. Execute test steps:
-   - browser_snapshot before each interaction
-   - browser_click, browser_type for interactions
-   - browser_wait_for after actions (1-3s)
-   - browser_snapshot to verify results
-5. Verify expected UI state
+```bash
+# 1. Open browser and navigate
+playwright-cli open http://localhost:3000
+# 2. Snapshot to get page structure and element refs
+playwright-cli snapshot
+# 3. Login (if needed):
+playwright-cli fill e1 "admin"
+playwright-cli fill e2 "SecurePass123!"
+playwright-cli click e3
+# 4. Execute test steps:
+#    - snapshot before each interaction
+playwright-cli snapshot
+#    - click, type, fill for interactions
+playwright-cli click e5
+playwright-cli type "some text"
+#    - snapshot to verify results
+playwright-cli snapshot
+# 5. Close browser when done
+playwright-cli close
 ```
 
 **Rules**:
-- Always `browser_snapshot` before interactions to get element refs
-- Use short incremental waits (1-3s)
+- Always `playwright-cli snapshot` before interactions to get element refs
+- Use snapshots (not screenshots) to verify UI state
 - Check for errors in snapshot responses
 
 ### 3.3 Error Handling
