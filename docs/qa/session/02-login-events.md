@@ -10,11 +10,11 @@
 
 Auth9 采用 Headless Keycloak 架构，登录事件的产生和记录涉及两个系统：
 
-1. **登录操作发生在 Keycloak** → 测试可通过 Auth9 登录入口触发 OIDC 流程（底层由 Keycloak 执行用户名/密码与 MFA 验证）
+1. **用户名/密码与 MFA 验证由底层认证引擎处理** → 测试应通过 Auth9 登录入口触发 OIDC 流程
 2. **事件通过 Webhook 推送** → Keycloak ext-event-http SPI 插件（p2-inc/keycloak-events）将事件实时推送到 auth9-core 的 `POST /api/v1/keycloak/events` 端点
 3. **Auth9 Core 记录和分析** → Auth9 接收事件后写入 `login_events` 表，并触发安全检测（如暴力破解告警）
 
-**关键点**：Auth9 不直接处理用户名/密码验证，所有认证均通过 Keycloak OIDC 流程完成。本文档不要求必须手工访问 Keycloak 登录页 URL。
+**关键点**：Auth9 不直接处理用户名/密码验证，所有认证均通过底层 OIDC 流程完成。本文档不要求也不建议手工访问底层登录页 URL。
 
 ---
 
@@ -106,7 +106,7 @@ WHERE email = 'user@example.com' ORDER BY created_at DESC LIMIT 1;
 | 症状 | 原因 | 解决 |
 |------|------|------|
 | 事件未记录 | ext-event-http SPI 未加载 | 检查 `docker exec auth9-keycloak ls /opt/keycloak/providers/` 确认 JAR 存在 |
-| 事件未记录 | Webhook 未到达 auth9-core | 检查 `KEYCLOAK_WEBHOOK_SECRET` 配置，确认 Keycloak realm Events → Event Listeners 包含 `ext-event-http` |
+| 事件未记录 | Webhook 未到达 auth9-core | 检查 `KEYCLOAK_WEBHOOK_SECRET` 配置；如需平台排障，可确认底层 realm Events → Event Listeners 包含 `ext-event-http` |
 | 事件延迟 | Webhook 推送有短暂延迟 | 等待 3-5 秒后再查询 |
 
 ---

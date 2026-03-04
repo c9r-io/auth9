@@ -3,13 +3,18 @@ import { redirect } from "react-router";
 import { commitSession, getOAuthState, clearOAuthStateCookie } from "~/services/session.server";
 import { invitationApi } from "~/services/api";
 
-function parseOAuthState(stateParam: string | null): { inviteToken?: string } {
+function parseOAuthState(
+    stateParam: string | null
+): { inviteToken?: string; redirectTo?: string } {
     if (!stateParam) return {};
     try {
         const decoded = Buffer.from(stateParam, "base64url").toString("utf-8");
         const parsed = JSON.parse(decoded);
-        if (parsed && typeof parsed === "object" && parsed.invite_token) {
-            return { inviteToken: parsed.invite_token };
+        if (parsed && typeof parsed === "object") {
+            return {
+                inviteToken: typeof parsed.invite_token === "string" ? parsed.invite_token : undefined,
+                redirectTo: typeof parsed.redirect_to === "string" ? parsed.redirect_to : undefined,
+            };
         }
     } catch {
         // Not a JSON state (plain UUID), ignore
@@ -78,7 +83,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         };
 
         // Check if there's a pending invitation to accept
-        const { inviteToken } = parseOAuthState(state);
+        const { inviteToken, redirectTo } = parseOAuthState(state);
         if (inviteToken) {
             try {
                 await invitationApi.accept({ token: inviteToken });
@@ -87,7 +92,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
             }
         }
 
-        return redirect("/tenant/select", {
+        return redirect(redirectTo || "/tenant/select", {
             headers: [
                 ["Set-Cookie", await commitSession(session)],
                 ["Set-Cookie", await clearOAuthStateCookie()],

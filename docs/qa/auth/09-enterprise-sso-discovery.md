@@ -11,7 +11,7 @@
 
 本功能新增企业 SSO 发现端点，通过用户邮箱域名匹配租户连接器并返回重定向地址。
 
-**本文档测试的是 Portal `/login` 页面上「Continue with Enterprise SSO」路径**，即输入企业邮箱 → 域名发现 → 跳转到对应的企业 IdP。与「Sign in with password」（直接跳 Keycloak 密码登录页）是不同的认证路径。
+**本文档测试的是 Portal `/login` 页面上「Continue with Enterprise SSO」路径**，即输入企业邮箱 → 域名发现 → 跳转到对应的企业 IdP。与「Sign in with password」（进入托管密码认证链路）是不同的认证路径。
 
 端点：
 - `POST /api/v1/enterprise-sso/discovery`
@@ -192,7 +192,7 @@ SELECT COUNT(*) AS cnt FROM enterprise_sso_connectors;
 - 已存在可用 OIDC client：`auth9-portal`
 
 ### 目的
-验证授权端点支持 `connector_alias` 并向 Keycloak 透传 `kc_idp_hint`
+验证授权端点支持 `connector_alias` 并向底层授权请求透传 `kc_idp_hint`
 
 ### 测试操作流程
 1. 访问：
@@ -203,7 +203,7 @@ curl -I 'http://localhost:8080/api/v1/auth/authorize?response_type=code&client_i
 
 ### 预期结果
 - HTTP 状态码为 `307` 或 `302`
-- `Location` 指向 Keycloak auth endpoint
+- `Location` 指向底层授权端点
 - `Location` 查询参数中存在 `kc_idp_hint={keycloak_alias}`
 
 ### 预期数据状态
@@ -231,4 +231,4 @@ SELECT COUNT(*) AS cnt FROM enterprise_sso_connectors WHERE keycloak_alias = '{k
 | 2 | 未配置域名时返回未找到错误 | ☐ | | | API 层 |
 | 3 | 连接器禁用后 discovery 不可用 | ☐ | | | API 层 |
 | 4 | 缺失或非法邮箱参数返回验证错误 | ☐ | | | API 层 |
-| 5 | /api/v1/auth/authorize 透传 connector_alias 到 Keycloak | ☐ | | | API 层 |
+| 5 | /api/v1/auth/authorize 透传 connector_alias 到底层授权请求 | ☐ | | | API 层 |

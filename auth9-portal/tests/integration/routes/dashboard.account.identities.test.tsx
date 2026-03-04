@@ -6,6 +6,7 @@ import { identityProviderApi } from "~/services/api";
 
 vi.mock("~/services/api", () => ({
     identityProviderApi: {
+        list: vi.fn(),
         listMyLinkedIdentities: vi.fn(),
         unlinkIdentity: vi.fn(),
     },
@@ -17,7 +18,15 @@ vi.mock("~/services/session.server", () => ({
         session: {
             accessToken: "test-token",
             refreshToken: "test-refresh-token",
-            idToken: "test-id-token",
+            idToken: [
+                "header",
+                Buffer.from(JSON.stringify({
+                    iss: "http://localhost:8081/realms/auth9",
+                    session_state: "session-123",
+                    azp: "auth9-portal",
+                })).toString("base64url"),
+                "signature",
+            ].join("."),
             expiresAt: Date.now() + 3600000,
         },
         headers: undefined,
@@ -89,6 +98,9 @@ function createFormRequest(data: Record<string, string>): Request {
 describe("Account Identities Page", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        vi.mocked(identityProviderApi.list).mockResolvedValue({
+            data: [],
+        });
     });
 
     // ============================================================================
@@ -99,11 +111,38 @@ describe("Account Identities Page", () => {
         vi.mocked(identityProviderApi.listMyLinkedIdentities).mockResolvedValue({
             data: mockIdentities,
         });
+        vi.mocked(identityProviderApi.list).mockResolvedValue({
+            data: [
+                {
+                    alias: "linkedin",
+                    provider_id: "linkedin",
+                    display_name: "LinkedIn",
+                    enabled: true,
+                    config: {},
+                },
+                {
+                    alias: "google",
+                    provider_id: "google",
+                    display_name: "Google",
+                    enabled: true,
+                    config: {},
+                },
+            ],
+        });
 
         const request = new Request("http://localhost/dashboard/account/identities");
         const result = await loader({ request, params: {}, context: {} });
 
-        expect(result).toEqual({ identities: mockIdentities });
+        expect(result).toEqual({
+            identities: mockIdentities,
+            availableProviders: [
+                {
+                    alias: "linkedin",
+                    provider_id: "linkedin",
+                    display_name: "LinkedIn",
+                },
+            ],
+        });
     });
 
     it("loader redirects when no access token", async () => {
@@ -126,7 +165,11 @@ describe("Account Identities Page", () => {
         const request = new Request("http://localhost/dashboard/account/identities");
         const result = await loader({ request, params: {}, context: {} });
 
-        expect(result).toEqual({ identities: [], error: "Failed to load linked identities" });
+        expect(result).toEqual({
+            identities: [],
+            availableProviders: [],
+            error: "Failed to load linked identities",
+        });
     });
 
     // ============================================================================
@@ -141,6 +184,22 @@ describe("Account Identities Page", () => {
 
         expect(result).toEqual({ success: true, message: "Identity unlinked successfully" });
         expect(identityProviderApi.unlinkIdentity).toHaveBeenCalledWith("id-1", "test-token");
+    });
+
+    it("action redirects to provider linking flow", async () => {
+        const request = createFormRequest({ intent: "link", providerAlias: "github" });
+        const result = await action({ request, params: {}, context: {} });
+
+        expect(result).toBeInstanceOf(Response);
+        expect((result as Response).status).toBe(302);
+        const location = (result as Response).headers.get("Location");
+        expect(location).toContain("/realms/auth9/broker/github/link");
+        expect(location).toContain("client_id=auth9-portal");
+        expect(location).toContain(
+            "redirect_uri=http%3A%2F%2Flocalhost%2Fdashboard%2Faccount%2Fidentities"
+        );
+        expect(location).toContain("nonce=");
+        expect(location).toContain("hash=");
     });
 
     it("action returns error when not authenticated", async () => {
@@ -187,7 +246,7 @@ describe("Account Identities Page", () => {
             {
                 path: "/dashboard/account/identities",
                 Component: AccountIdentitiesPage,
-                loader: () => ({ identities: mockIdentities }),
+                loader: () => ({ identities: mockIdentities, availableProviders: [] }),
             },
         ]);
 
@@ -203,7 +262,7 @@ describe("Account Identities Page", () => {
             {
                 path: "/dashboard/account/identities",
                 Component: AccountIdentitiesPage,
-                loader: () => ({ identities: mockIdentities }),
+                loader: () => ({ identities: mockIdentities, availableProviders: [] }),
             },
         ]);
 
@@ -232,6 +291,7 @@ describe("Account Identities Page", () => {
                         external_email: "",
                         linked_at: "2024-01-01T00:00:00Z",
                     }],
+                    availableProviders: [],
                 }),
             },
         ]);
@@ -245,7 +305,7 @@ describe("Account Identities Page", () => {
             {
                 path: "/dashboard/account/identities",
                 Component: AccountIdentitiesPage,
-                loader: () => ({ identities: [] }),
+                loader: () => ({ identities: [], availableProviders: [] }),
             },
         ]);
 
@@ -258,7 +318,7 @@ describe("Account Identities Page", () => {
             {
                 path: "/dashboard/account/identities",
                 Component: AccountIdentitiesPage,
-                loader: () => ({ identities: [mockIdentities[0]] }),
+                loader: () => ({ identities: [mockIdentities[0]], availableProviders: [] }),
             },
         ]);
 
@@ -271,11 +331,35 @@ describe("Account Identities Page", () => {
             {
                 path: "/dashboard/account/identities",
                 Component: AccountIdentitiesPage,
-                loader: () => ({ identities: [], error: "Failed to load linked identities" }),
+                loader: () => ({
+                    identities: [],
+                    availableProviders: [],
+                    error: "Failed to load linked identities",
+                }),
             },
         ]);
 
         render(<RoutesStub initialEntries={["/dashboard/account/identities"]} />);
         expect(await screen.findByText("Failed to load linked identities")).toBeInTheDocument();
+    });
+
+    it("renders available link providers", async () => {
+        const RoutesStub = createRoutesStub([
+            {
+                path: "/dashboard/account/identities",
+                Component: AccountIdentitiesPage,
+                loader: () => ({
+                    identities: [],
+                    availableProviders: [
+                        { alias: "github", provider_id: "github", display_name: "GitHub" },
+                    ],
+                }),
+            },
+        ]);
+
+        render(<RoutesStub initialEntries={["/dashboard/account/identities"]} />);
+
+        expect(await screen.findByText("Link another identity")).toBeInTheDocument();
+        expect(screen.getByRole("button", { name: /link github/i })).toBeInTheDocument();
     });
 });

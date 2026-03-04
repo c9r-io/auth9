@@ -190,7 +190,7 @@ WHERE t.slug IN ('auth9-platform', 'demo');
 - 数据库已重置
 
 ### 目的
-验证通过 `AUTH9_ADMIN_EMAIL` 环境变量可以自定义管理员邮箱，且种子数据使用 Keycloak 中的实际邮箱
+验证通过 `AUTH9_ADMIN_EMAIL` 环境变量可以自定义管理员邮箱，且种子数据使用底层认证主体中的实际邮箱
 
 ### 测试操作流程
 1. 重置环境：
@@ -206,18 +206,18 @@ WHERE t.slug IN ('auth9-platform', 'demo');
 
 ### 预期结果
 - Init 成功完成
-- Keycloak 中管理员用户使用指定邮箱创建
-- 数据库中用户邮箱与 Keycloak 一致
+- 底层认证主体中的管理员用户使用指定邮箱创建
+- 数据库中用户邮箱与底层认证主体一致
 
 ### 预期数据状态
 ```sql
--- 验证用户邮箱来自 Keycloak（与 AUTH9_ADMIN_EMAIL 设置一致）
+-- 验证用户邮箱来自底层认证主体（与 AUTH9_ADMIN_EMAIL 设置一致）
 SELECT email, display_name FROM users WHERE display_name = 'Admin User';
 -- 预期: email = ops@example.com, display_name = Admin User
 
--- 验证 Keycloak 中的邮箱一致
--- 通过 Keycloak Admin Console (http://localhost:8081/admin) 查看
--- Realm: auth9 → Users → admin → Email 字段应为 ops@example.com
+-- 如需做后台同步校验（可选），通过容器内 Admin API 验证底层认证主体邮箱一致
+-- docker exec auth9-core curl -s "http://keycloak:8080/admin/realms/auth9/users?email=ops@example.com" ...
+-- 预期: 返回匹配用户，邮箱为 ops@example.com
 ```
 
 ---
@@ -285,7 +285,7 @@ WHERE u.display_name = 'Admin User';
 
 ### 测试操作流程
 1. 打开浏览器访问 Portal：http://localhost:3000
-2. 点击「登录」按钮，页面跳转至 Keycloak 登录页
+2. 点击「登录」按钮，页面跳转至 Auth9 品牌认证页
 3. 输入管理员凭据：
    - **用户名**: `admin`（**不是** email `admin@auth9.local`）
    - **密码**: Docker 环境默认为 `SecurePass123!`（由 `AUTH9_ADMIN_PASSWORD` 环境变量控制）
@@ -293,7 +293,7 @@ WHERE u.display_name = 'Admin User';
 5. 验证 Dashboard 页面
 6. 查看租户列表
 
-> **重要**: Keycloak 登录使用 **用户名**（`admin`），不能使用 email（`admin@auth9.local`），
+> **重要**: 托管认证页登录使用 **用户名**（`admin`），不能使用 email（`admin@auth9.local`），
 > 除非 Realm 显式开启了 `loginWithEmailAllowed`。如果未设置 `AUTH9_ADMIN_PASSWORD` 环境变量，
 > init 命令会生成随机密码并输出到日志中。
 

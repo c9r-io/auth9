@@ -160,24 +160,24 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
 ## 场景 3：删除后外部系统同步验证
 
 ### 初始状态
-- 租户 `{tenant_id}` 下存在用户 `{user_id}`，该用户在 Keycloak 中有对应账户
-- **`users.keycloak_id` 必须是有效的 Keycloak 用户 UUID**（通过正常 OIDC 登录或 API 创建用户流程生成，不能是手动插入的非 UUID 字符串）
+- 租户 `{tenant_id}` 下存在用户 `{user_id}`，该用户在底层认证主体中有对应账户
+- **`users.keycloak_id` 必须是有效的底层认证主体 UUID**（通过正常 OIDC 登录或 API 创建用户流程生成，不能是手动插入的非 UUID 字符串）
 - 租户配置了至少 1 个 Webhook
 
 ### 目的
-验证删除操作在数据库事务 commit 后正确执行 Keycloak 用户删除和 Webhook 通知
+验证删除操作在数据库事务 commit 后正确执行底层认证主体删除和 Webhook 通知
 
 ### 测试操作流程
-1. 记录用户在 Keycloak 中的 ID（从 `users.keycloak_id` 获取，确认为 UUID 格式）
+1. 记录用户在底层认证主体中的 ID（从 `users.keycloak_id` 获取，确认为 UUID 格式）
 2. 删除用户：
    ```bash
    curl -s -w "\n%{http_code}" -X DELETE \
      -H "Authorization: Bearer {admin_token}" \
      http://localhost:8080/api/v1/tenants/{tenant_id}/users/{user_id}
    ```
-3. 检查 Keycloak 中用户是否已删除：
+3. 检查底层认证主体中用户是否已删除：
    ```bash
-   # Keycloak Admin API
+   # 底层 Admin API
    curl -s -w "\n%{http_code}" \
      -H "Authorization: Bearer {keycloak_admin_token}" \
      http://localhost:8081/admin/realms/auth9/users/{keycloak_user_id}
@@ -185,8 +185,8 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
 4. 检查 Webhook 投递记录（如配置了 Webhook）
 
 ### 预期结果
-- 用户从数据库和 Keycloak 中均已删除
-- Keycloak 查询返回 `404 Not Found`
+- 用户从数据库和底层认证主体中均已删除
+- 底层 Admin API 查询返回 `404 Not Found`
 - Webhook 端点收到 `user.deleted` 事件
 
 ---

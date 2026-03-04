@@ -115,7 +115,7 @@ SELECT COUNT(*) FROM sessions WHERE user_id = '{user_id}' AND revoked_at IS NULL
 ## 测试数据准备
 
 ```sql
--- 准备测试用户（需要在 Keycloak 中也创建）
+-- 准备测试用户（应通过 Auth9 正常注册流程或受控测试脚本创建对应底层认证主体）
 INSERT INTO users (id, keycloak_id, email, display_name, mfa_enabled) VALUES
 ('user-auth-1111-1111-111111111111', 'kc-auth-1', 'auth-test@example.com', 'Auth Test', false),
 ('user-auth-2222-2222-222222222222', 'kc-auth-2', 'mfa-test@example.com', 'MFA Test', true);
@@ -136,9 +136,9 @@ DELETE FROM users WHERE id LIKE 'user-auth-%';
 
 ---
 
-## Keycloak 测试用户
+## 测试用户准备说明
 
-在 Keycloak 管理界面创建：
+通过 Auth9 正常注册流程、管理员创建入口或受控测试脚本准备以下用户，确保其具备有效的底层认证主体映射：
 
 1. **标准用户**
    - Username: `auth-test@example.com`

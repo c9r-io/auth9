@@ -82,7 +82,7 @@ SELECT COUNT(*) FROM webauthn_credentials WHERE user_id = '{user_id}';
 5. 完成生物识别或 PIN 验证
 
 ### 预期结果
-- 点击后**不跳转到 Keycloak**，页面保持不变
+- 点击后**不跳转到托管认证链路**，页面保持不变
 - 设备弹出 WebAuthn 验证请求（Touch ID / Windows Hello / Security Key）
 - 验证成功后显示绿色提示「Passkey registered successfully!」
 - Passkey 列表自动刷新，显示新注册的 Passkey
@@ -232,14 +232,14 @@ async (page) => {
 }
 ```
 
-### 步骤 1：SSO 登录
+### 步骤 1：密码登录（仅用于建立已登录态）
 
 1. 调用 **`browser_navigate`**: `http://localhost:3000/login`
-2. 调用 **`browser_snapshot`** 查看页面，找到「Sign in with SSO」按钮
-3. 调用 **`browser_click`** 点击 SSO 按钮
-4. 页面跳转到 Keycloak，调用 **`browser_snapshot`** 查看登录表单
+2. 调用 **`browser_snapshot`** 查看页面，找到「Sign in with password」按钮
+3. 调用 **`browser_click`** 点击「Sign in with password」
+4. 页面进入 Auth9 品牌认证页，调用 **`browser_snapshot`** 查看登录表单
 5. 调用 **`browser_fill_form`** 填写 username=`e2e-test-user`, password=`Test123!`
-6. 调用 **`browser_click`** 点击 Keycloak 的「Sign In」按钮
+6. 调用 **`browser_click`** 点击认证页的「Sign In」按钮
 7. 调用 **`browser_snapshot`** 确认跳转到 Dashboard
 
 ### 步骤 2：场景 1 — 验证空状态

@@ -106,6 +106,36 @@ describe("Auth Callback", () => {
       );
     });
 
+    it("redirects back to the requested route when redirect_to is encoded in state", async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          access_token: "new-access-token",
+          refresh_token: "new-refresh-token",
+          id_token: "new-id-token",
+          expires_in: 3600,
+        }),
+      });
+
+      const encodedState = Buffer.from(
+        JSON.stringify({
+          nonce: "n-1",
+          redirect_to: "/dashboard/account/identities",
+        })
+      ).toString("base64url");
+      vi.mocked(getOAuthState).mockResolvedValueOnce(encodedState);
+
+      const request = new Request(
+        `http://localhost/auth/callback?code=auth-code-123&state=${encodedState}`
+      );
+
+      const response = await loader({ request, params: {}, context: {} });
+      expect((response as Response).status).toBe(302);
+      expect((response as Response).headers.get("Location")).toBe(
+        "/dashboard/account/identities"
+      );
+    });
+
     it("redirects to /login on token exchange failure", async () => {
       mockFetch.mockResolvedValue({
         ok: false,

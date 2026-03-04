@@ -24,9 +24,9 @@
 6. 等待页面跳转
 
 ### 预期结果
-- 页面跳转到 Keycloak 授权端点（URL 包含 `/realms/auth9`）
+- 页面离开 `/login` 并进入托管认证链路
 - 跳转 URL 包含 `kc_idp_hint=` 参数，值为该连接器的 `keycloak_alias`
-- 用户进入企业 IdP 的登录页面（非 Keycloak 默认用户名/密码表单）
+- 用户进入企业 IdP 的登录页面（而非回退到托管的用户名/密码表单）
 
 ### 预期数据状态
 ```sql
@@ -48,7 +48,7 @@ WHERE d.domain = '{corp_domain}' AND c.enabled = 1;
 ### 目的
 **回归验证**：确认用户在 Portal `/login` 页面输入未配置域名的企业邮箱后，页面停留在 `/login` 并显示错误信息，而不是发生意外跳转或白屏。
 
-> **回归背景**：commit `25ea411` 曾引入 loader auto-redirect，导致用户根本无法到达 `/login` 页面的 Enterprise SSO 输入框——页面在 loader 阶段就被重定向到 Keycloak。修复后 `/login` 始终渲染，本场景验证 Enterprise SSO 的错误路径在 UI 层面工作正常。
+> **回归背景**：commit `25ea411` 曾引入 loader auto-redirect，导致用户根本无法到达 `/login` 页面的 Enterprise SSO 输入框——页面在 loader 阶段就被直接重定向到底层授权链路。修复后 `/login` 始终渲染，本场景验证 Enterprise SSO 的错误路径在 UI 层面工作正常。
 
 ### 测试操作流程
 1. 在浏览器中访问 `http://localhost:3000/login`
@@ -63,7 +63,7 @@ WHERE d.domain = '{corp_domain}' AND c.enabled = 1;
 
 ### 回归失败的表现（若 auto-redirect bug 复发）
 - 用户根本无法看到 Enterprise SSO 邮箱输入框
-- 访问 `/login` 后立即被 302 重定向到 Keycloak 密码登录页
+- 访问 `/login` 后立即被 302 重定向到托管密码认证链路
 - Enterprise SSO 功能完全不可用
 
 ---
@@ -95,7 +95,7 @@ WHERE d.domain = '{corp_domain}' AND c.enabled = 1;
 3. 调用 **`browser_click`**: 点击「Continue with Enterprise SSO」按钮
 4. 等待跳转后调用 **`browser_snapshot`**
 5. **验证**：
-   - 页面 URL 包含 `/realms/auth9` 或企业 IdP 域名
+   - 页面 URL 包含企业 IdP 域名，或进入底层授权链路
    - URL 包含 `kc_idp_hint=` 参数
 
 ---
@@ -107,5 +107,5 @@ WHERE d.domain = '{corp_domain}' AND c.enabled = 1;
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ✅ 通过 | 2026-03-04 | opencode | 成功跳转到 Keycloak，kc_idp_hint=test-oidc-idp |
+| 1 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ✅ 通过 | 2026-03-04 | opencode | 成功进入托管认证链路，kc_idp_hint=test-oidc-idp |
 | 2 | Portal /login 页面输入未配置域名邮箱显示错误（UI 回归） | ✅ 通过 | 2026-03-04 | opencode | 防止 auto-redirect 绕过 SSO 入口 |

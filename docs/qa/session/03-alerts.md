@@ -15,35 +15,24 @@
 mysql -h 127.0.0.1 -P 4000 -u root auth9 < docs/qa/session/seed.sql
 ```
 
-### Step 2: 在 Keycloak 中创建目标用户
-```bash
-# 获取 Keycloak Admin Token
-KC_TOKEN=$(curl -s -X POST "http://localhost:8081/realms/master/protocol/openid-connect/token" \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "grant_type=client_credentials&client_id=admin-cli&client_secret=admin" \
-  | jq -r '.access_token')
+### Step 2: 通过 Auth9 管理入口或受控脚本准备目标用户
 
-# 创建 target@example.com 用户（忽略已存在错误）
-curl -s -o /dev/null -w "%{http_code}" -X POST "http://localhost:8081/admin/realms/auth9/users" \
-  -H "Authorization: Bearer $KC_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"username":"target","email":"target@example.com","firstName":"Target","lastName":"User","enabled":true,"emailVerified":true,"credentials":[{"type":"password","value":"Target123!","temporary":false}]}'
+推荐方式（优先顺序）：
 
-# 获取 Keycloak 分配的用户 ID 并更新数据库
-KC_USER_ID=$(curl -s "http://localhost:8081/admin/realms/auth9/users?email=target@example.com" \
-  -H "Authorization: Bearer $KC_TOKEN" | jq -r '.[0].id')
+1. 通过 Auth9 Portal「用户管理」创建 `target@example.com`
+2. 或通过 Auth9 用户 API / 测试脚本创建同名用户
+3. 若本地集成环境需要补齐底层认证主体映射，使用受控脚本完成 `keycloak_id` 对齐，不要求 QA 手工操作底层管理控制台
 
-mysql -h 127.0.0.1 -P 4000 -u root auth9 -e \
-  "UPDATE users SET keycloak_id='$KC_USER_ID' WHERE id='50587266-c621-42d7-9d3d-8fc8e0ed00ef';"
+验证目标：
 
-echo "Target user Keycloak ID: $KC_USER_ID"
-```
+- `target@example.com` 能通过正常登录流程完成认证
+- `users.keycloak_id`（或底层认证主体映射字段）已正确存在
 
 说明：
 - `seed.sql` 会创建目标用户的会话数据和历史登录记录（用于安全告警检测）
 - 管理员：`admin@auth9.local`
 - 目标用户：`target@example.com`（密码：`Target123!`）
-- Step 2 确保用户同时存在于 Keycloak 和数据库中，并同步 keycloak_id
+- Step 2 确保用户同时存在于 Auth9 和底层认证主体映射中，并同步 `keycloak_id`
 - seed.sql 预置的登录记录使 new_device 和 impossible_travel 检测能在本地环境触发
 
 ---

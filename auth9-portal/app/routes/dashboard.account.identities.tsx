@@ -1,11 +1,78 @@
+import { createHash } from "node:crypto";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { redirect } from "react-router";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { identityProviderApi, type LinkedIdentity } from "~/services/api";
-import { getAccessToken } from "~/services/session.server";
+import { getAccessToken, requireAuthWithUpdate } from "~/services/session.server";
 import { Cross2Icon } from "@radix-ui/react-icons";
+
+type AvailableIdentityProvider = {
+  alias: string;
+  provider_id: string;
+  display_name?: string;
+};
+
+type LinkTokenClaims = {
+  iss: string;
+  session_state?: string;
+  sid?: string;
+  azp?: string;
+  aud?: string | string[];
+};
+
+function parseKeycloakLinkTokenClaims(token: string): LinkTokenClaims {
+  const [, payload = ""] = token.split(".");
+  if (!payload) {
+    throw new Error("Missing access token payload");
+  }
+
+  const decoded = Buffer.from(payload, "base64url").toString("utf8");
+  const claims = JSON.parse(decoded) as Partial<LinkTokenClaims>;
+  const clientId =
+    claims.azp ||
+    (typeof claims.aud === "string" ? claims.aud : undefined) ||
+    process.env.AUTH9_PORTAL_CLIENT_ID ||
+    "auth9-portal";
+
+  const sessionState = claims.session_state || claims.sid;
+
+  if (!claims.iss || !sessionState) {
+    throw new Error("OIDC token is missing Keycloak linking claims");
+  }
+
+  return {
+    iss: claims.iss,
+    session_state: sessionState,
+    azp: clientId,
+  };
+}
+
+function buildKeycloakAccountLinkUrl(
+  requestUrl: URL,
+  providerAlias: string,
+  keycloakToken: string
+): string {
+  const portalUrl = process.env.AUTH9_PORTAL_URL || requestUrl.origin;
+  const redirectUri = `${portalUrl}/dashboard/account/identities`;
+  const nonce = crypto.randomUUID();
+  const claims = parseKeycloakLinkTokenClaims(keycloakToken);
+  const issuer = claims.iss.replace(/\/$/, "");
+  const clientId = claims.azp || process.env.AUTH9_PORTAL_CLIENT_ID || "auth9-portal";
+  const digestInput = `${nonce}${claims.session_state}${clientId}${providerAlias}`;
+  const hash = createHash("sha256").update(digestInput, "utf8").digest("base64url");
+
+  const accountLinkUrl = new URL(
+    `${issuer}/broker/${encodeURIComponent(providerAlias)}/link`
+  );
+  accountLinkUrl.searchParams.set("client_id", clientId);
+  accountLinkUrl.searchParams.set("redirect_uri", redirectUri);
+  accountLinkUrl.searchParams.set("nonce", nonce);
+  accountLinkUrl.searchParams.set("hash", hash);
+
+  return accountLinkUrl.toString();
+}
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const accessToken = await getAccessToken(request);
@@ -15,9 +82,29 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const response = await identityProviderApi.listMyLinkedIdentities(accessToken);
-    return { identities: response.data };
+    const linkedAliases = new Set(response.data.map((identity) => identity.provider_alias));
+
+    let availableProviders: AvailableIdentityProvider[] = [];
+    try {
+      const providers = await identityProviderApi.list(accessToken);
+      availableProviders = providers.data
+        .filter((provider) => provider.enabled && !linkedAliases.has(provider.alias))
+        .map((provider) => ({
+          alias: provider.alias,
+          provider_id: provider.provider_id,
+          display_name: provider.display_name,
+        }));
+    } catch {
+      // Keep identity management usable even if provider discovery fails.
+    }
+
+    return { identities: response.data, availableProviders };
   } catch {
-    return { identities: [], error: "Failed to load linked identities" };
+    return {
+      identities: [],
+      availableProviders: [],
+      error: "Failed to load linked identities",
+    };
   }
 }
 
@@ -31,6 +118,28 @@ export async function action({ request }: ActionFunctionArgs) {
   const intent = formData.get("intent");
 
   try {
+    if (intent === "link") {
+      const providerAlias = String(formData.get("providerAlias") || "").trim();
+      if (!providerAlias) {
+        return { error: "Provider alias is required" };
+      }
+
+      const { session, headers } = await requireAuthWithUpdate(request);
+      const keycloakLinkToken =
+        session.idToken || session.identityAccessToken || session.accessToken;
+      if (!keycloakLinkToken) {
+        return { error: "Not authenticated" };
+      }
+
+      const linkUrl = buildKeycloakAccountLinkUrl(
+        new URL(request.url),
+        providerAlias,
+        keycloakLinkToken
+      );
+
+      return redirect(linkUrl, headers ? { headers } : undefined);
+    }
+
     if (intent === "unlink") {
       const identityId = formData.get("identityId") as string;
       await identityProviderApi.unlinkIdentity(identityId, accessToken);
@@ -67,7 +176,7 @@ function getProviderName(providerAlias: string, providerType: string) {
 }
 
 export default function AccountIdentitiesPage() {
-  const { identities, error: loadError } = useLoaderData<typeof loader>();
+  const { identities, availableProviders, error: loadError } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
 
@@ -84,6 +193,29 @@ export default function AccountIdentitiesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {availableProviders.length > 0 && (
+            <div className="mb-6 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-4">
+              <div className="mb-3">
+                <h3 className="font-medium text-[var(--text-primary)]">Link another identity</h3>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Start a verified provider flow to connect an additional sign-in method to
+                  this account.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {availableProviders.map((provider) => (
+                  <Form method="post" key={provider.alias}>
+                    <input type="hidden" name="intent" value="link" />
+                    <input type="hidden" name="providerAlias" value={provider.alias} />
+                    <Button type="submit" variant="outline" size="sm" disabled={isSubmitting}>
+                      Link {getProviderName(provider.display_name || provider.alias, provider.provider_id)}
+                    </Button>
+                  </Form>
+                ))}
+              </div>
+            </div>
+          )}
+
           {loadError && (
             <div className="text-sm text-[var(--accent-red)] bg-red-50 p-3 rounded-md mb-4">
               {loadError}
@@ -111,8 +243,9 @@ export default function AccountIdentitiesPage() {
                 No linked identities
               </h3>
               <p className="text-[var(--text-secondary)]">
-                You haven&apos;t connected any external accounts yet.
-                Link an identity provider from the login page to enable social sign-in.
+                {availableProviders.length > 0
+                  ? "You haven't connected any external accounts yet. Use the link actions above to add one now."
+                  : "You haven't connected any external accounts yet. Once a provider is enabled, you can link it here."}
               </p>
             </div>
           ) : (

@@ -2,6 +2,12 @@
 
 本目录包含 Auth9 系统的手动测试用例。文档正在向“每文档不超过 5 个场景”的规范收敛，便于多名 QA 工程师并行测试。
 
+默认原则：
+
+- QA 应优先验证 Auth9 Portal、Auth9 API 和用户可见的 Auth9 产品行为。
+- 认证链路中的托管页面统一称为“Auth9 品牌认证页”；其可由 `auth9-keycloak-theme` 承载，但不应在测试步骤中作为独立产品面暴露为 Keycloak UI。
+- 如无文档明确说明，QA 不应直接操作 Keycloak Admin Console。底层认证引擎相关配置、管理接口和 realm 状态仅用于排障或受控集成校验。
+
 ## 测试用例索引
 
 ## 文档治理
@@ -52,7 +58,7 @@
 | [service/03-oidc.md](./service/03-oidc.md) | OIDC 配置、URI 验证 | 5 |
 | [service/04-tenant-service-toggle.md](./service/04-tenant-service-toggle.md) | 租户服务启停 | 5 |
 | [service/05-integration-info.md](./service/05-integration-info.md) | 集成信息 API 与 Portal 页面 | 5 |
-| [service/06-service-branding.md](./service/06-service-branding.md) | Service 级品牌配置、公开端点 client_id、Keycloak 主题集成 | 5 |
+| [service/06-service-branding.md](./service/06-service-branding.md) | Service 级品牌配置、公开端点 client_id、托管认证页品牌集成 | 5 |
 
 ### 邀请管理 (3 个文档, 15 个场景)
 | 文档 | 描述 | 场景数 |
@@ -81,13 +87,13 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (12 个文档, 55 个场景)
+### 认证流程 (13 个文档, 60 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 5 |
 | [auth/02-token-exchange.md](./auth/02-token-exchange.md) | Token Exchange | 5 |
-| [auth/03-password.md](./auth/03-password.md) | 密码管理（**Sign in with password** 路径进入） | 5 |
-| [auth/04-social.md](./auth/04-social.md) | 社交登录、OIDC 端点（**Sign in with password** 路径进入 Keycloak 页面） | 5 |
+| [auth/03-password.md](./auth/03-password.md) | 密码管理（优先通过 Auth9 代理页验证） | 5 |
+| [auth/04-social.md](./auth/04-social.md) | 社交登录、OIDC 端点（通过 Auth9 登录入口触发） | 5 |
 | [auth/05-boundary.md](./auth/05-boundary.md) | 边界测试 | 3 |
 | [auth/06-client-credentials.md](./auth/06-client-credentials.md) | Client Credentials、服务对服务授权 | 5 |
 | [auth/07-public-endpoints.md](./auth/07-public-endpoints.md) | Public 端点访问控制与最小暴露 | 5 |
@@ -96,6 +102,7 @@
 | [auth/10-b2b-onboarding-flow.md](./auth/10-b2b-onboarding-flow.md) | B2B 首次入驻流程（三种登录方式均可触发） | 5 |
 | [auth/11-tenant-selection-token-exchange.md](./auth/11-tenant-selection-token-exchange.md) | 登录后 tenant 选择、tenant token exchange、identity token 权限收敛、gRPC tenant token 使用 | 5 |
 | [auth/12-enterprise-sso-ui-regression.md](./auth/12-enterprise-sso-ui-regression.md) | 企业 SSO UI 入口可见性与异常回归（Portal `/login`） | 2 |
+| [auth/13-keycloak-ui-visibility-regression.md](./auth/13-keycloak-ui-visibility-regression.md) | 社交登录/关联异常路径下的 Keycloak UI 可视性回归（仅检查是否有原生 UI 泄漏） | 5 |
 
 ### 系统设置 (3 个文档, 15 个场景)
 | 文档 | 描述 | 场景数 |
@@ -164,7 +171,7 @@
 | [integration/04-health-check.md](./integration/04-health-check.md) | 健康检查端点与依赖状态 | 5 |
 | [integration/05-keycloak-events.md](./integration/05-keycloak-events.md) | Keycloak 事件兼容入口与映射 | 5 |
 | [integration/11-keycloak26-event-stream.md](./integration/11-keycloak26-event-stream.md) | Keycloak 26 升级、Webhook 事件接入（ext-event-http SPI）、Redis Stream 兼容回归 | 5 |
-| [integration/06-init-seed-data.md](./integration/06-init-seed-data.md) | Init 初始种子数据、幂等性、Keycloak 重置恢复 | 5 |
+| [integration/06-init-seed-data.md](./integration/06-init-seed-data.md) | Init 初始种子数据、幂等性、底层认证同步恢复 | 5 |
 | [integration/07-observability-metrics.md](./integration/07-observability-metrics.md) | Prometheus /metrics 端点、HTTP 指标、X-Request-ID、路径折叠 | 5 |
 | [integration/08-observability-stack.md](./integration/08-observability-stack.md) | 可观测性栈启动、Grafana 仪表盘、业务指标、限流指标 | 5 |
 | [integration/09-security-hardening-config.md](./integration/09-security-hardening-config.md) | 生产环境安全启动校验、REST aud 严格校验、HSTS 条件下发、gRPC audience 必填 | 5 |
@@ -192,7 +199,7 @@
 | 邀请管理 | 3 | 15 |
 | 会话与安全 | 8 | 39 |
 | Webhook | 4 | 17 |
-| 认证流程 | 12 | 55 |
+| 认证流程 | 13 | 60 |
 | 系统设置 | 3 | 15 |
 | 身份提供商 | 3 | 15 |
 | Passkeys | 3 | 15 |
@@ -202,7 +209,7 @@
 | SDK | 6 | 30 |
 | 集成测试 | 11 | 54 |
 | SCIM Provisioning | 5 | 25 |
-| **总计** | **94** | **444** |
+| **总计** | **95** | **449** |
 
 ---
 
@@ -249,13 +256,6 @@ cd auth9-portal && npm run dev
 ```bash
 mysql -h 127.0.0.1 -P 4000 -u root -D auth9
 ```
-
-### Keycloak 管理
-
-- 地址：http://localhost:8081/admin
-- 凭证：admin / admin
-
----
 
 ## 测试用例结构
 

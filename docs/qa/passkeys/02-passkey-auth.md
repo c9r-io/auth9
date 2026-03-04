@@ -19,7 +19,7 @@
 5. 后端验证断言、创建 Session、签发 Identity Token
 6. 前端通过 Form POST 将 Token 存入 Session Cookie，重定向到 `/tenant/select`（单 tenant 账号可自动进入 Dashboard）
 
-签发的 Identity Token 与 Keycloak OIDC 登录签发的格式相同（含 `sub`, `email`, `name`, `sid`, `iss`, `aud` claims），后续 Token Exchange 和会话管理与 SSO 登录完全一致。
+签发的 Identity Token 与基于 OIDC 的登录流程使用相同的 Auth9 令牌格式（含 `sub`, `email`, `name`, `sid`, `iss`, `aud` claims），后续 Token Exchange 和会话管理与其他登录方式完全一致。
 
 ---
 
@@ -35,7 +35,7 @@
 1. 访问 `/login`（不带任何查询参数）
 
 ### 预期结果
-- 页面正常渲染（**不会** auto-redirect 到 Keycloak）
+- 页面正常渲染（**不会** auto-redirect 到底层授权链路）
 - 显示 Auth9 Logo「A9」
 - 显示标题「Sign In」
 - 显示副标题「Choose how you want to sign in」
@@ -105,8 +105,8 @@ ORDER BY last_used_at DESC LIMIT 1;
 ### 预期结果
 - 显示红色错误提示「Authentication was cancelled or timed out.」
 - 按钮恢复为「Sign in with passkey」可用状态
-- 「Sign in with SSO」按钮也恢复为可用状态
-- 用户可以重新尝试 Passkey 登录或改用 SSO
+- 「Continue with Enterprise SSO」按钮也恢复为可用状态
+- 用户可以重新尝试 Passkey 登录或改用 Enterprise SSO
 
 ---
 
@@ -124,22 +124,22 @@ ORDER BY last_used_at DESC LIMIT 1;
 ### 预期结果
 - 显示标题「Sign In Failed」
 - 显示错误描述「Access was denied. Please try again or contact your administrator.」
-- 显示「Sign in with SSO」按钮（可重新尝试 SSO）
+- 显示「Continue with Enterprise SSO」按钮（可重新尝试 SSO）
 - 显示「Sign in with passkey」按钮（可改用 Passkey）
 - 两种登录方式均可正常使用
 
 ---
 
-## 场景 5：`/login` 不再 auto-redirect 到 Keycloak（回归测试）
+## 场景 5：`/login` 不再 auto-redirect 到底层授权链路（回归测试）
 
 ### 初始状态
 - 用户已登出
 - 直接访问 `/login`（不带任何查询参数）
 
 ### 目的
-**回归验证**：确认 `/login` 页面不会自动 302 重定向到 Keycloak，始终渲染认证方式选择页面。
+**回归验证**：确认 `/login` 页面不会自动 302 重定向到底层授权链路，始终渲染认证方式选择页面。
 
-> **回归背景**：commit `25ea411` 曾引入 loader auto-redirect，当 URL 不含 `?passkey=true` 或 `?error=` 时，loader 直接 `throw redirect()` 跳转到 Keycloak authorize 端点，导致用户永远无法看到 Enterprise SSO 邮箱输入和 Passkey 按钮——只能进入 Keycloak 默认的用户名/密码表单。该问题已在后续提交中修复，loader 始终返回数据让页面渲染。
+> **回归背景**：commit `25ea411` 曾引入 loader auto-redirect，当 URL 不含 `?passkey=true` 或 `?error=` 时，loader 直接 `throw redirect()` 跳转到底层 authorize 端点，导致用户永远无法看到 Enterprise SSO 邮箱输入和 Passkey 按钮，只能被直接推进到托管密码认证链路。该问题已在后续提交中修复，loader 始终返回数据让页面渲染。
 
 ### 测试操作流程
 1. 在浏览器地址栏输入 `/login` 并回车
@@ -151,7 +151,7 @@ ORDER BY last_used_at DESC LIMIT 1;
   - Enterprise SSO 邮箱输入框 + 「Continue with Enterprise SSO」按钮
   - 「Sign in with password」按钮
   - 「Sign in with passkey」按钮
-- 点击「Sign in with password」后才跳转到 Keycloak SSO 流程
+- 点击「Sign in with password」后才跳转到托管密码认证链路
 - 输入企业邮箱点击「Continue with Enterprise SSO」后进入企业 IdP 流程
 
 ### 回归失败的表现（若 bug 复发）
@@ -224,14 +224,14 @@ async (page) => {
 3. **验证**（从 snapshot 中确认）：
    - 显示标题「Sign In Failed」
    - 显示错误描述「Access was denied...」
-   - 同时存在「Sign in with SSO」和「Sign in with passkey」按钮
+   - 同时存在「Continue with Enterprise SSO」和「Sign in with passkey」按钮
 
 ### 步骤 3：场景 5 — 回归测试（无 auto-redirect）
 
 1. 调用 **`browser_navigate`**: `http://localhost:3000/login`（不带参数）
 2. 调用 **`browser_snapshot`** 查看页面
 3. **验证**:
-   - 页面 URL 仍为 `http://localhost:3000/login`（**未跳转**到 Keycloak）
+   - 页面 URL 仍为 `http://localhost:3000/login`（**未跳转**到底层授权链路）
    - 页面显示三种认证方式（Enterprise SSO、Password、Passkey）
    - 若 URL 变为包含 `/api/v1/auth/authorize` 或 `/realms/auth9`，说明 auto-redirect bug 复发
 

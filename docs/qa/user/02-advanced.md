@@ -37,7 +37,7 @@ SELECT COUNT(*) FROM tenant_users WHERE user_id = '{user_id}';
 SELECT COUNT(*) FROM sessions WHERE user_id = '{user_id}';
 -- 预期: 0
 
--- Keycloak 验证：用户已被删除
+-- 底层认证主体应随用户删除被同步清理（可通过受控后台校验确认）
 ```
 
 ---
@@ -46,7 +46,7 @@ SELECT COUNT(*) FROM sessions WHERE user_id = '{user_id}';
 
 ### 初始状态
 - 存在用户 id=`{user_id}`，mfa_enabled=false
-- **目标用户必须在 Keycloak 中存在对应账户**（有 keycloak_id 映射）
+- **目标用户必须具备有效的底层认证主体映射**（`keycloak_id` 非空）
 - 管理员已登录且知道自己的密码（用于二次确认）
 
 ### 目的
@@ -62,7 +62,7 @@ SELECT COUNT(*) FROM sessions WHERE user_id = '{user_id}';
 
 ### 预期结果
 - MFA 状态变为已启用
-- Keycloak 中 MFA 配置同步
+- 底层认证引擎中的 MFA 配置同步
 
 ### 常见失败原因
 

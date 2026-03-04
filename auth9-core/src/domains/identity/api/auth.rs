@@ -9,7 +9,9 @@ use crate::domain::{
 use crate::domains::security_observability::service::analytics::LoginEventMetadata;
 use crate::error::{AppError, Result};
 use crate::jwt::IdentityClaims;
-use crate::state::{HasAnalytics, HasCache, HasServices, HasSessionManagement};
+use crate::state::{
+    HasAnalytics, HasCache, HasIdentityProviders, HasServices, HasSessionManagement,
+};
 use axum::{
     extract::{Query, State},
     http::{HeaderMap, StatusCode},
@@ -40,6 +42,7 @@ pub struct AuthorizeRequest {
     pub state: String,
     pub nonce: Option<String>,
     pub connector_alias: Option<String>,
+    pub kc_action: Option<String>,
 }
 
 /// Allowed OIDC scopes whitelist
@@ -126,6 +129,7 @@ pub async fn authorize<S: HasServices + HasCache>(
         encoded_state: &state_nonce,
         nonce: params.nonce.as_deref(),
         connector_alias: params.connector_alias.as_deref(),
+        kc_action: params.kc_action.as_deref(),
     })?;
 
     Ok(Redirect::temporary(&auth_url).into_response())
@@ -195,6 +199,7 @@ pub async fn enterprise_sso_discovery<S: HasServices + HasCache + crate::state::
         encoded_state: &state_nonce,
         nonce: params.nonce.as_deref(),
         connector_alias: Some(&discovery.keycloak_alias),
+        kc_action: None,
     })?;
 
     Ok(Json(SuccessResponse::new(EnterpriseSsoDiscoveryResponse {
@@ -296,7 +301,9 @@ pub struct TenantTokenExchangeRequest {
         (status = 200, description = "Token response")
     )
 )]
-pub async fn token<S: HasServices + HasSessionManagement + HasCache + HasAnalytics>(
+pub async fn token<
+    S: HasServices + HasSessionManagement + HasCache + HasAnalytics + HasIdentityProviders,
+>(
     State(state): State<S>,
     headers: HeaderMap,
     Json(params): Json<TokenRequest>,
@@ -424,6 +431,11 @@ pub async fn token<S: HasServices + HasSessionManagement + HasCache + HasAnalyti
                 }
                 Err(e) => return Err(e),
             };
+
+            state
+                .identity_provider_service()
+                .sync_user_identities(user.id, &userinfo.sub)
+                .await?;
 
             // Create session record for authorization_code flow
             let session = state
@@ -625,6 +637,11 @@ pub async fn token<S: HasServices + HasSessionManagement + HasCache + HasAnalyti
                 }
                 Err(e) => return Err(e),
             };
+
+            state
+                .identity_provider_service()
+                .sync_user_identities(user.id, &userinfo.sub)
+                .await?;
 
             let session_id = state
                 .cache()
@@ -1185,6 +1202,7 @@ pub struct KeycloakAuthUrlParams<'a> {
     pub encoded_state: &'a str,
     pub nonce: Option<&'a str>,
     pub connector_alias: Option<&'a str>,
+    pub kc_action: Option<&'a str>,
 }
 
 /// Build Keycloak authorization URL
@@ -1207,6 +1225,9 @@ pub fn build_keycloak_auth_url(params: &KeycloakAuthUrlParams) -> Result<String>
         }
         if let Some(alias) = params.connector_alias {
             pairs.append_pair("kc_idp_hint", alias);
+        }
+        if let Some(action) = params.kc_action {
+            pairs.append_pair("kc_action", action);
         }
     }
 
@@ -2102,6 +2123,7 @@ mod tests {
             encoded_state: "encoded-state",
             nonce: None,
             connector_alias: None,
+            kc_action: None,
         })
         .unwrap();
 
@@ -2124,10 +2146,31 @@ mod tests {
             encoded_state: "state",
             nonce: Some("my-nonce"),
             connector_alias: None,
+            kc_action: None,
         })
         .unwrap();
 
         assert!(url.contains("nonce=my-nonce"));
+    }
+
+    #[test]
+    fn test_build_keycloak_auth_url_with_kc_action() {
+        let url = build_keycloak_auth_url(&KeycloakAuthUrlParams {
+            keycloak_public_url: "https://keycloak.example.com",
+            realm: "test",
+            response_type: "code",
+            client_id: "client",
+            callback_url: "https://app.com/cb",
+            scope: "openid",
+            encoded_state: "state",
+            nonce: None,
+            connector_alias: Some("github"),
+            kc_action: Some("idp_link:github"),
+        })
+        .unwrap();
+
+        assert!(url.contains("kc_idp_hint=github"));
+        assert!(url.contains("kc_action=idp_link%3Agithub"));
     }
 
     #[test]
@@ -2242,6 +2285,7 @@ mod tests {
             encoded_state: "state123",
             nonce: Some("nonce with spaces"),
             connector_alias: None,
+            kc_action: None,
         })
         .unwrap();
 

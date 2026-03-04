@@ -225,14 +225,14 @@ WHERE service_id = '{service_id}';
 - 该 Service 的 Client 已配置 OIDC 回调
 
 ### 目的
-验证 Keycloak 登录页根据 OIDC 请求中的 `client_id` 加载对应 Service 的品牌样式
+验证 Auth9 托管认证页根据 OIDC 请求中的 `client_id` 加载对应 Service 的品牌样式
 
 ### 测试操作流程
 1. 通过该 Service 的 OIDC 入口触发登录流程（Portal 或直接 OIDC authorize URL）
-2. 观察 Keycloak 登录页外观
+2. 观察托管认证页外观
 
 ### 预期结果
-- 登录页使用 Service 自定义的 `primary_color`（`#E74C3C`，非系统默认 `#007AFF`）
+- 托管认证页使用 Service 自定义的 `primary_color`（`#E74C3C`，非系统默认 `#007AFF`）
 - 显示 Service 自定义的 `company_name` 和 `logo_url`（如已配置）
 - 若 Service 无自定义品牌，则显示系统默认品牌
 

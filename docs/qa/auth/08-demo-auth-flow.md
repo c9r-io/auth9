@@ -1,7 +1,7 @@
 # Auth9 Demo - 完整认证流程回归测试
 
 **模块**: 认证流程 / Auth9 Demo
-**测试范围**: auth9-demo 通过 Auth9 Core + Keycloak 的完整 OAuth 登录 & gRPC Token Exchange 流程
+**测试范围**: auth9-demo 通过 Auth9 Core + 底层 OIDC 引擎的完整 OAuth 登录 & gRPC Token Exchange 流程
 **场景数**: 5
 **前置条件**: `./scripts/reset-docker.sh` 完成，所有服务健康
 
@@ -36,7 +36,7 @@ Auth9 Core gRPC → Tenant Access Token (with roles/permissions)
 - gRPC exchangeToken 的 `tenantId` 支持 UUID 和 slug 两种格式
 - Demo 使用 Auth9-signed `access_token`（非 Keycloak 的 `id_token`）进行 gRPC 调用
 
-> **与 Portal 登录流程的区别**：auth9-demo 是独立的第三方示例应用，其「Login with Auth9」按钮直接调用 `/api/v1/auth/authorize`（不带 `connector_alias`），跳转到 Keycloak 密码登录页。这等价于 Auth9 Portal `/login` 页面上的「**Sign in with password**」路径。Demo 应用不涉及 Enterprise SSO 或 Passkey。
+> **与 Portal 登录流程的区别**：auth9-demo 是独立的第三方示例应用，其「Login with Auth9」按钮直接调用 `/api/v1/auth/authorize`（不带 `connector_alias`），进入 Auth9 托管的密码认证链路。这等价于 Auth9 Portal `/login` 页面上的「**Sign in with password**」路径。Demo 应用不涉及 Enterprise SSO 或 Passkey。
 
 ---
 
@@ -60,40 +60,40 @@ Auth9 Core gRPC → Tenant Access Token (with roles/permissions)
 
 ---
 
-## 场景 2：OAuth 授权 → Keycloak 登录页跳转
+## 场景 2：OAuth 授权 → 托管认证页跳转
 
 ### 初始状态
 - 用户未登录
 
 ### 目的
-验证点击登录后正确跳转到 Keycloak，且 redirect_uri 指向 Auth9 Core（非 demo 直连）
+验证点击登录后正确进入托管认证链路，且 redirect_uri 指向 Auth9 Core（非 demo 直连）
 
 ### 测试操作流程
 1. 访问 `http://localhost:3002`
 2. 点击 "Login with Auth9"
 
 ### 预期结果
-- 浏览器跳转到 Keycloak 登录页: `http://localhost:8081/realms/auth9/protocol/openid-connect/auth?...`
+- 浏览器进入托管认证页，对应的授权请求由底层 OIDC 引擎处理
 - URL 参数包含:
   - `client_id=auth9-demo`
   - `redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Fapi%2Fv1%2Fauth%2Fcallback`（Auth9 Core 的 callback，不是 demo 的）
   - `scope=openid+profile+email`
-- Keycloak 登录页正常显示（**不出现** "Invalid parameter: redirect_uri" 错误）
-- 登录页显示 Auth9 Keycloak 主题
+- 托管认证页正常显示（**不出现** "Invalid parameter: redirect_uri" 错误）
+- 登录页显示 Auth9 品牌主题
 
 ---
 
-## 场景 3：Keycloak 登录 → Dashboard 跳转 & Identity Token 验证
+## 场景 3：托管认证页登录 → Dashboard 跳转 & Identity Token 验证
 
 ### 初始状态
-- 已跳转到 Keycloak 登录页
+- 已进入 Auth9 托管认证页
 - admin 用户存在（admin / SecurePass123!）
 
 ### 目的
 验证输入凭证后完成 OAuth code exchange，获取 Auth9-signed Identity Token，正确显示用户信息
 
 ### 测试操作流程
-1. 在 Keycloak 登录页输入 username: `admin`, password: `SecurePass123!`
+1. 在 Auth9 品牌认证页输入 username: `admin`, password: `SecurePass123!`
 2. 点击 "Sign In"
 
 ### 预期结果
@@ -196,7 +196,7 @@ echo "<accessToken>" | cut -d. -f2 | base64 -d 2>/dev/null | jq .
 
 | 检查项 | 修复内容 | 验证场景 |
 |--------|----------|----------|
-| Keycloak redirect_uri | seeder 在 auth9-demo 客户端注册 Auth9 Core callback URL | 场景 2 |
+| OIDC redirect_uri | seeder 在 auth9-demo 客户端注册 Auth9 Core callback URL | 场景 2 |
 | Public client token exchange | auth9-core 对 public client 不传 client_secret | 场景 3 |
 | Identity Token 来源 | demo 使用 Auth9-signed `access_token`（非 Keycloak `id_token`） | 场景 3, 4 |
 | gRPC tenant slug 支持 | exchangeToken 接受 tenant slug（如 `demo`）而非仅 UUID | 场景 4 |

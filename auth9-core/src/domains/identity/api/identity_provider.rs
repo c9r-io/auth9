@@ -142,6 +142,20 @@ pub async fn list_my_linked_identities<S: HasIdentityProviders + HasServices>(
     headers: HeaderMap,
 ) -> Result<Json<SuccessResponse<Vec<LinkedIdentityInfo>>>, AppError> {
     let user_id = extract_user_id(&state, &headers)?;
+    let user = state.user_service().get(user_id).await?;
+
+    if let Err(error) = state
+        .identity_provider_service()
+        .sync_user_identities(user.id, &user.keycloak_id)
+        .await
+    {
+        tracing::warn!(
+            user_id = %user.id,
+            keycloak_user_id = %user.keycloak_id,
+            "Failed to sync linked identities before listing: {}",
+            error
+        );
+    }
 
     let identities = state
         .identity_provider_service()

@@ -2,7 +2,7 @@ import { createRoutesStub } from "react-router";
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import Login, { loader, action, meta } from "~/routes/login";
-import { enterpriseSsoApi } from "~/services/api";
+import { enterpriseSsoApi, publicBrandingApi } from "~/services/api";
 
 // Mock session.server
 vi.mock("~/services/session.server", () => ({
@@ -13,6 +13,18 @@ vi.mock("~/services/session.server", () => ({
 vi.mock("~/services/api", () => ({
     enterpriseSsoApi: {
         discover: vi.fn(),
+    },
+    publicBrandingApi: {
+        get: vi.fn().mockResolvedValue({
+            data: {
+                logo_url: undefined,
+                primary_color: "#007AFF",
+                secondary_color: "#5856D6",
+                background_color: "#F5F5F7",
+                text_color: "#1D1D1F",
+                allow_registration: false,
+            },
+        }),
     },
 }));
 
@@ -33,6 +45,7 @@ describe("Login Page", () => {
         expect(result).toEqual({
             error: null,
             apiBaseUrl: "http://localhost:8080",
+            allowRegistration: false,
         });
     });
 
@@ -43,6 +56,7 @@ describe("Login Page", () => {
         expect(result).toEqual({
             error: "access_denied",
             apiBaseUrl: "http://localhost:8080",
+            allowRegistration: false,
         });
     });
 
@@ -53,6 +67,29 @@ describe("Login Page", () => {
         expect(result).toEqual({
             error: "server_error",
             apiBaseUrl: "http://localhost:8080",
+            allowRegistration: false,
+        });
+    });
+
+    it("loader returns allowRegistration when branding enables signup", async () => {
+        vi.mocked(publicBrandingApi.get).mockResolvedValueOnce({
+            data: {
+                logo_url: undefined,
+                primary_color: "#007AFF",
+                secondary_color: "#5856D6",
+                background_color: "#F5F5F7",
+                text_color: "#1D1D1F",
+                allow_registration: true,
+            },
+        });
+
+        const request = new Request("http://localhost:3000/login");
+        const result = await loader({ request, params: {}, context: {} });
+
+        expect(result).toEqual({
+            error: null,
+            apiBaseUrl: "http://localhost:8080",
+            allowRegistration: true,
         });
     });
 
@@ -180,7 +217,7 @@ describe("Login Page", () => {
                 path: "/login",
                 Component: Login,
                 loader() {
-                    return { error: "access_denied", apiBaseUrl: "http://localhost:8080" };
+                    return { error: "access_denied", apiBaseUrl: "http://localhost:8080", allowRegistration: false };
                 },
             },
         ]);
@@ -199,7 +236,7 @@ describe("Login Page", () => {
                 path: "/login",
                 Component: Login,
                 loader() {
-                    return { error: "server_error", apiBaseUrl: "http://localhost:8080" };
+                    return { error: "server_error", apiBaseUrl: "http://localhost:8080", allowRegistration: false };
                 },
             },
         ]);
@@ -216,7 +253,7 @@ describe("Login Page", () => {
                 path: "/login",
                 Component: Login,
                 loader() {
-                    return { error: "test_error", apiBaseUrl: "http://localhost:8080" };
+                    return { error: "test_error", apiBaseUrl: "http://localhost:8080", allowRegistration: false };
                 },
             },
         ]);
@@ -224,6 +261,40 @@ describe("Login Page", () => {
         render(<RoutesStub initialEntries={["/login?error=test_error"]} />);
 
         expect(await screen.findByText("A9")).toBeInTheDocument();
+    });
+
+    it("renders forgot password link and hides registration link when signup is disabled", async () => {
+        const RoutesStub = createRoutesStub([
+            {
+                path: "/login",
+                Component: Login,
+                loader() {
+                    return { error: null, apiBaseUrl: "http://localhost:8080", allowRegistration: false };
+                },
+            },
+        ]);
+
+        render(<RoutesStub initialEntries={["/login"]} />);
+
+        expect(await screen.findByRole("link", { name: /forgot password/i })).toBeInTheDocument();
+        expect(screen.queryByRole("link", { name: /create account/i })).not.toBeInTheDocument();
+    });
+
+    it("renders registration link when signup is enabled", async () => {
+        const RoutesStub = createRoutesStub([
+            {
+                path: "/login",
+                Component: Login,
+                loader() {
+                    return { error: null, apiBaseUrl: "http://localhost:8080", allowRegistration: true };
+                },
+            },
+        ]);
+
+        render(<RoutesStub initialEntries={["/login"]} />);
+
+        expect(await screen.findByRole("link", { name: /forgot password/i })).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: /create account/i })).toBeInTheDocument();
     });
 
     // ============================================================================
@@ -237,6 +308,7 @@ describe("Login Page", () => {
         expect(result).toEqual({
             error: null,
             apiBaseUrl: "http://localhost:8080",
+            allowRegistration: false,
         });
     });
 });

@@ -39,7 +39,7 @@ Portal 路由：
 
 ### 测试操作流程
 1. 访问 `/login`，使用以下任一方式登录：
-   - 点击「**Sign in with password**」→ 在 Keycloak 页面输入用户名密码
+   - 点击「**Sign in with password**」→ 在 Auth9 品牌认证页输入用户名密码
    - 点击「**Continue with Enterprise SSO**」→ 输入企业邮箱完成 SSO 认证
    - 点击「**Sign in with passkey**」→ 使用设备 Passkey 认证
 2. 完成认证后，观察页面跳转

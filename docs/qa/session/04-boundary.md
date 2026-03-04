@@ -62,7 +62,7 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 < docs/qa/session/seed.sql
 ## 场景 3：社交登录事件记录
 
 ### 初始状态
-- **前提**：需要在 Keycloak 中预先配置社交登录 Identity Provider（如 Google、GitHub），需要有效的 OAuth Client ID 和 Secret
+- **前提**：需要在 Auth9 中预先配置社交登录 Identity Provider（如 Google、GitHub），需要有效的 OAuth Client ID 和 Secret
 - 用户通过社交账号登录
 
 **注意**：本地开发环境默认未配置任何 Identity Provider。测试此场景需先通过 Portal 的 Settings > Identity Providers 页面添加社交登录提供商，或在预发布/生产环境中测试。

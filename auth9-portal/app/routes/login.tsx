@@ -1,5 +1,5 @@
 import type { MetaFunction, ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { redirect, Form, useActionData, useLoaderData, useNavigation } from "react-router";
+import { redirect, Form, Link, useActionData, useLoaderData, useNavigation } from "react-router";
 import { useState, useCallback } from "react";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -7,7 +7,7 @@ import { Input } from "~/components/ui/input";
 import { ThemeToggle } from "~/components/ThemeToggle";
 import { LockClosedIcon } from "@radix-ui/react-icons";
 import { commitSession, serializeOAuthState } from "~/services/session.server";
-import { enterpriseSsoApi } from "~/services/api";
+import { enterpriseSsoApi, publicBrandingApi } from "~/services/api";
 
 export const meta: MetaFunction = () => {
   return [{ title: "Sign In - Auth9" }];
@@ -40,8 +40,17 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const error = url.searchParams.get("error");
   const apiBaseUrl = process.env.AUTH9_CORE_PUBLIC_URL || process.env.AUTH9_CORE_URL || "http://localhost:8080";
+  const clientId = process.env.AUTH9_PORTAL_CLIENT_ID || "auth9-portal";
+  let allowRegistration = false;
 
-  return { error, apiBaseUrl };
+  try {
+    const { data: branding } = await publicBrandingApi.get(clientId);
+    allowRegistration = branding.allow_registration;
+  } catch {
+    // Default closed if branding cannot be loaded.
+  }
+
+  return { error, apiBaseUrl, allowRegistration };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -157,7 +166,11 @@ function toRequestOptions(publicKey: Record<string, unknown>): PublicKeyCredenti
 }
 
 export default function Login() {
-  const data = useLoaderData<typeof loader>() as { error: string | null; apiBaseUrl: string };
+  const data = useLoaderData<typeof loader>() as {
+    error: string | null;
+    apiBaseUrl: string;
+    allowRegistration: boolean;
+  };
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -344,6 +357,19 @@ export default function Login() {
                   {passkeyError}
                 </div>
               )}
+
+              <div className="flex items-center justify-between text-sm text-[var(--text-tertiary)] pt-1">
+                <Link to="/forgot-password" className="hover:text-[var(--text-primary)] underline-offset-4 hover:underline">
+                  Forgot password?
+                </Link>
+                {data.allowRegistration ? (
+                  <Link to="/register" className="hover:text-[var(--text-primary)] underline-offset-4 hover:underline">
+                    Create account
+                  </Link>
+                ) : (
+                  <span />
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
