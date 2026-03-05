@@ -124,10 +124,7 @@ fn build_portal_logout_attributes(portal_url: Option<&str>) -> Option<HashMap<St
     }
 
     let mut attrs = HashMap::new();
-    attrs.insert(
-        "post.logout.redirect.uris".to_string(),
-        uris.join("##"),
-    );
+    attrs.insert("post.logout.redirect.uris".to_string(), uris.join("##"));
     Some(attrs)
 }
 
@@ -908,11 +905,7 @@ impl KeycloakSeeder {
         } else {
             let status = result.status();
             let body = result.text().await.unwrap_or_default();
-            anyhow::bail!(
-                "Failed to reset admin password: {} - {}",
-                status,
-                body
-            );
+            anyhow::bail!("Failed to reset admin password: {} - {}", status, body);
         }
 
         Ok(())

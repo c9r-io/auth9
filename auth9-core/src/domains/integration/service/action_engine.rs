@@ -492,9 +492,7 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
     ) -> Result<ActionContext> {
         let start = Instant::now();
         let user_id = context.user.id.parse().ok();
-        let tenant_id = action
-            .tenant_id
-            .or_else(|| context.tenant.id.parse().ok());
+        let tenant_id = action.tenant_id.or_else(|| context.tenant.id.parse().ok());
 
         match self.execute_action(action, &context).await {
             Ok(modified_context) => {
@@ -937,9 +935,7 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
     ) -> Result<(ActionContext, i32, Vec<String>)> {
         let start = Instant::now();
         let user_id = context.user.id.parse().ok();
-        let tenant_id = action
-            .tenant_id
-            .or_else(|| context.tenant.id.parse().ok());
+        let tenant_id = action.tenant_id.or_else(|| context.tenant.id.parse().ok());
 
         match self.execute_action(action, &context).await {
             Ok(modified_context) => {

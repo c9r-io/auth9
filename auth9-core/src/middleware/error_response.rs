@@ -38,8 +38,7 @@ pub async fn normalize_error_response(request: Request<Body>, next: Next) -> Res
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
-    if content_type.contains("application/json") || content_type.contains("application/scim+json")
-    {
+    if content_type.contains("application/json") || content_type.contains("application/scim+json") {
         // Already JSON from our AppError handler or SCIM handler - pass through as-is.
         // Note: axum's JsonRejection also returns application/json with
         // internal details. We handle this by replacing the body for

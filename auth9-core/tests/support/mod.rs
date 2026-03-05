@@ -585,11 +585,7 @@ impl UserRepository for TestUserRepository {
         Ok(count as i64)
     }
 
-    async fn search_tenant_users_count(
-        &self,
-        tenant_id: StringUuid,
-        query: &str,
-    ) -> Result<i64> {
+    async fn search_tenant_users_count(&self, tenant_id: StringUuid, query: &str) -> Result<i64> {
         let tenant_users = self.tenant_users.read().await;
         let users = self.users.read().await;
         let user_ids: Vec<StringUuid> = tenant_users

@@ -79,10 +79,8 @@ impl IntoResponse for AppError {
                         || db_err.code().as_deref() == Some("1062")
                         || db_err.message().contains("Duplicate entry");
                     if is_duplicate {
-                        return AppError::Conflict(
-                            "Resource already exists".to_string(),
-                        )
-                        .into_response();
+                        return AppError::Conflict("Resource already exists".to_string())
+                            .into_response();
                     }
                 }
                 tracing::error!("Database error: {:?}", e);

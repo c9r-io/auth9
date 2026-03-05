@@ -241,7 +241,9 @@ pub async fn batch_upsert_actions<S: HasServices>(
     ensure_service_scope(&state, &auth, service_id).await?;
 
     let action_service = state.action_service();
-    let response = action_service.batch_upsert(tenant_id, service_id, req.actions).await?;
+    let response = action_service
+        .batch_upsert(tenant_id, service_id, req.actions)
+        .await?;
 
     Ok(Json(SuccessResponse::new(response)))
 }

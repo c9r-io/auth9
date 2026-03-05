@@ -128,9 +128,7 @@ async fn ensure_user_in_caller_tenant<S: HasServices>(
         .user_service()
         .get_user_tenants(StringUuid::from(target_user_id))
         .await?;
-    let is_in_tenant = target_tenants
-        .iter()
-        .any(|tu| *tu.tenant_id == tenant_id);
+    let is_in_tenant = target_tenants.iter().any(|tu| *tu.tenant_id == tenant_id);
     if !is_in_tenant {
         return Err(AppError::NotFound(format!(
             "User {} not found",
@@ -181,7 +179,12 @@ pub async fn list<S: HasServices>(
                 if !search.is_empty() {
                     state
                         .user_service()
-                        .search_tenant_users(StringUuid::from(tenant_id), search, query.page, query.per_page)
+                        .search_tenant_users(
+                            StringUuid::from(tenant_id),
+                            search,
+                            query.page,
+                            query.per_page,
+                        )
                         .await?
                 } else {
                     state
@@ -246,7 +249,12 @@ pub async fn list<S: HasServices>(
         if !search.is_empty() {
             state
                 .user_service()
-                .search_tenant_users(StringUuid::from(tenant_id), search, query.page, query.per_page)
+                .search_tenant_users(
+                    StringUuid::from(tenant_id),
+                    search,
+                    query.page,
+                    query.per_page,
+                )
                 .await?
         } else {
             state

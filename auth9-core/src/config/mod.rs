@@ -495,9 +495,7 @@ impl Config {
                 );
             }
             if self.keycloak.webhook_secret.is_none() {
-                anyhow::bail!(
-                    "KEYCLOAK_WEBHOOK_SECRET is required in production"
-                );
+                anyhow::bail!("KEYCLOAK_WEBHOOK_SECRET is required in production");
             }
         } else if self.keycloak.webhook_secret.is_none() {
             tracing::warn!(

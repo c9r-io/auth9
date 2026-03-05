@@ -499,15 +499,30 @@ mod tests {
     fn test_identity_token_path_allowed_tenants() {
         // Tenant create (POST) and delete (DELETE) are allowed for identity tokens
         // (platform admin operations with handler-level authorization)
-        assert!(is_identity_token_path_allowed("/api/v1/tenants", &Method::POST));
-        assert!(is_identity_token_path_allowed("/api/v1/tenants/some-uuid", &Method::DELETE));
+        assert!(is_identity_token_path_allowed(
+            "/api/v1/tenants",
+            &Method::POST
+        ));
+        assert!(is_identity_token_path_allowed(
+            "/api/v1/tenants/some-uuid",
+            &Method::DELETE
+        ));
 
         // GET /api/v1/tenants (list) is allowed — handler filters to user's memberships
-        assert!(is_identity_token_path_allowed("/api/v1/tenants", &Method::GET));
+        assert!(is_identity_token_path_allowed(
+            "/api/v1/tenants",
+            &Method::GET
+        ));
 
         // GET/PUT on specific tenant or sub-resources require Tenant Access Token
-        assert!(!is_identity_token_path_allowed("/api/v1/tenants/some-uuid", &Method::GET));
-        assert!(!is_identity_token_path_allowed("/api/v1/tenants/some-uuid", &Method::PUT));
+        assert!(!is_identity_token_path_allowed(
+            "/api/v1/tenants/some-uuid",
+            &Method::GET
+        ));
+        assert!(!is_identity_token_path_allowed(
+            "/api/v1/tenants/some-uuid",
+            &Method::PUT
+        ));
         assert!(!is_identity_token_path_allowed(
             "/api/v1/tenants/some-uuid/sso/connectors",
             &Method::GET
@@ -522,11 +537,23 @@ mod tests {
     fn test_identity_token_path_allowed_existing() {
         let get = Method::GET;
         assert!(is_identity_token_path_allowed("/api/v1/auth/token", &get));
-        assert!(is_identity_token_path_allowed("/api/v1/users/me/tenants", &get));
-        assert!(is_identity_token_path_allowed("/api/v1/organizations", &get));
+        assert!(is_identity_token_path_allowed(
+            "/api/v1/users/me/tenants",
+            &get
+        ));
+        assert!(is_identity_token_path_allowed(
+            "/api/v1/organizations",
+            &get
+        ));
         assert!(is_identity_token_path_allowed("/api/v1/users/me", &get));
-        assert!(is_identity_token_path_allowed("/api/v1/users/me/sessions", &get));
-        assert!(is_identity_token_path_allowed("/api/v1/users/me/passkeys", &get));
+        assert!(is_identity_token_path_allowed(
+            "/api/v1/users/me/sessions",
+            &get
+        ));
+        assert!(is_identity_token_path_allowed(
+            "/api/v1/users/me/passkeys",
+            &get
+        ));
 
         // Invitation management paths
         assert!(is_identity_token_path_allowed(
@@ -537,7 +564,10 @@ mod tests {
             "/api/v1/invitations/some-uuid/revoke",
             &get
         ));
-        assert!(is_identity_token_path_allowed("/api/v1/invitations/some-uuid", &get));
+        assert!(is_identity_token_path_allowed(
+            "/api/v1/invitations/some-uuid",
+            &get
+        ));
 
         // Non-allowed paths
         assert!(!is_identity_token_path_allowed("/api/v1/users", &get));

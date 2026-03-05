@@ -543,7 +543,11 @@ pub async fn token<
                             modified_context.claims
                         }
                         Err(e) => {
-                            tracing::warn!("PostLogin action failed (strict_mode) for user {}: {}", user.id, e);
+                            tracing::warn!(
+                                "PostLogin action failed (strict_mode) for user {}: {}",
+                                user.id,
+                                e
+                            );
                             return Err(e);
                         }
                     }
@@ -1071,9 +1075,7 @@ pub async fn logout<S: HasServices + HasSessionManagement + HasCache>(
 ///
 /// Accepts Identity tokens, Tenant Access tokens, and Service Client tokens
 /// via the standard AuthUser middleware chain.
-pub async fn userinfo<S: HasServices>(
-    auth: crate::middleware::auth::AuthUser,
-) -> Result<Response> {
+pub async fn userinfo<S: HasServices>(auth: crate::middleware::auth::AuthUser) -> Result<Response> {
     Ok(Json(auth).into_response())
 }
 

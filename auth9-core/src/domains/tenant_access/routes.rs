@@ -14,10 +14,7 @@ where
             "/api/v1/invitations/accept",
             post(tenant_access_api::invitation::accept::<S>),
         )
-        .route(
-            "/api/v1/users",
-            post(tenant_access_api::user::create::<S>),
-        )
+        .route("/api/v1/users", post(tenant_access_api::user::create::<S>))
 }
 
 pub fn protected_routes<S>() -> Router<S>
@@ -25,10 +22,7 @@ where
     S: TenantAccessContext,
 {
     Router::new()
-        .route(
-            "/api/v1/users",
-            get(tenant_access_api::user::list::<S>),
-        )
+        .route("/api/v1/users", get(tenant_access_api::user::list::<S>))
         .route(
             "/api/v1/organizations",
             post(tenant_access_api::organization::create_organization::<S>),

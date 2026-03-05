@@ -617,11 +617,7 @@ where
             let op = operation.op.to_lowercase();
             match op.as_str() {
                 "add" | "replace" => {
-                    let path_lower = operation
-                        .path
-                        .as_deref()
-                        .unwrap_or("")
-                        .to_ascii_lowercase();
+                    let path_lower = operation.path.as_deref().unwrap_or("").to_ascii_lowercase();
 
                     if path_lower == "members" {
                         if let Some(value) = &operation.value {

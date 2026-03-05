@@ -249,7 +249,9 @@ fn derive_failure_reason_with_details(
                 }
             }
             "user_not_found" => "User not found",
-            "invalid_totp" | "invalid_otp" | "invalid_otp_credentials"
+            "invalid_totp"
+            | "invalid_otp"
+            | "invalid_otp_credentials"
             | "invalid_authenticator" => "Invalid MFA code",
             "user_disabled" => "Account disabled",
             "user_temporarily_disabled" => "Account temporarily locked",

@@ -1264,8 +1264,7 @@ mod tests {
                     },
                 ])
             });
-        mock.expect_count_tenant_users()
-            .returning(|_| Ok(2));
+        mock.expect_count_tenant_users().returning(|_| Ok(2));
 
         let service = create_test_service(mock);
 

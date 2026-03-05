@@ -275,8 +275,7 @@ pub async fn require_platform_admin_identity<S: HasServices>(
         return Err(AppError::Forbidden("Platform admin required".to_string()));
     }
     // Email-based platform admin: only Identity tokens
-    if auth.token_type == TokenType::Identity
-        && state.config().is_platform_admin_email(&auth.email)
+    if auth.token_type == TokenType::Identity && state.config().is_platform_admin_email(&auth.email)
     {
         return Ok(());
     }
@@ -339,9 +338,9 @@ pub async fn enforce_with_state<S: HasServices>(
         // manage tenant B's ABAC policies.
         if is_abac_action(input.action) && auth.token_type == TokenType::TenantAccess {
             if let ResourceScope::Tenant(tenant_id) = &input.scope {
-                let token_tenant_id = auth.tenant_id.ok_or_else(|| {
-                    AppError::Forbidden("No tenant context in token".to_string())
-                })?;
+                let token_tenant_id = auth
+                    .tenant_id
+                    .ok_or_else(|| AppError::Forbidden("No tenant context in token".to_string()))?;
                 if token_tenant_id != **tenant_id {
                     return Err(AppError::Forbidden(
                         "Cannot access another tenant's ABAC policies".to_string(),
