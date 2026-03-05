@@ -184,6 +184,12 @@ export default function IdentityProvidersPage() {
   function openCreateDialog() {
     wasSubmitting.current = false; // Reset to avoid stale actionData closing dialog
     resetForm();
+    // Auto-select first template so the config form is immediately visible
+    const first = PROVIDER_TEMPLATES[0];
+    if (first) {
+      setSelectedTemplate(first.provider_id);
+      setFormData((prev) => ({ ...prev, alias: first.provider_id }));
+    }
     setShowDialog(true);
   }
 

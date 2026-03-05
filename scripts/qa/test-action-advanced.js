@@ -1,14 +1,16 @@
 const { execSync } = require('child_process');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
+const path = require('path');
 
-const keyPath = './deploy/dev-certs/jwt/private.key';
+const projectRoot = path.resolve(__dirname, '..', '..');
+const keyPath = path.join(projectRoot, 'deploy', 'dev-certs', 'jwt', 'private.key');
 const privateKey = fs.readFileSync(keyPath, 'utf8');
 
 function generateAccessToken() {
-  const userId = '3aedee2d-8f25-44de-93bb-1ef5d58e84c3';
-  const tenantId = '3427371a-b594-4d47-9c67-d876cab0522b';
-  const serviceId = '70356552-776b-4d66-8b18-1d7328239738';
+  const userId = 'd1115ab1-e961-4348-962d-34f008196f70';
+  const tenantId = '82dbe0b5-1c0b-4cb5-b0a7-ccbb1dcc1a2f';
+  const serviceId = 'f9780ccb-204e-45a4-87ca-9bc3002e9e56';
   const now = Math.floor(Date.now() / 1000);
 
   const payload = {
@@ -30,8 +32,8 @@ function generateAccessToken() {
 
 const TOKEN = generateAccessToken();
 const BASE_URL = 'http://localhost:8080';
-const DEMO_TENANT_ID = '3427371a-b594-4d47-9c67-d876cab0522b';
-const DEMO_SERVICE_ID = '70356552-776b-4d66-8b18-1d7328239738';
+const DEMO_TENANT_ID = '82dbe0b5-1c0b-4cb5-b0a7-ccbb1dcc1a2f';
+const DEMO_SERVICE_ID = 'f9780ccb-204e-45a4-87ca-9bc3002e9e56';
 
 const headers = {
   'Authorization': `Bearer ${TOKEN}`,

@@ -75,12 +75,14 @@ function generateToken(type, { tenantId, userId }) {
         case 'tenant-access':
             // Tenant Access Token (for tenant member, not owner)
             // Uses NON_ADMIN_USER_ID to avoid DB-based platform admin bypass
+            // Uses "auth9-portal" as audience to match JWT_TENANT_ACCESS_ALLOWED_AUDIENCES
             payload = {
                 sub: userId || NON_ADMIN_USER_ID,
                 email: "regular-user@example.com",
                 iss: issuer,
-                aud: "test-service-client-id", // Service client_id as audience
+                aud: "auth9-portal",
                 tenant_id: TENANT_ID,
+                token_type: "access",
                 roles: ["member"],
                 permissions: ["read:profile"],
                 iat: now,
@@ -90,12 +92,14 @@ function generateToken(type, { tenantId, userId }) {
 
         case 'tenant-owner':
             // Tenant Owner Access Token
+            // Uses "auth9-portal" as audience to match JWT_TENANT_ACCESS_ALLOWED_AUDIENCES
             payload = {
                 sub: ADMIN_USER_ID,
                 email: "admin@auth9.local",
                 iss: issuer,
-                aud: "test-service-client-id",
+                aud: "auth9-portal",
                 tenant_id: TENANT_ID,
+                token_type: "access",
                 roles: ["owner", "admin"],
                 permissions: ["*"],
                 iat: now,

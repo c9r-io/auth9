@@ -75,7 +75,7 @@ fn filter_scopes(requested_scope: &str) -> Result<String> {
     )
 )]
 /// Login redirect (initiates OIDC flow)
-pub async fn authorize<S: HasServices + HasCache>(
+pub async fn authorize<S: HasServices + HasCache + crate::state::HasDbPool>(
     State(state): State<S>,
     Query(params): Query<AuthorizeRequest>,
 ) -> Result<Response> {
@@ -119,6 +119,22 @@ pub async fn authorize<S: HasServices + HasCache>(
         .store_oidc_state(&state_nonce, &state_payload_json, OIDC_STATE_TTL_SECS)
         .await?;
 
+    // Resolve connector_alias to keycloak_alias if provided
+    let kc_idp_hint = if let Some(alias) = params.connector_alias.as_deref() {
+        let keycloak_alias = sqlx::query_scalar::<_, String>(
+            "SELECT keycloak_alias FROM enterprise_sso_connectors WHERE alias = ? AND enabled = TRUE LIMIT 1",
+        )
+        .bind(alias)
+        .fetch_optional(state.db_pool())
+        .await
+        .ok()
+        .flatten();
+        // Use keycloak_alias if found, otherwise fall back to the provided alias
+        Some(keycloak_alias.unwrap_or_else(|| alias.to_string()))
+    } else {
+        None
+    };
+
     let auth_url = build_keycloak_auth_url(&KeycloakAuthUrlParams {
         keycloak_public_url: &state.config().keycloak.public_url,
         realm: &state.config().keycloak.realm,
@@ -128,7 +144,7 @@ pub async fn authorize<S: HasServices + HasCache>(
         scope: &filtered_scope,
         encoded_state: &state_nonce,
         nonce: params.nonce.as_deref(),
-        connector_alias: params.connector_alias.as_deref(),
+        connector_alias: kc_idp_hint.as_deref(),
         kc_action: params.kc_action.as_deref(),
     })?;
 

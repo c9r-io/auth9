@@ -221,6 +221,20 @@ impl PasswordResetRepository for PasswordResetRepositoryImpl {
 
         tx.commit().await.map_err(AppError::Database)?;
 
+        // Post-commit cleanup: remove any duplicate tokens created by concurrent
+        // transactions (TiDB may not fully serialize gap-lock-free DELETE+INSERT).
+        // Use (created_at, id) ordering so the "newest" token deterministically
+        // survives even when two cleanups race against each other.
+        let _: std::result::Result<_, _> = sqlx::query(
+            "DELETE FROM password_reset_tokens WHERE user_id = ? AND used_at IS NULL AND (created_at < ? OR (created_at = ? AND id < ?))",
+        )
+        .bind(input.user_id)
+        .bind(token.created_at)
+        .bind(token.created_at)
+        .bind(id)
+        .execute(&self.pool)
+        .await;
+
         Ok(token)
     }
 }

@@ -1,0 +1,3 @@
+-- Add slow_brute_force to security_alerts alert_type enum
+ALTER TABLE security_alerts
+    MODIFY COLUMN alert_type ENUM('brute_force', 'slow_brute_force', 'new_device', 'impossible_travel', 'suspicious_ip') NOT NULL;

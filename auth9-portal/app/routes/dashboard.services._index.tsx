@@ -178,7 +178,7 @@ export default function ServicesPage() {
             {data.data.map((service) => (
               <div
                 key={service.id}
-                className="h-full liquid-glass p-5 flex flex-col gap-3"
+                className="h-full liquid-glass p-5 pb-6 flex flex-col gap-3"
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0 flex-1">
