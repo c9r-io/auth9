@@ -246,6 +246,11 @@ cd auth9-portal && npm run dev
 - **h2spec**: HTTP/2 合规性测试 🆕
 - **race-the-web**: 竞态条件测试 🆕
 
+### 安全回归脚本（推荐入口）
+
+- `./scripts/qa/test_privilege_escalation.sh`：授权提升核心拒绝路径（对应 `authorization/03-privilege-escalation.md` 的核心场景）
+- `./scripts/qa/security_grpc_test.sh`：gRPC 认证/跨租户/TLS 基线（对应 `api-security/02-grpc-api.md` 与 `business-logic/01-workflow-abuse.md` 的核心场景）
+
 ---
 
 ## 测试用例结构

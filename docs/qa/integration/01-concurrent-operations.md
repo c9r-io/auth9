@@ -18,6 +18,8 @@
 ### 初始状态
 - 系统中不存在邮箱 `concurrent@example.com` 的用户
 - 准备 10 个并发请求，同时创建相同邮箱的用户
+- 已获取有效 **Tenant Access Token**（具备 `admin` 角色或 `user:write` 权限）
+- 已确定有效 `tenant_id`
 
 ### 目的
 验证系统在并发情况下正确处理重复邮箱约束
@@ -29,10 +31,9 @@
    POST /api/v1/users
    {
      "email": "concurrent@example.com",
-     "username": "concurrent-user-${VU_ID}",
+     "display_name": "concurrent-user-${VU_ID}",
      "password": "Test123!",
-     "first_name": "Concurrent",
-     "last_name": "Test"
+     "tenant_id": "{tenant_id}"
    }
    ```
 3. 同时发送所有 10 个请求
@@ -43,6 +44,12 @@
 - 只有 1 个请求成功（状态码 201）
 - 其余 9 个请求失败（状态码 400 或 409），错误信息为「Email already exists」
 - 数据库中只存在 1 条记录
+
+### 常见误报原因
+| 症状 | 原因 | 解决 |
+|------|------|------|
+| 全部请求失败且返回 404 | `tenant_id` 使用了旧环境 ID（重置环境后已变化） | 每次执行前重新查询当前 `demo` 租户 ID |
+| 全部 401/403 | 使用了无效 token 或非租户管理员 token | 重新生成 Tenant Access Token 并确认权限 |
 
 ### 预期数据状态
 ```sql

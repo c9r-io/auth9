@@ -1,5 +1,6 @@
 import { createCookie, redirect } from "react-router";
 import { authApi } from "~/services/api";
+import { ApiResponseError } from "~/services/api/client";
 
 const isProduction = process.env.NODE_ENV === "production";
 const SESSION_MAX_AGE = 8 * 60 * 60;
@@ -176,9 +177,8 @@ async function exchangeTenantToken(
       tenantExpiresAt: Date.now() + (data.expires_in * 1000),
     };
   } catch (error) {
-    console.error("[exchangeTenantToken] Failed for tenant", tenantId, ":",
-      error instanceof Error ? error.message : error);
-    return null;
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`tenant_exchange_failed:${message}`, { cause: error });
   }
 }
 
@@ -198,16 +198,29 @@ async function ensureIdentitySession(
 
 async function ensureTenantSession(
   session: SessionData
-): Promise<{ session: SessionData | null; updated: boolean }> {
+): Promise<{ session: SessionData | null; updated: boolean; degraded?: boolean }> {
   if (!session.activeTenantId) {
     return { session, updated: false };
   }
   if (session.tenantAccessToken && !isTokenExpired(session.tenantExpiresAt)) {
     return { session, updated: false };
   }
-  const exchanged = await exchangeTenantToken(session, session.activeTenantId);
-  if (!exchanged) {
-    // Clear stale tenant from session - tenant may be inactive or unavailable
+  try {
+    const exchanged = await exchangeTenantToken(session, session.activeTenantId);
+    return { session: exchanged, updated: true };
+  } catch (error) {
+    const cause = error instanceof Error ? error.cause : undefined;
+    const isRecoverableNetworkFailure =
+      cause instanceof TypeError ||
+      (cause instanceof ApiResponseError && cause.status >= 500);
+
+    if (isRecoverableNetworkFailure) {
+      // Keep tenant selection on transient failures and degrade to identity token.
+      return { session, updated: false, degraded: true };
+    }
+
+    // Clear stale tenant from session when exchange fails permanently
+    // (e.g. tenant removed, membership revoked, or explicit forbidden).
     return {
       session: {
         ...session,
@@ -218,7 +231,6 @@ async function ensureTenantSession(
       updated: true,
     };
   }
-  return { session: exchanged, updated: true };
 }
 
 export async function getAccessToken(request: Request): Promise<string | null> {
@@ -304,7 +316,12 @@ export async function requireTenantAuthWithUpdate(
   }
 
   const tenantResult = await ensureTenantSession(session);
-  if (!tenantResult.session || !tenantResult.session.tenantAccessToken) {
+  if (!tenantResult.session) {
+    throw redirect("/tenant/select?error=tenant_exchange_failed", {
+      headers: NO_STORE_HEADERS,
+    });
+  }
+  if (!tenantResult.session.tenantAccessToken && !tenantResult.degraded) {
     throw redirect("/tenant/select?error=tenant_exchange_failed", {
       headers: NO_STORE_HEADERS,
     });

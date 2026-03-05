@@ -24,6 +24,13 @@ Express 中间件提供三个功能：
 
 测试方法：使用 Express + supertest 或直接构造 req/res 对象
 
+## 执行前检查（避免误报）
+
+1. `docker ps` 确认 `auth9-core` 状态为 `healthy`。
+2. 确认 `http://localhost:8080/.well-known/jwks.json` 可访问（中间件验签依赖 JWKS）。
+3. 准备 **有效 Tenant Access Token**（不要用过期 token、Identity Token 或手工伪造无效签名 token）。
+4. 若集成测试依赖真实租户权限，请先确认测试用户在目标租户中有成员关系。
+
 ---
 
 ## 场景 1：成功认证 — req.auth 注入

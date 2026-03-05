@@ -25,6 +25,22 @@ Auth9 权限层级：
 
 ---
 
+## 自动化回归脚本（推荐）
+
+可使用脚本快速执行本页的核心拒绝路径回归（动态取数，无硬编码 tenant/user/token）：
+
+```bash
+./scripts/qa/test_privilege_escalation.sh
+```
+
+覆盖范围：
+- 场景 1（自我角色分配）✅
+- 场景 2（角色创建后门）✅
+- 场景 4（所有权转移）✅
+- 场景 3/5 提供基础拒绝校验（完整业务链路仍需按手工步骤补测）
+
+---
+
 ## 场景 1：自我角色分配攻击
 
 ### 前置条件
@@ -99,10 +115,11 @@ WHERE tenant_user_id IN (
 ## 场景 2：角色创建后门
 
 ### 前置条件
-- 租户管理员账户
+- 非平台管理员账户（推荐：demo 租户 `admin`，但不是 `auth9-platform` 的 admin）
+- 使用 **Tenant Access Token**（非 Identity Token）
 
 ### 攻击目标
-验证是否可以创建超出自身权限的角色
+验证非平台管理员不能创建平台级角色
 
 ### 攻击步骤
 1. 以租户管理员身份登录
@@ -113,9 +130,9 @@ WHERE tenant_user_id IN (
 3. 将该角色分配给自己或同伙
 
 ### 预期安全行为
-- 只能创建不超过自身权限的角色
-- 平台级权限不可分配
-- 系统角色不可创建
+- 非平台管理员应直接被拒绝创建角色
+- 返回 `403 Platform admin required`
+- 不产生新角色记录
 
 ### 验证方法
 ```bash
@@ -128,7 +145,7 @@ curl -X POST -H "Authorization: Bearer $TENANT_ADMIN_TOKEN" \
     "service_id": "'$SERVICE_ID'",
     "permissions": ["platform:admin", "tenant:delete", "system:configure"]
   }'
-# 预期: 400 "Cannot assign permissions you don't have"
+# 预期: 403 "Platform admin required"
 
 # 尝试创建系统保留角色名
 curl -X POST -H "Authorization: Bearer $TENANT_ADMIN_TOKEN" \
@@ -138,10 +155,8 @@ curl -X POST -H "Authorization: Bearer $TENANT_ADMIN_TOKEN" \
 ```
 
 ### 修复建议
-- 验证创建者拥有所有要分配的权限
-- 保留系统角色名列表
-- 平台权限仅平台管理员可分配
-- 角色创建需要审批流程 (可选)
+- 继续保持 `POST /api/v1/roles` 的平台管理员门禁
+- 若后续开放租户级角色创建，需新增“可分配权限子集校验”并补充专门测试
 
 ---
 

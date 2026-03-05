@@ -8,7 +8,7 @@ use aes_gcm::{
     Aes256Gcm, Nonce,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
-use rand::Rng;
+use rand::{rngs::OsRng, RngCore};
 use thiserror::Error;
 
 /// Encryption key for AES-256-GCM
@@ -76,7 +76,7 @@ pub fn encrypt(key: &EncryptionKey, plaintext: &str) -> Result<String, Encryptio
 
     // Generate random 12-byte nonce
     let mut nonce_bytes = [0u8; 12];
-    rand::thread_rng().fill(&mut nonce_bytes);
+    OsRng.fill_bytes(&mut nonce_bytes);
     let nonce = Nonce::from_slice(&nonce_bytes);
 
     // Encrypt

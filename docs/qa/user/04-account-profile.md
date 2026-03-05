@@ -183,8 +183,9 @@ SELECT display_name FROM users WHERE id = '{other_user_id}';
 
 ### 预期结果
 - 按钮显示 "Saving..." 加载状态
-- 失败后显示红色错误提示 "Failed to update profile"
-- 页面不崩溃，表单保持可编辑状态
+- 失败后显示红色错误提示（允许文案为通用网络错误，例如 "Unable to connect to the server. Please try again later."）
+- 页面不崩溃，不应跳转到 `/tenant/select?error=tenant_exchange_failed`
+- 表单区域保持可见，用户可继续编辑或重试
 
 ---
 

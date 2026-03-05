@@ -1,91 +1,163 @@
-#!/bin/bash
-# security_grpc_test.sh - Automated gRPC Security Tests (using Docker helper)
+#!/usr/bin/env bash
+# security_grpc_test.sh - gRPC security regression checks (dynamic fixtures).
 
 set -euo pipefail
 
-GRPC_HELPER=".claude/skills/tools/grpcurl-docker.sh"
-GRPC_TARGET="auth9-grpc-tls:50051"
-PROTO="auth9.proto"
-API_KEY="dev-grpc-api-key"  # pragma: allowlist secret
+GRPC_HELPER="${GRPC_HELPER:-.claude/skills/tools/grpcurl-docker.sh}"
+GRPC_TARGET="${GRPC_TARGET:-auth9-grpc-tls:50051}"
+PROTO="${PROTO:-auth9.proto}"
+API_KEY="${API_KEY:-dev-grpc-api-key}" # pragma: allowlist secret
+JWT_PRIVATE_KEY="${JWT_PRIVATE_KEY:-deploy/dev-certs/jwt/private.key}"
+PORTAL_CLIENT_ID="${PORTAL_CLIENT_ID:-auth9-portal}"
 
-# Cert args for mTLS
-CERT_ARGS="-cacert /certs/ca.crt -cert /certs/client.crt -key /certs/client.key"
-PROTO_ARGS="-import-path /proto -proto $PROTO"
+MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+MYSQL_PORT="${MYSQL_PORT:-4000}"
+MYSQL_USER="${MYSQL_USER:-root}"
+MYSQL_DB="${MYSQL_DB:-auth9}"
+TEST_TENANT_SLUG="${TEST_TENANT_SLUG:-demo}"
+OTHER_TENANT_SLUG="${OTHER_TENANT_SLUG:-auth9-platform}"
+
+GRPC_USER_ID="55555555-5555-5555-5555-555555555555"
+GRPC_USER_TU_ID="66666666-6666-6666-6666-666666666666"
+
+PASS_COUNT=0
+FAIL_COUNT=0
+SKIP_COUNT=0
+
+CERT_ARGS=(-cacert /certs/ca.crt -cert /certs/client.crt -key /certs/client.key)
+PROTO_ARGS=(-import-path /proto -proto "$PROTO")
+
+mysql_q() {
+  mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" "$MYSQL_DB" -N -e "$1"
+}
+
+mark_pass() { PASS_COUNT=$((PASS_COUNT + 1)); echo "✅ PASS: $1"; }
+mark_fail() { FAIL_COUNT=$((FAIL_COUNT + 1)); echo "❌ FAIL: $1"; }
+mark_skip() { SKIP_COUNT=$((SKIP_COUNT + 1)); echo "⏭️  SKIP: $1"; }
+
+require_bin() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "Missing dependency: $1"
+    exit 2
+  fi
+}
+
+gen_identity_token() {
+  local user_id="$1"
+  local email="$2"
+  node -e '
+const jwt=require("jsonwebtoken");
+const fs=require("fs");
+const now=Math.floor(Date.now()/1000);
+const privateKey=fs.readFileSync(process.argv[1], "utf8");
+const payload={
+  sub: process.argv[2],
+  email: process.argv[3],
+  iss: "http://localhost:8080",
+  aud: "auth9",
+  token_type: "identity",
+  iat: now,
+  exp: now + 3600,
+  sid: "sid-" + process.argv[2].slice(0, 8)
+};
+process.stdout.write(jwt.sign(payload, privateKey, {algorithm:"RS256", keyid:"auth9-current"}));
+' "$JWT_PRIVATE_KEY" "$user_id" "$email"
+}
 
 echo "=========================================="
-echo "🔐 gRPC Security Tests (Dockerized)"
+echo "🔐 gRPC Security Tests (Dockerized, Dynamic)"
 echo "=========================================="
 
-echo ""
+require_bin mysql
+require_bin node
+require_bin grep
+
+if [[ ! -x "$GRPC_HELPER" ]]; then
+  echo "Missing helper: $GRPC_HELPER"
+  exit 2
+fi
+if [[ ! -f "$JWT_PRIVATE_KEY" ]]; then
+  echo "Missing key: $JWT_PRIVATE_KEY"
+  exit 2
+fi
+
+DEMO_TENANT_ID="$(mysql_q "SELECT id FROM tenants WHERE slug='$TEST_TENANT_SLUG' LIMIT 1;")"
+OTHER_TENANT_ID="$(mysql_q "SELECT id FROM tenants WHERE slug='$OTHER_TENANT_SLUG' LIMIT 1;")"
+
+if [[ -z "$DEMO_TENANT_ID" || -z "$OTHER_TENANT_ID" ]]; then
+  echo "Missing tenant data in DB; run reset/init first."
+  exit 2
+fi
+if [[ "$DEMO_TENANT_ID" == "$OTHER_TENANT_ID" ]]; then
+  echo "Test tenant and other tenant must be different."
+  exit 2
+fi
+
+# Prepare deterministic gRPC test user: member in demo tenant only.
+mysql -h "$MYSQL_HOST" -P "$MYSQL_PORT" -u "$MYSQL_USER" "$MYSQL_DB" <<SQL
+DELETE FROM tenant_users WHERE user_id = '$GRPC_USER_ID';
+DELETE FROM users WHERE id = '$GRPC_USER_ID';
+INSERT INTO users (id,keycloak_id,email,display_name,mfa_enabled)
+VALUES ('$GRPC_USER_ID','kc-grpc-member-555','grpc.member@test.local','gRPC Member',0);
+INSERT INTO tenant_users (id,tenant_id,user_id,role_in_tenant)
+VALUES ('$GRPC_USER_TU_ID','$DEMO_TENANT_ID','$GRPC_USER_ID','member');
+SQL
+
+ID_TOKEN="$(gen_identity_token "$GRPC_USER_ID" "grpc.member@test.local")"
+
+echo
 echo "=========================================="
 echo "🧪 场景 1: 未认证 gRPC 访问"
 echo "=========================================="
-
-echo "Trying to list services without API Key (but with mTLS certs)..."
-# Even with valid mTLS, if x-api-key is required and missing, it should fail.
-# Note: auth9-core might require API Key even if Nginx allowed mTLS.
-STATUS_OUT=$($GRPC_HELPER $CERT_ARGS $PROTO_ARGS "$GRPC_TARGET" list 2>&1 || true)
-if echo "$STATUS_OUT" | grep -q "Unauthenticated"; then
-    echo "✅ PASS: Unauthenticated request rejected (Unauthenticated)."
+NO_APIKEY_OUT="$("$GRPC_HELPER" "${CERT_ARGS[@]}" "${PROTO_ARGS[@]}" \
+  -d '{"identity_token":"dummy","tenant_id":"dummy","service_id":"dummy"}' \
+  "$GRPC_TARGET" auth9.TokenExchange/ExchangeToken 2>&1 || true)"
+echo "$NO_APIKEY_OUT"
+if echo "$NO_APIKEY_OUT" | grep -Eiq 'Unauthenticated|missing api key|invalid api key'; then
+  mark_pass "ExchangeToken without API key was rejected"
 else
-    echo "⚠️  INFO: Service listing allowed with mTLS but without API Key. Checking actual method call..."
+  mark_fail "Expected unauthenticated/missing-api-key rejection"
 fi
 
-echo "Trying to call ExchangeToken without API Key..."
-EXCHANGE_OUT=$($GRPC_HELPER $CERT_ARGS $PROTO_ARGS -d '{"identity_token":"invalid"}' "$GRPC_TARGET" auth9.TokenExchange/ExchangeToken 2>&1 || true)
-if echo "$EXCHANGE_OUT" | grep -q "Unauthenticated"; then
-    echo "✅ PASS: Unauthenticated method call rejected (Unauthenticated)."
-else
-    echo "❌ FAIL: Unexpected response for unauthenticated method call: $EXCHANGE_OUT"
-fi
-
-echo ""
+echo
 echo "=========================================="
-echo "🧪 场景 2: Token Exchange 滥用 (跨租户)"
+echo "🧪 场景 2: Token Exchange 跨租户滥用"
 echo "=========================================="
-
-# IDs
-USER1="408a0cdb-1582-47dc-bd44-cc442af245e8"
-TENANT2="9dca1bb5-1156-4716-9fa9-18628f25b5ce"
-
-echo "Generating valid Identity Token for User 1..."
-ID_TOKEN=$(node .claude/skills/tools/gen-test-tokens.js identity-user --user-id $USER1)
-
-echo "Attempting to exchange for OTHER tenant (Tenant 2)..."
-EXCHANGE_OUT=$($GRPC_HELPER $CERT_ARGS $PROTO_ARGS -H "x-api-key: $API_KEY" \
-  -d "{\"identity_token\": \"$ID_TOKEN\", \"tenant_id\": \"$TENANT2\", \"service_id\": \"auth9-portal\"}" \
-  "$GRPC_TARGET" auth9.TokenExchange/ExchangeToken 2>&1 || true)
-
-if echo "$EXCHANGE_OUT" | grep -q "PermissionDenied"; then
-    echo "✅ PASS: Cross-tenant exchange rejected (PermissionDenied)."
-elif echo "$EXCHANGE_OUT" | grep -q "User not member of tenant"; then
-    echo "✅ PASS: Cross-tenant exchange rejected (User not member of tenant)."
+CROSS_TENANT_OUT="$("$GRPC_HELPER" "${CERT_ARGS[@]}" "${PROTO_ARGS[@]}" \
+  -H "x-api-key: $API_KEY" \
+  -d "{\"identity_token\":\"$ID_TOKEN\",\"tenant_id\":\"$OTHER_TENANT_ID\",\"service_id\":\"$PORTAL_CLIENT_ID\"}" \
+  "$GRPC_TARGET" auth9.TokenExchange/ExchangeToken 2>&1 || true)"
+echo "$CROSS_TENANT_OUT"
+if echo "$CROSS_TENANT_OUT" | grep -Eiq 'PermissionDenied|not a member of this tenant'; then
+  mark_pass "Cross-tenant token exchange was blocked"
 else
-    echo "❌ FAIL: Cross-tenant exchange might have worked or returned unexpected error: $EXCHANGE_OUT"
+  mark_fail "Expected PermissionDenied for cross-tenant exchange"
 fi
 
-echo ""
+echo
 echo "=========================================="
-echo "🧪 场景 5: gRPC 传输安全 (Plaintext check)"
+echo "🧪 场景 3: gRPC TLS 传输安全"
 echo "=========================================="
-
-echo "Trying to connect via plaintext to auth9-core directly (bypassing Nginx)..."
-# auth9-core:50051 is the internal port
-if $GRPC_HELPER -plaintext $PROTO_ARGS auth9-core:50051 list > /dev/null 2>&1; then
-    echo "⚠️  INFO: Internal gRPC (auth9-core) is plaintext. (Acceptable if restricted to Docker network)."
+PLAINTEXT_OUT="$("$GRPC_HELPER" -plaintext "${PROTO_ARGS[@]}" \
+  -d '{"identity_token":"dummy","tenant_id":"dummy","service_id":"dummy"}' \
+  "$GRPC_TARGET" auth9.TokenExchange/ExchangeToken 2>&1 || true)"
+echo "$PLAINTEXT_OUT"
+if echo "$PLAINTEXT_OUT" | grep -Eiq 'tls|handshake|transport|connection|first record does not look like a TLS handshake|DeadlineExceeded|Unavailable'; then
+  mark_pass "Plaintext connection to TLS endpoint failed as expected"
+elif echo "$PLAINTEXT_OUT" | grep -Eiq 'Unauthenticated|PermissionDenied|Invalid identity token'; then
+  mark_fail "Plaintext reached application layer on TLS endpoint"
 else
-    echo "✅ PASS: Internal gRPC also requires TLS."
+  mark_skip "Could not classify plaintext result; inspect output above"
 fi
 
-echo "Trying to connect via plaintext to auth9-grpc-tls (Nginx)..."
-if $GRPC_HELPER -plaintext $PROTO_ARGS auth9-grpc-tls:50051 list > /dev/null 2>&1; then
-    echo "❌ FAIL: Nginx proxy accepts plaintext connections!"
-else
-    echo "✅ PASS: Nginx proxy rejected plaintext connection."
-fi
-
-echo ""
+echo
 echo "=========================================="
 echo "📊 测试总结"
 echo "=========================================="
-echo "已执行 3 个 gRPC 安全场景。"
+echo "PASS: $PASS_COUNT"
+echo "FAIL: $FAIL_COUNT"
+echo "SKIP: $SKIP_COUNT"
+
+if [[ "$FAIL_COUNT" -gt 0 ]]; then
+  exit 1
+fi

@@ -389,8 +389,9 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 9px 12px;
-    margin: 1px 0;
+    min-height: 44px;
+    padding: 10px 12px;
+    margin: 0;
     border-radius: 12px;
     color: var(--text-secondary);
     font-weight: 500;
@@ -399,6 +400,10 @@
     text-decoration: none;
     transition: all 0.2s ease;
     cursor: pointer;
+  }
+
+  .nav-section .sidebar-item + .sidebar-item {
+    margin-top: 4px;
   }
 
   .sidebar-item:hover {
