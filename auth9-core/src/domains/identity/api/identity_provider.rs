@@ -224,6 +224,8 @@ fn extract_user_id<S: HasIdentityProviders + HasServices>(
     } else if !state.config().is_production() {
         #[allow(deprecated)]
         if let Ok(claims) = jwt.verify_tenant_access_token(token, None) {
+            metrics::counter!("auth9_jwt_legacy_fallback_total", "caller" => "idp_extract_user")
+                .increment(1);
             return StringUuid::parse_str(&claims.sub)
                 .map_err(|_| AppError::Unauthorized("Invalid user ID in token".to_string()));
         }

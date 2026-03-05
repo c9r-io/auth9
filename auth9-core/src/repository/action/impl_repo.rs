@@ -1,73 +1,11 @@
-//! Action repository
+//! impl ActionRepository for ActionRepositoryImpl
 
+use super::{ActionRepository, ActionRepositoryImpl};
 use crate::domain::{
     Action, ActionExecution, CreateActionInput, LogQueryFilter, StringUuid, UpdateActionInput,
 };
 use crate::error::{AppError, Result};
 use async_trait::async_trait;
-use sqlx::MySqlPool;
-
-#[cfg_attr(test, mockall::automock)]
-#[async_trait]
-#[allow(clippy::too_many_arguments)]
-pub trait ActionRepository: Send + Sync {
-    async fn create(
-        &self,
-        tenant_id: StringUuid,
-        service_id: StringUuid,
-        input: &CreateActionInput,
-    ) -> Result<Action>;
-    async fn find_by_id(&self, id: StringUuid) -> Result<Option<Action>>;
-    async fn list_by_service(&self, service_id: StringUuid) -> Result<Vec<Action>>;
-    async fn list_by_trigger(
-        &self,
-        service_id: StringUuid,
-        trigger_id: &str,
-        enabled_only: bool,
-    ) -> Result<Vec<Action>>;
-    /// List actions by tenant and trigger (for PostChangePassword fallback where no service_id is available)
-    async fn list_by_tenant_trigger(
-        &self,
-        tenant_id: StringUuid,
-        trigger_id: &str,
-        enabled_only: bool,
-    ) -> Result<Vec<Action>>;
-    async fn update(&self, id: StringUuid, input: &UpdateActionInput) -> Result<Action>;
-    async fn delete(&self, id: StringUuid) -> Result<()>;
-    async fn delete_by_service(&self, service_id: StringUuid) -> Result<u64>;
-    async fn delete_by_tenant(&self, tenant_id: StringUuid) -> Result<u64>;
-    async fn record_execution(
-        &self,
-        action_id: StringUuid,
-        tenant_id: Option<StringUuid>,
-        service_id: StringUuid,
-        trigger_id: String,
-        user_id: Option<StringUuid>,
-        success: bool,
-        duration_ms: i32,
-        error: Option<String>,
-    ) -> Result<()>;
-    async fn update_execution_stats(
-        &self,
-        id: StringUuid,
-        success: bool,
-        error: Option<String>,
-    ) -> Result<()>;
-    async fn find_execution_by_id(&self, id: StringUuid) -> Result<Option<ActionExecution>>;
-    async fn query_logs(&self, filter: &LogQueryFilter) -> Result<Vec<ActionExecution>>;
-    async fn count_logs(&self, filter: &LogQueryFilter) -> Result<i64>;
-    async fn get_stats(&self, action_id: StringUuid) -> Result<Option<(i64, i64, f64, i64)>>;
-}
-
-pub struct ActionRepositoryImpl {
-    pool: MySqlPool,
-}
-
-impl ActionRepositoryImpl {
-    pub fn new(pool: MySqlPool) -> Self {
-        Self { pool }
-    }
-}
 
 #[async_trait]
 impl ActionRepository for ActionRepositoryImpl {
@@ -430,11 +368,11 @@ impl ActionRepository for ActionRepositoryImpl {
 
         query_str.push_str(" ORDER BY executed_at DESC");
 
-        if let Some(limit) = filter.limit {
-            query_str.push_str(&format!(" LIMIT {}", limit));
+        if filter.limit.is_some() {
+            query_str.push_str(" LIMIT ?");
         }
-        if let Some(offset) = filter.offset {
-            query_str.push_str(&format!(" OFFSET {}", offset));
+        if filter.offset.is_some() {
+            query_str.push_str(" OFFSET ?");
         }
 
         let mut query = sqlx::query_as::<_, ActionExecution>(&query_str);
@@ -456,6 +394,12 @@ impl ActionRepository for ActionRepositoryImpl {
         }
         if let Some(to) = filter.to {
             query = query.bind(to);
+        }
+        if let Some(limit) = filter.limit {
+            query = query.bind(limit as i64);
+        }
+        if let Some(offset) = filter.offset {
+            query = query.bind(offset as i64);
         }
 
         let executions = query.fetch_all(&self.pool).await?;
@@ -552,16 +496,5 @@ impl ActionRepository for ActionRepositoryImpl {
         .await?;
 
         Ok(result)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_action_repository_trait_is_mockable() {
-        // This test ensures MockActionRepository can be created
-        let _mock = MockActionRepository::new();
     }
 }

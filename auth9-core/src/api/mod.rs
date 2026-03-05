@@ -201,6 +201,8 @@ pub(crate) fn extract_actor_id_generic<S: HasServices>(
             #[allow(deprecated)]
             state.jwt_manager().verify_tenant_access_token(token, None)
         } {
+            ::metrics::counter!("auth9_jwt_legacy_fallback_total", "caller" => "api_extract_user")
+                .increment(1);
             return Uuid::parse_str(&claims.sub).ok();
         }
     }

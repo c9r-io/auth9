@@ -25,8 +25,9 @@ spec:
         fsGroup: 1000
       containers:
         - name: auth9-init
+          # Image tag is overridden at deploy time
           image: ghcr.io/gpgkd906/auth9-core:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command: ["auth9-core", "init"]
           envFrom:
             - configMapRef:

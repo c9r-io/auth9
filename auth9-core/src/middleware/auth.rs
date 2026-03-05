@@ -223,6 +223,8 @@ where
             // Legacy behavior for non-production: if allowlist isn't configured, do not validate aud.
             #[allow(deprecated)]
             if let Ok(claims) = jwt_manager.verify_tenant_access_token(token, None) {
+                metrics::counter!("auth9_jwt_legacy_fallback_total", "caller" => "auth_extractor")
+                    .increment(1);
                 return AuthUser::from_tenant_access_claims(claims);
             }
         }

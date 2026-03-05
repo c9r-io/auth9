@@ -27,6 +27,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
       full_image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.digest.outputs.digest }}
 
     steps:
       - name: Checkout
@@ -68,6 +69,10 @@ jobs:
             type=registry,ref=${{ env.REGISTRY }}/${{ env.CORE_IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64
 
+      - name: Export image digest
+        id: digest
+        run: echo "digest=${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
+
   # ==================== Build and Push auth9-portal ====================
   build-portal:
     name: Build auth9-portal
@@ -79,6 +84,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.meta.outputs.version }}
       full_image: ${{ steps.meta.outputs.tags }}
+      digest: ${{ steps.digest.outputs.digest }}
 
     steps:
       - name: Checkout
@@ -120,6 +126,10 @@ jobs:
             type=gha,mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ env.PORTAL_IMAGE_NAME }}:buildcache,mode=max
           platforms: linux/amd64
+
+      - name: Export image digest
+        id: digest
+        run: echo "digest=${{ steps.build.outputs.digest }}" >> $GITHUB_OUTPUT
 
   # ==================== Build and Push auth9-keycloak-theme ====================
   build-theme:
@@ -289,14 +299,23 @@ jobs:
           | auth9-portal | `ghcr.io/gpgkd906/auth9-portal:latest` |
           | auth9-keycloak-theme | `ghcr.io/gpgkd906/auth9-keycloak-theme:latest` |
           | auth9-keycloak-events | `ghcr.io/gpgkd906/auth9-keycloak-events:latest` |
-          
+
+          ### Pinned by Digest (for immutable deployments)
+
+          | Component | Digest |
+          |-----------|--------|
+          | auth9-core | `CORE_DIGEST` |
+          | auth9-portal | `PORTAL_DIGEST` |
+
           ---
-          
+
           To deploy, run:
           ```bash
           ./deploy/deploy.sh
           ```
           EOF
           
-          # Also substitute the SHORT_SHA in the summary
+          # Substitute variables in the summary
           sed -i "s/\${SHORT_SHA}/${SHORT_SHA}/g" $GITHUB_STEP_SUMMARY
+          sed -i "s|CORE_DIGEST|${{ needs.build-core.outputs.digest }}|g" $GITHUB_STEP_SUMMARY
+          sed -i "s|PORTAL_DIGEST|${{ needs.build-portal.outputs.digest }}|g" $GITHUB_STEP_SUMMARY

@@ -1,72 +1,11 @@
-//! Login event repository
+//! impl LoginEventRepository for LoginEventRepositoryImpl
 
-#[allow(unused_imports)]
-use crate::domain::{
-    CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginEventType, LoginStats, StringUuid,
-};
+use super::{LoginEventRepository, LoginEventRepositoryImpl};
+use crate::domain::{CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginStats, StringUuid};
 use crate::error::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::MySqlPool;
 use std::collections::HashMap;
-
-#[cfg_attr(test, mockall::automock)]
-#[async_trait]
-pub trait LoginEventRepository: Send + Sync {
-    async fn create(&self, input: &CreateLoginEventInput) -> Result<i64>;
-    async fn find_by_id(&self, id: i64) -> Result<Option<LoginEvent>>;
-    async fn list(&self, offset: i64, limit: i64) -> Result<Vec<LoginEvent>>;
-    async fn list_by_user(
-        &self,
-        user_id: StringUuid,
-        offset: i64,
-        limit: i64,
-    ) -> Result<Vec<LoginEvent>>;
-    async fn list_by_tenant(
-        &self,
-        tenant_id: StringUuid,
-        offset: i64,
-        limit: i64,
-    ) -> Result<Vec<LoginEvent>>;
-    async fn list_by_email(&self, email: &str, offset: i64, limit: i64) -> Result<Vec<LoginEvent>>;
-    async fn count(&self) -> Result<i64>;
-    async fn count_by_user(&self, user_id: StringUuid) -> Result<i64>;
-    async fn count_by_tenant(&self, tenant_id: StringUuid) -> Result<i64>;
-    async fn count_by_email(&self, email: &str) -> Result<i64>;
-    async fn get_stats(&self, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats>;
-    async fn count_failed_by_ip(&self, ip_address: &str, since: DateTime<Utc>) -> Result<i64>;
-    async fn count_failed_by_ip_multi_user(
-        &self,
-        ip_address: &str,
-        since: DateTime<Utc>,
-    ) -> Result<i64>;
-    /// Count failed login attempts for a specific user/email across all IPs (account-level detection)
-    async fn count_failed_by_user(&self, email: &str, since: DateTime<Utc>) -> Result<i64>;
-    async fn delete_old(&self, days: i64) -> Result<u64>;
-
-    /// Nullify user_id for login events (preserve audit trail when user is deleted)
-    async fn nullify_user_id(&self, user_id: StringUuid) -> Result<u64>;
-
-    /// Delete all login events for a tenant (when tenant is deleted)
-    async fn delete_by_tenant(&self, tenant_id: StringUuid) -> Result<u64>;
-
-    /// Get daily trend data (per-day breakdown of logins)
-    async fn get_daily_trend(
-        &self,
-        start: DateTime<Utc>,
-        end: DateTime<Utc>,
-    ) -> Result<Vec<DailyTrendPoint>>;
-}
-
-pub struct LoginEventRepositoryImpl {
-    pool: MySqlPool,
-}
-
-impl LoginEventRepositoryImpl {
-    pub fn new(pool: MySqlPool) -> Self {
-        Self { pool }
-    }
-}
 
 #[async_trait]
 impl LoginEventRepository for LoginEventRepositoryImpl {
@@ -415,81 +354,5 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
                 failed,
             })
             .collect())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use mockall::predicate::*;
-
-    #[tokio::test]
-    async fn test_mock_login_event_repository() {
-        let mut mock = MockLoginEventRepository::new();
-
-        mock.expect_count().returning(|| Ok(100));
-
-        let count = mock.count().await.unwrap();
-        assert_eq!(count, 100);
-    }
-
-    #[tokio::test]
-    async fn test_mock_create() {
-        let mut mock = MockLoginEventRepository::new();
-
-        mock.expect_create().returning(|_| Ok(1));
-
-        let input = CreateLoginEventInput {
-            user_id: Some(StringUuid::new_v4()),
-            email: Some("test@example.com".to_string()),
-            tenant_id: None,
-            event_type: LoginEventType::Success,
-            ip_address: Some("192.168.1.1".to_string()),
-            user_agent: None,
-            device_type: Some("desktop".to_string()),
-            location: None,
-            session_id: None,
-            failure_reason: None,
-        };
-
-        let id = mock.create(&input).await.unwrap();
-        assert_eq!(id, 1);
-    }
-
-    #[tokio::test]
-    async fn test_mock_get_stats() {
-        let mut mock = MockLoginEventRepository::new();
-        let start = Utc::now() - chrono::Duration::days(7);
-        let end = Utc::now();
-
-        mock.expect_get_stats().returning(|start, end| {
-            Ok(LoginStats {
-                total_logins: 100,
-                successful_logins: 80,
-                failed_logins: 20,
-                unique_users: 50,
-                by_event_type: HashMap::new(),
-                by_device_type: HashMap::new(),
-                period_start: start,
-                period_end: end,
-            })
-        });
-
-        let stats = mock.get_stats(start, end).await.unwrap();
-        assert_eq!(stats.total_logins, 100);
-        assert_eq!(stats.successful_logins, 80);
-    }
-
-    #[tokio::test]
-    async fn test_mock_count_failed_by_ip() {
-        let mut mock = MockLoginEventRepository::new();
-        let since = Utc::now() - chrono::Duration::minutes(10);
-
-        mock.expect_count_failed_by_ip()
-            .with(eq("192.168.1.1"), always())
-            .returning(|_, _| Ok(5));
-
-        let count = mock.count_failed_by_ip("192.168.1.1", since).await.unwrap();
-        assert_eq!(count, 5);
     }
 }

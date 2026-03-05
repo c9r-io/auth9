@@ -1,368 +1,20 @@
-//! ActionEngine - V8-based script execution engine for Auth9 Actions
-//!
-//! This module provides the core engine for executing TypeScript/JavaScript actions
-//! in a secure V8 isolate sandbox. Key features:
-//!
-//! - **V8 Isolate Sandbox**: Each script runs in an isolated V8 instance
-//! - **Async/Await Support**: Scripts can use `async/await`, `fetch()`, `setTimeout`
-//! - **TypeScript Support**: Automatic transpilation to JavaScript
-//! - **Timeout Control**: Enforced execution timeout per action
-//! - **Script Caching**: LRU cache for compiled scripts
-//! - **Host Functions**: Exposed Deno ops for logging, HTTP fetch, and timers
-//! - **Security**: Domain allowlist for fetch, private IP blocking, request limits
+//! ActionEngine struct and all impl methods.
 
 use crate::domain::{Action, ActionContext, AsyncActionConfig};
 use crate::error::{AppError, Result};
 use crate::repository::ActionRepository;
-use deno_core::{JsRuntime, OpState, RuntimeOptions};
-use lru::LruCache;
 use metrics::{counter, histogram};
-use std::cell::RefCell;
-use std::collections::HashMap;
 use std::num::NonZeroUsize;
-use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
-/// Error type for action ops (implements JsErrorClass for deno_core)
-#[derive(Debug, thiserror::Error, deno_error::JsError)]
-#[class(generic)]
-#[error("{0}")]
-struct ActionOpError(String);
-
-// ============================================================
-// Async ops state types
-// ============================================================
-
-/// Counter for HTTP requests in a single action execution
-struct RequestCounter(usize);
-
-/// Response from op_fetch, serialized back to JS
-#[derive(serde::Serialize)]
-struct FetchResponse {
-    status: u16,
-    body: String,
-    headers: HashMap<String, String>,
-}
-
-// ============================================================
-// Deno ops
-// ============================================================
-
-#[deno_core::op2(async)]
-#[serde]
-async fn op_fetch(
-    state: Rc<RefCell<OpState>>,
-    #[string] url: String,
-    #[string] method: String,
-    #[serde] headers: HashMap<String, String>,
-    #[string] body: String,
-) -> std::result::Result<FetchResponse, ActionOpError> {
-    op_fetch_impl(state, url, method, headers, body).await
-}
-
-async fn op_fetch_impl(
-    state: Rc<RefCell<OpState>>,
-    url: String,
-    method: String,
-    headers: HashMap<String, String>,
-    body: String,
-) -> std::result::Result<FetchResponse, ActionOpError> {
-    // Extract config and client from state
-    let (client, config, request_count) = {
-        let state = state
-            .try_borrow()
-            .map_err(|_| ActionOpError("op state is busy (read borrow conflict)".into()))?;
-        let client = state.borrow::<reqwest::Client>().clone();
-        let config = state.borrow::<AsyncActionConfig>().clone();
-        let count = state.borrow::<RequestCounter>().0;
-        (client, config, count)
-    };
-
-    // Check request limit
-    if request_count >= config.max_requests_per_execution {
-        return Err(ActionOpError(format!(
-            "Request limit exceeded (max {} per execution)",
-            config.max_requests_per_execution
-        )));
-    }
-
-    // Parse URL and check domain
-    let parsed_url =
-        url::Url::parse(&url).map_err(|e| ActionOpError(format!("Invalid URL: {}", e)))?;
-
-    let host = parsed_url
-        .host_str()
-        .ok_or_else(|| ActionOpError("URL has no host".into()))?;
-
-    let host_with_port = if let Some(port) = parsed_url.port() {
-        format!("{}:{}", host, port)
-    } else {
-        host.to_string()
-    };
-
-    // Check allowlist (match on host alone or host:port)
-    if !config
-        .allowed_domains
-        .iter()
-        .any(|d| d == host || d == &host_with_port)
-    {
-        return Err(ActionOpError(format!(
-            "Domain '{}' not in allowlist. Allowed: {:?}",
-            host, config.allowed_domains
-        )));
-    }
-
-    // Check private IP (SSRF protection)
-    if !config.allow_private_ips && is_private_ip(host) {
-        return Err(ActionOpError(format!(
-            "Requests to private/internal IPs are blocked: {}",
-            host
-        )));
-    }
-
-    // Increment request counter
-    {
-        let mut state = state
-            .try_borrow_mut()
-            .map_err(|_| ActionOpError("op state is busy (write borrow conflict)".into()))?;
-        state.borrow_mut::<RequestCounter>().0 += 1;
-    }
-
-    // Build HTTP request
-    let method = reqwest::Method::from_bytes(method.as_bytes())
-        .map_err(|e| ActionOpError(format!("Invalid HTTP method: {}", e)))?;
-
-    let mut req = client.request(method, &url);
-
-    for (key, value) in &headers {
-        req = req.header(key.as_str(), value.as_str());
-    }
-
-    if !body.is_empty() {
-        req = req.body(body);
-    }
-
-    // Execute with per-request timeout
-    let response =
-        tokio::time::timeout(Duration::from_millis(config.request_timeout_ms), req.send())
-            .await
-            .map_err(|_| {
-                ActionOpError(format!(
-                    "Request timed out after {}ms",
-                    config.request_timeout_ms
-                ))
-            })?
-            .map_err(|e| ActionOpError(format!("HTTP request failed: {}", e)))?;
-
-    let status = response.status().as_u16();
-    let resp_headers: HashMap<String, String> = response
-        .headers()
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.to_str().unwrap_or("").to_string()))
-        .collect();
-
-    let body_bytes = response
-        .bytes()
-        .await
-        .map_err(|e| ActionOpError(format!("Failed to read body: {}", e)))?;
-
-    // Truncate at max_response_bytes
-    let body = if body_bytes.len() > config.max_response_bytes {
-        String::from_utf8_lossy(&body_bytes[..config.max_response_bytes]).to_string()
-    } else {
-        String::from_utf8_lossy(&body_bytes).to_string()
-    };
-
-    Ok(FetchResponse {
-        status,
-        body,
-        headers: resp_headers,
-    })
-}
-
-#[deno_core::op2(async)]
-async fn op_set_timeout(#[number] delay_ms: u64) -> std::result::Result<(), ActionOpError> {
-    // Cap at 30 seconds to prevent abuse
-    let capped = delay_ms.min(30_000);
-    tokio::time::sleep(Duration::from_millis(capped)).await;
-    Ok(())
-}
-
-#[deno_core::op2]
-fn op_console_log(#[serde] args: Vec<String>) {
-    tracing::info!("[Action Script] {}", args.join(" "));
-}
-
-// Register extension
-deno_core::extension!(
-    auth9_action_ext,
-    ops = [op_fetch, op_set_timeout, op_console_log],
-);
-
-// ============================================================
-// Private IP blocking (SSRF protection)
-// ============================================================
-
-fn is_private_ip(host: &str) -> bool {
-    use std::net::IpAddr;
-
-    if let Ok(ip) = host.parse::<IpAddr>() {
-        match ip {
-            IpAddr::V4(v4) => {
-                v4.is_loopback()      // 127.0.0.0/8
-                || v4.is_private()    // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
-                || v4.is_link_local() // 169.254.0.0/16
-                || v4.is_unspecified() // 0.0.0.0
-            }
-            IpAddr::V6(v6) => v6.is_loopback() || v6.is_unspecified(),
-        }
-    } else {
-        // Hostname: block common internal names
-        host == "localhost" || host.ends_with(".local") || host.ends_with(".internal")
-    }
-}
-
-// ============================================================
-// JavaScript polyfills (injected once at runtime creation)
-// ============================================================
-
-const POLYFILLS_JS: &str = r#"
-// fetch(url, options?) -> Promise<{ status, body, headers, ok, text(), json() }>
-globalThis.fetch = async function(url, options) {
-    options = options || {};
-    const method = (options.method || 'GET').toUpperCase();
-    const headers = options.headers || {};
-    const body = options.body || '';
-    const result = await Deno.core.ops.op_fetch(url, method, headers, body);
-    return {
-        status: result.status,
-        ok: result.status >= 200 && result.status < 300,
-        headers: result.headers,
-        text: async () => result.body,
-        json: async () => JSON.parse(result.body),
-    };
+use super::cache::{CompiledScript, ScriptCache};
+use super::ops::RequestCounter;
+use super::runtime::{
+    create_js_runtime, return_js_runtime, return_local_tokio_rt, take_js_runtime,
+    take_local_tokio_rt,
 };
-
-// setTimeout(callback, delay) -> id
-globalThis.__timers = { nextId: 1, pending: new Map() };
-globalThis.setTimeout = function(callback, delay) {
-    delay = delay || 0;
-    const id = globalThis.__timers.nextId++;
-    const promise = Deno.core.ops.op_set_timeout(delay).then(() => {
-        if (globalThis.__timers.pending.has(id)) {
-            globalThis.__timers.pending.delete(id);
-            callback();
-        }
-    });
-    globalThis.__timers.pending.set(id, promise);
-    return id;
-};
-globalThis.clearTimeout = function(id) {
-    globalThis.__timers.pending.delete(id);
-};
-
-// console.log/warn/error
-globalThis.console = {
-    log: (...args) => Deno.core.ops.op_console_log(args.map(String)),
-    warn: (...args) => Deno.core.ops.op_console_log(args.map(a => '[WARN] ' + String(a))),
-    error: (...args) => Deno.core.ops.op_console_log(args.map(a => '[ERROR] ' + String(a))),
-};
-"#;
-
-// ============================================================
-// Thread-local V8 runtime management
-// ============================================================
-
-// Thread-local storage for V8 runtime (JsRuntime is !Send, must stay on one thread)
-thread_local! {
-    static JS_RUNTIME: RefCell<Option<JsRuntime>> = const { RefCell::new(None) };
-    static LOCAL_TOKIO_RT: RefCell<Option<tokio::runtime::Runtime>> = const { RefCell::new(None) };
-}
-
-/// Take JsRuntime out of thread-local (avoids RefCell borrow across await)
-fn take_js_runtime() -> Option<JsRuntime> {
-    JS_RUNTIME.with(|rt| rt.borrow_mut().take())
-}
-
-/// Return JsRuntime to thread-local storage
-fn return_js_runtime(runtime: JsRuntime) {
-    JS_RUNTIME.with(|rt| {
-        *rt.borrow_mut() = Some(runtime);
-    });
-}
-
-/// Create a new JsRuntime with async extension + polyfills
-fn create_js_runtime(http_client: reqwest::Client, config: AsyncActionConfig) -> Result<JsRuntime> {
-    tracing::debug!("Creating thread-local V8 runtime with async extensions");
-
-    let max_heap_bytes = config.max_heap_mb * 1024 * 1024;
-    let create_params = deno_core::v8::Isolate::create_params().heap_limits(0, max_heap_bytes);
-
-    let mut runtime = JsRuntime::new(RuntimeOptions {
-        extensions: vec![auth9_action_ext::init_ops_and_esm()],
-        create_params: Some(create_params),
-        ..Default::default()
-    });
-
-    // Inject initial op state
-    {
-        let op_state = runtime.op_state();
-        let mut state = op_state.borrow_mut();
-        state.put(http_client);
-        state.put(config);
-        state.put(RequestCounter(0));
-    }
-
-    // Inject polyfills (fetch, setTimeout, console)
-    runtime
-        .execute_script("<polyfills>", POLYFILLS_JS)
-        .map_err(|e| AppError::Internal(anyhow::anyhow!("Failed to load polyfills: {}", e)))?;
-
-    Ok(runtime)
-}
-
-/// Get or create thread-local tokio current-thread runtime, take it out for use
-fn take_local_tokio_rt() -> tokio::runtime::Runtime {
-    LOCAL_TOKIO_RT.with(|rt_cell| {
-        let mut rt = rt_cell.borrow_mut();
-        if rt.is_none() {
-            *rt = Some(
-                tokio::runtime::Builder::new_current_thread()
-                    .enable_all()
-                    .build()
-                    .expect("Failed to create thread-local tokio runtime"),
-            );
-        }
-        rt.take().unwrap()
-    })
-}
-
-/// Return tokio runtime to thread-local storage
-fn return_local_tokio_rt(rt: tokio::runtime::Runtime) {
-    LOCAL_TOKIO_RT.with(|rt_cell| {
-        *rt_cell.borrow_mut() = Some(rt);
-    });
-}
-
-// ============================================================
-// Compiled script cache
-// ============================================================
-
-/// Compiled script cache entry
-#[derive(Debug, Clone)]
-struct CompiledScript {
-    /// Transpiled JavaScript code
-    code: String,
-}
-
-/// Script cache (action_id -> compiled script)
-type ScriptCache = Arc<RwLock<LruCache<String, CompiledScript>>>;
-
-// ============================================================
-// ActionEngine
-// ============================================================
 
 /// ActionEngine executes TypeScript/JavaScript actions in V8 isolate
 pub struct ActionEngine<R: ActionRepository> {
@@ -392,7 +44,9 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
 
         Self {
             action_repo,
-            script_cache: Arc::new(RwLock::new(LruCache::new(NonZeroUsize::new(100).unwrap()))),
+            script_cache: Arc::new(RwLock::new(lru::LruCache::new(
+                NonZeroUsize::new(100).unwrap(),
+            ))),
             http_client,
             async_config,
         }
@@ -592,7 +246,7 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
     }
 
     /// Execute a single action
-    async fn execute_action(
+    pub(super) async fn execute_action(
         &self,
         action: &Action,
         context: &ActionContext,
@@ -659,7 +313,7 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
             // otherwise V8 invokes its fatal OOM handler which aborts the process.
             const HEAP_BUMP_BYTES: usize = 5 * 1024 * 1024; // 5MB
             let heap_handle = isolate_handle;
-            let heap_callback_count = Rc::new(std::cell::Cell::new(0u32));
+            let heap_callback_count = std::rc::Rc::new(std::cell::Cell::new(0u32));
             let heap_callback_count_clone = heap_callback_count.clone();
             let was_oom_inner = was_oom_clone.clone();
             js_runtime.add_near_heap_limit_callback(move |current_limit, initial_limit| {
@@ -868,7 +522,7 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
     }
 
     /// Get compiled script from cache or compile new one
-    async fn get_or_compile_script(&self, action: &Action) -> Result<String> {
+    pub(super) async fn get_or_compile_script(&self, action: &Action) -> Result<String> {
         let cache_key = action.id.to_string();
 
         // Check cache first
@@ -900,7 +554,7 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
     ///
     /// Detects async patterns and wraps in async IIFE when needed.
     /// Ensures the script returns context at the end.
-    fn compile_typescript(&self, script: &str) -> Result<String> {
+    pub(super) fn compile_typescript(&self, script: &str) -> Result<String> {
         let trimmed = script.trim();
 
         // Detect async patterns
@@ -993,9 +647,15 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{ActionContextRequest, ActionContextTenant, ActionContextUser, StringUuid};
+    use crate::domain::{
+        ActionContextRequest, ActionContextTenant, ActionContextUser, AsyncActionConfig, StringUuid,
+    };
     use crate::repository::action::MockActionRepository;
     use chrono::Utc;
+    use std::collections::HashMap;
+
+    use super::super::ops::{is_private_ip, op_fetch_impl};
+    use super::super::runtime::create_js_runtime;
 
     fn create_test_context() -> ActionContext {
         ActionContext {

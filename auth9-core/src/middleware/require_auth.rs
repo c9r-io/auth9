@@ -114,6 +114,8 @@ pub async fn require_auth_middleware(
             .jwt_manager
             .verify_tenant_access_token(token, None)
     } {
+        metrics::counter!("auth9_jwt_legacy_fallback_total", "caller" => "require_auth_middleware")
+            .increment(1);
         session_id = claims.sid.clone().or_else(|| Some(claims.sub.clone()));
         Some("tenant_access")
     } else {
