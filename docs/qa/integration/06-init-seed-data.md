@@ -330,8 +330,8 @@ ORDER BY s.created_at DESC LIMIT 1;
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | 首次 Init 创建全部种子数据 | ☐ | | | |
-| 2 | 重复执行 Init 保证幂等性 | ☐ | | | |
-| 3 | 自定义管理员邮箱（AUTH9_ADMIN_EMAIL） | ☐ | | | |
-| 4 | Keycloak 重置后重新 Init（keycloak_id 更新） | ☐ | | | |
-| 5 | Portal 登录验证种子数据可用性 | ☐ | | | |
+| 1 | 首次 Init 创建全部种子数据 | ✅ PASS | 2026-03-06 | opencode | |
+| 2 | 重复执行 Init 保证幂等性 | ✅ PASS | 2026-03-06 | opencode | |
+| 3 | 自定义管理员邮箱（AUTH9_ADMIN_EMAIL） | ✅ PASS | 2026-03-06 | opencode | |
+| 4 | Keycloak 重置后重新 Init（keycloak_id 更新） | ✅ PASS | 2026-03-06 | opencode | |
+| 5 | Portal 登录验证种子数据可用性 | ✅ PASS | 2026-03-06 | opencode | |
