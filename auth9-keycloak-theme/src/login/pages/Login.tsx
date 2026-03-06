@@ -30,6 +30,10 @@ export default function Login(
   const branding = useBrandingContext();
 
   const [isLoginButtonDisabled, setIsLoginButtonDisabled] = useState(false);
+  const hasCredentialFieldError = messagesPerField.existsError("username", "password");
+  const shouldShowGlobalMessage =
+    message !== undefined &&
+    !(message.type === "error" && hasCredentialFieldError);
 
   const onSubmit: FormEventHandler<HTMLFormElement> = () => {
     setIsLoginButtonDisabled(true);
@@ -56,14 +60,14 @@ export default function Login(
         </div>
 
         {/* Status Message (e.g. password reset success) */}
-        {message !== undefined && (
+        {shouldShowGlobalMessage && message !== undefined && (
           <GlassAlert variant={message.type === "error" ? "error" : message.type === "warning" ? "warning" : "success"}>
             <span dangerouslySetInnerHTML={{ __html: message.summary }} />
           </GlassAlert>
         )}
 
         {/* Field Error Messages */}
-        {messagesPerField.existsError("username", "password") && (
+        {hasCredentialFieldError && (
           <GlassAlert variant="error">
             {messagesPerField.getFirstError("username", "password")}
           </GlassAlert>
