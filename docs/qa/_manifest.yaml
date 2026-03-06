@@ -1,5 +1,5 @@
 version: qa-doc-gen-v1
-generated_at: 2026-03-04
+generated_at: 2026-03-06
 documents:
   - id: action/01-crud
     path: docs/qa/action/01-crud.md
@@ -16,7 +16,7 @@ documents:
     has_ui_flow: true
     has_entry_visibility: true
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: action/03-logs
     path: docs/qa/action/03-logs.md
     module: action
@@ -48,7 +48,7 @@ documents:
     has_ui_flow: false
     has_entry_visibility: false
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: action/07-crud-advanced
     path: docs/qa/action/07-crud-advanced.md
     module: action
@@ -160,7 +160,7 @@ documents:
     has_ui_flow: false
     has_entry_visibility: false
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: auth/06-client-credentials
     path: docs/qa/auth/06-client-credentials.md
     module: auth
@@ -200,7 +200,7 @@ documents:
     has_ui_flow: true
     has_entry_visibility: true
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: auth/11-tenant-selection-token-exchange
     path: docs/qa/auth/11-tenant-selection-token-exchange.md
     module: auth
@@ -216,7 +216,7 @@ documents:
     has_ui_flow: true
     has_entry_visibility: true
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: auth/13-keycloak-ui-visibility-regression
     path: docs/qa/auth/13-keycloak-ui-visibility-regression.md
     module: auth
@@ -232,7 +232,7 @@ documents:
     has_ui_flow: true
     has_entry_visibility: false
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: identity-provider/02-toggle-validation
     path: docs/qa/identity-provider/02-toggle-validation.md
     module: identity-provider
@@ -296,7 +296,7 @@ documents:
     has_ui_flow: true
     has_entry_visibility: false
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: integration/07-observability-metrics
     path: docs/qa/integration/07-observability-metrics.md
     module: integration
@@ -624,7 +624,7 @@ documents:
     has_ui_flow: true
     has_entry_visibility: false
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: tenant/01-crud
     path: docs/qa/tenant/01-crud.md
     module: tenant
@@ -648,7 +648,7 @@ documents:
     has_ui_flow: false
     has_entry_visibility: false
     has_checklist: true
-    last_reviewed: 2026-02-21
+    last_reviewed: 2026-03-06
   - id: tenant/04-b2b-org-creation
     path: docs/qa/tenant/04-b2b-org-creation.md
     module: tenant

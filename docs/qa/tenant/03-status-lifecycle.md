@@ -32,23 +32,24 @@ Auth9 租户有三种状态：
 
 ---
 
-## 场景 1：将租户状态设为 Inactive
+## 场景 1：入口可见性 - 从租户列表进入状态编辑并设为 Inactive
 
 ### 初始状态
 - 存在租户 id=`{tenant_id}`，status=`active`
 - 该租户有关联用户和服务
 
 ### 目的
-验证租户状态可以正确切换为 inactive
+验证从 Portal 可见入口进入租户详情并将状态切换为 inactive
 
 ### 测试操作流程
-1. 进入租户详情页 `/dashboard/tenants/{tenant_id}`
-2. 修改状态为 `Inactive`（或调用 API）：
+1. 从 Dashboard 左侧导航点击「Tenants」
+2. 在租户列表中点击目标租户名称进入详情页
+3. 修改状态为 `Inactive`（或调用 API）：
    ```bash
    PUT /api/v1/tenants/{tenant_id}
    { "status": "inactive" }
    ```
-3. 刷新页面确认状态显示
+4. 刷新页面确认状态显示
 
 ### 预期结果
 - 状态更新成功
