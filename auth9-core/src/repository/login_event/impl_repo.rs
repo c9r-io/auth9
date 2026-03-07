@@ -169,10 +169,10 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
         Ok(row.0)
     }
 
-    async fn get_stats(&self, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
-        // Get basic counts
-        // Note: SUM() returns DECIMAL in MySQL/TiDB, must CAST to SIGNED for i64 compatibility
-        let counts: (i64, i64, i64, i64) = sqlx::query_as(
+    async fn get_stats(&self, tenant_id: Option<StringUuid>, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
+        let tenant_filter = if tenant_id.is_some() { " AND tenant_id = ?" } else { "" };
+
+        let counts_sql = format!(
             r#"
             SELECT
                 COUNT(*) as total,
@@ -180,41 +180,51 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
                 CAST(COALESCE(SUM(CASE WHEN event_type IN ('failed_password', 'failed_mfa', 'locked') THEN 1 ELSE 0 END), 0) AS SIGNED) as failed,
                 COUNT(DISTINCT user_id) as unique_users
             FROM login_events
-            WHERE created_at BETWEEN ? AND ?
+            WHERE created_at BETWEEN ? AND ?{}
             "#,
-        )
-        .bind(start)
-        .bind(end)
-        .fetch_one(&self.pool)
-        .await?;
+            tenant_filter
+        );
+        let mut q = sqlx::query_as::<_, (i64, i64, i64, i64)>(&counts_sql)
+            .bind(start)
+            .bind(end);
+        if let Some(ref tid) = tenant_id {
+            q = q.bind(tid.to_string());
+        }
+        let counts = q.fetch_one(&self.pool).await?;
 
-        // Get counts by event type
-        let event_type_counts: Vec<(String, i64)> = sqlx::query_as(
+        let event_type_sql = format!(
             r#"
             SELECT event_type, COUNT(*) as count
             FROM login_events
-            WHERE created_at BETWEEN ? AND ?
+            WHERE created_at BETWEEN ? AND ?{}
             GROUP BY event_type
             "#,
-        )
-        .bind(start)
-        .bind(end)
-        .fetch_all(&self.pool)
-        .await?;
+            tenant_filter
+        );
+        let mut q = sqlx::query_as::<_, (String, i64)>(&event_type_sql)
+            .bind(start)
+            .bind(end);
+        if let Some(ref tid) = tenant_id {
+            q = q.bind(tid.to_string());
+        }
+        let event_type_counts = q.fetch_all(&self.pool).await?;
 
-        // Get counts by device type
-        let device_type_counts: Vec<(Option<String>, i64)> = sqlx::query_as(
+        let device_type_sql = format!(
             r#"
             SELECT device_type, COUNT(*) as count
             FROM login_events
-            WHERE created_at BETWEEN ? AND ?
+            WHERE created_at BETWEEN ? AND ?{}
             GROUP BY device_type
             "#,
-        )
-        .bind(start)
-        .bind(end)
-        .fetch_all(&self.pool)
-        .await?;
+            tenant_filter
+        );
+        let mut q = sqlx::query_as::<_, (Option<String>, i64)>(&device_type_sql)
+            .bind(start)
+            .bind(end);
+        if let Some(ref tid) = tenant_id {
+            q = q.bind(tid.to_string());
+        }
+        let device_type_counts = q.fetch_all(&self.pool).await?;
 
         let by_event_type: HashMap<String, i64> = event_type_counts.into_iter().collect();
         let by_device_type: HashMap<String, i64> = device_type_counts
@@ -324,10 +334,12 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
 
     async fn get_daily_trend(
         &self,
+        tenant_id: Option<StringUuid>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
     ) -> Result<Vec<DailyTrendPoint>> {
-        let rows: Vec<(String, i64, i64, i64)> = sqlx::query_as(
+        let tenant_filter = if tenant_id.is_some() { " AND tenant_id = ?" } else { "" };
+        let sql = format!(
             r#"
             SELECT
                 DATE_FORMAT(created_at, '%Y-%m-%d') as date,
@@ -335,15 +347,19 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
                 CAST(COALESCE(SUM(CASE WHEN event_type = 'success' OR event_type = 'social' THEN 1 ELSE 0 END), 0) AS SIGNED) as successful,
                 CAST(COALESCE(SUM(CASE WHEN event_type IN ('failed_password', 'failed_mfa', 'locked') THEN 1 ELSE 0 END), 0) AS SIGNED) as failed
             FROM login_events
-            WHERE created_at BETWEEN ? AND ?
+            WHERE created_at BETWEEN ? AND ?{}
             GROUP BY DATE_FORMAT(created_at, '%Y-%m-%d')
             ORDER BY date
             "#,
-        )
-        .bind(start)
-        .bind(end)
-        .fetch_all(&self.pool)
-        .await?;
+            tenant_filter
+        );
+        let mut q = sqlx::query_as::<_, (String, i64, i64, i64)>(&sql)
+            .bind(start)
+            .bind(end);
+        if let Some(ref tid) = tenant_id {
+            q = q.bind(tid.to_string());
+        }
+        let rows = q.fetch_all(&self.pool).await?;
 
         Ok(rows
             .into_iter()

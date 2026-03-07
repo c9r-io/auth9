@@ -22,12 +22,6 @@ export default function Index() {
       {/* Dynamic Background */}
       <div className="page-backdrop" />
 
-      {/* Theme Toggle - fixed position */}
-      <div className="fixed top-6 right-6 z-[60] flex items-center gap-3">
-        <LanguageSwitcher />
-        <ThemeToggle />
-      </div>
-
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 liquid-glass border-b border-[var(--glass-border-subtle)]">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -35,7 +29,10 @@ export default function Index() {
             <div className="logo-icon">A9</div>
             <span className="text-xl font-semibold text-[var(--text-primary)]">Auth9</span>
           </div>
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4">
+            <LanguageSwitcher />
+            <ThemeToggle />
+            <div className="w-px h-5 bg-[var(--glass-border-subtle)]" />
             <Link to="/login" className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] font-medium transition-colors">
               {t("home.nav.signIn")}
             </Link>

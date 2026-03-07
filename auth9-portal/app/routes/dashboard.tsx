@@ -163,16 +163,12 @@ export default function Dashboard() {
           isSidebarOpen && "open"
         )}
       >
-        {/* Logo & Theme Toggle */}
+        {/* Logo */}
         <div className="sidebar-header">
           <Link to="/dashboard" className="flex items-center gap-3">
             <div className="logo-icon">A9</div>
             <span className="logo-text">Auth9</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <LanguageSwitcher />
-            <ThemeToggle />
-          </div>
         </div>
 
         {/* Org Switcher */}
@@ -253,8 +249,12 @@ export default function Dashboard() {
           </div>
         </nav>
 
-        {/* User */}
+        {/* Preferences & User */}
         <div className="sidebar-footer">
+          <div className="flex items-center justify-center gap-2 pb-3 mb-3 border-b border-[var(--glass-border-subtle)]">
+            <LanguageSwitcher />
+            <ThemeToggle />
+          </div>
           <div className="user-card">
             <Link to="/dashboard/account" className="flex items-center gap-3 flex-1 min-w-0" onClick={() => setIsSidebarOpen(false)}>
               <Avatar>

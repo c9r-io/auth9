@@ -43,7 +43,7 @@ async fn test_mock_get_stats() {
     let start = Utc::now() - chrono::Duration::days(7);
     let end = Utc::now();
 
-    mock.expect_get_stats().returning(|start, end| {
+    mock.expect_get_stats().returning(|_, start, end| {
         Ok(LoginStats {
             total_logins: 100,
             successful_logins: 80,
@@ -56,7 +56,7 @@ async fn test_mock_get_stats() {
         })
     });
 
-    let stats = mock.get_stats(start, end).await.unwrap();
+    let stats = mock.get_stats(None, start, end).await.unwrap();
     assert_eq!(stats.total_logins, 100);
     assert_eq!(stats.successful_logins, 80);
 }

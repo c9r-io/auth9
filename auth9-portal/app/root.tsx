@@ -4,7 +4,6 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
-  useLoaderData,
   useRouteLoaderData,
   useRouteError,
   isRouteErrorResponse,
@@ -43,7 +42,8 @@ export const meta: MetaFunction<typeof loader> = ({ matches }) => {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const nonce = useNonce();
-  const { locale } = useLoaderData<typeof loader>();
+  const rootData = useRouteLoaderData("root") as { locale?: AppLocale } | undefined;
+  const locale = rootData?.locale ?? "zh-CN";
   return (
     <html lang={locale} className="h-full" data-theme="light" suppressHydrationWarning>
       <head>
@@ -64,7 +64,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { locale } = useLoaderData<typeof loader>() as { locale: AppLocale };
+  const rootData = useRouteLoaderData("root") as { locale?: AppLocale } | undefined;
+  const locale = (rootData?.locale ?? "zh-CN") as AppLocale;
   return (
     <I18nProvider locale={locale}>
       <ConfirmProvider>

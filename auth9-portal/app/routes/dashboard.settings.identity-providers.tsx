@@ -273,6 +273,9 @@ export default function IdentityProvidersPage() {
               );
             }}
           >
+            {actionData?.error && (showDialog || editingProvider) && (
+              <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--accent-red)]">{actionData.error}</div>
+            )}
             {!editingProvider && (
               <div className="space-y-2">
                 <Label>{t("settings.identityProvidersPage.providerType")}</Label>

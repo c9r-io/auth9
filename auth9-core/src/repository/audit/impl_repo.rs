@@ -11,15 +11,6 @@ use async_trait::async_trait;
 #[async_trait]
 impl AuditRepository for AuditRepositoryImpl {
     async fn create(&self, input: &CreateAuditLogInput) -> Result<()> {
-        let old_value = input
-            .old_value
-            .as_ref()
-            .map(|v| serde_json::to_string(v).unwrap_or_default());
-        let new_value = input
-            .new_value
-            .as_ref()
-            .map(|v| serde_json::to_string(v).unwrap_or_default());
-
         let actor_id = input.actor_id.map(|id| id.to_string());
         let resource_id = input.resource_id.map(|id| id.to_string());
 
@@ -33,8 +24,8 @@ impl AuditRepository for AuditRepositoryImpl {
         .bind(&input.action)
         .bind(&input.resource_type)
         .bind(resource_id)
-        .bind(old_value)
-        .bind(new_value)
+        .bind(input.old_value.as_ref().map(sqlx::types::Json))
+        .bind(input.new_value.as_ref().map(sqlx::types::Json))
         .bind(&input.ip_address)
         .execute(&self.pool)
         .await?;

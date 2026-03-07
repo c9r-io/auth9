@@ -4,7 +4,7 @@ import { Link, Outlet, redirect, useLoaderData, useMatch, useNavigate } from "re
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { analyticsApi } from "~/services/api";
 import type { DailyTrendPoint } from "~/services/api";
-import { getAccessToken } from "~/services/session.server";
+import { getAccessToken, getSession } from "~/services/session.server";
 import { useFormatters } from "~/i18n/format";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
@@ -19,6 +19,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
   if (!accessToken) {
     throw redirect("/login");
   }
+
+  const session = await getSession(request);
+  const tenantId = session?.activeTenantId;
 
   const url = new URL(request.url);
   const customStart = url.searchParams.get("start");
@@ -43,8 +46,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const [statsResponse, trendResponse] = await Promise.all([
-      analyticsApi.getStats(startDate, endDate, accessToken),
-      analyticsApi.getDailyTrend(days, accessToken, customStart ? startDate : undefined, customStart ? endDate : undefined),
+      analyticsApi.getStats(startDate, endDate, accessToken, tenantId),
+      analyticsApi.getDailyTrend(days, accessToken, customStart ? startDate : undefined, customStart ? endDate : undefined, tenantId),
     ]);
     return { stats: statsResponse.data, dailyTrend: trendResponse.data, days, rangeLabel, customStart, customEnd };
   } catch (error) {

@@ -42,12 +42,14 @@ export const analyticsApi = {
   getStats: async (
     startDate?: string,
     endDate?: string,
-    accessToken?: string
+    accessToken?: string,
+    tenantId?: string
   ): Promise<{ data: LoginStats }> => {
     let url = `${API_BASE_URL}/api/v1/analytics/login-stats`;
     const params = new URLSearchParams();
     if (startDate) params.set("start", startDate);
     if (endDate) params.set("end", endDate);
+    if (tenantId) params.set("tenant_id", tenantId);
     if (params.toString()) url += `?${params}`;
     const response = await fetch(url, { headers: getHeaders(accessToken) });
     return handleResponse(response);
@@ -57,7 +59,8 @@ export const analyticsApi = {
     days = 7,
     accessToken?: string,
     startDate?: string,
-    endDate?: string
+    endDate?: string,
+    tenantId?: string
   ): Promise<{ data: DailyTrendPoint[] }> => {
     const params = new URLSearchParams();
     if (startDate && endDate) {
@@ -66,6 +69,7 @@ export const analyticsApi = {
     } else {
       params.set("days", String(days));
     }
+    if (tenantId) params.set("tenant_id", tenantId);
     const url = `${API_BASE_URL}/api/v1/analytics/daily-trend?${params}`;
     const response = await fetch(url, { headers: getHeaders(accessToken) });
     return handleResponse(response);
@@ -75,10 +79,12 @@ export const analyticsApi = {
     page = 1,
     perPage = 50,
     email?: string,
-    accessToken?: string
+    accessToken?: string,
+    tenantId?: string
   ): Promise<PaginatedResponse<LoginEvent>> => {
     let url = `${API_BASE_URL}/api/v1/analytics/login-events?page=${page}&per_page=${perPage}`;
     if (email) url += `&email=${encodeURIComponent(email)}`;
+    if (tenantId) url += `&tenant_id=${encodeURIComponent(tenantId)}`;
     const response = await fetch(url, {
       headers: getHeaders(accessToken),
     });

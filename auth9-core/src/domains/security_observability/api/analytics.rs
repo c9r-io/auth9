@@ -27,6 +27,8 @@ pub async fn get_stats<S: HasAnalytics>(
     State(state): State<S>,
     Query(params): Query<StatsQuery>,
 ) -> Result<Json<SuccessResponse<LoginStats>>, AppError> {
+    let tenant_id = params.tenant_id;
+
     // First check for start/end date parameters (ISO 8601 format)
     if let (Some(start), Some(end)) = (&params.start, &params.end) {
         if let (Ok(start_dt), Ok(end_dt)) =
@@ -34,7 +36,7 @@ pub async fn get_stats<S: HasAnalytics>(
         {
             let stats = state
                 .analytics_service()
-                .get_stats_for_range(start_dt, end_dt)
+                .get_stats_for_range(tenant_id, start_dt, end_dt)
                 .await?;
             return Ok(Json(SuccessResponse::new(stats)));
         }
@@ -42,13 +44,12 @@ pub async fn get_stats<S: HasAnalytics>(
 
     // Fallback to period/days parameters
     let stats = match params.period.as_deref() {
-        Some("daily") | Some("day") => state.analytics_service().get_daily_stats().await?,
-        Some("weekly") | Some("week") => state.analytics_service().get_weekly_stats().await?,
-        Some("monthly") | Some("month") => state.analytics_service().get_monthly_stats().await?,
+        Some("daily") | Some("day") => state.analytics_service().get_daily_stats(tenant_id).await?,
+        Some("weekly") | Some("week") => state.analytics_service().get_weekly_stats(tenant_id).await?,
+        Some("monthly") | Some("month") => state.analytics_service().get_monthly_stats(tenant_id).await?,
         _ => {
-            // Default to weekly
             let days = params.days.unwrap_or(7);
-            state.analytics_service().get_stats_for_days(days).await?
+            state.analytics_service().get_stats_for_days(tenant_id, days).await?
         }
     };
 
@@ -66,6 +67,8 @@ pub struct StatsQuery {
     pub start: Option<String>,
     /// End date in ISO 8601 format (e.g., "2024-01-31T23:59:59Z")
     pub end: Option<String>,
+    /// Filter by tenant ID
+    pub tenant_id: Option<StringUuid>,
 }
 
 /// Query parameters for list_events endpoint
@@ -172,6 +175,8 @@ pub struct DailyTrendQuery {
     pub start: Option<String>,
     /// End date in ISO 8601 format (e.g., "2024-01-31T23:59:59Z")
     pub end: Option<String>,
+    /// Filter by tenant ID
+    pub tenant_id: Option<StringUuid>,
 }
 
 /// Get daily login trend data
@@ -187,6 +192,8 @@ pub async fn get_daily_trend<S: HasAnalytics>(
     State(state): State<S>,
     Query(params): Query<DailyTrendQuery>,
 ) -> Result<Json<SuccessResponse<Vec<DailyTrendPoint>>>, AppError> {
+    let tenant_id = params.tenant_id;
+
     // First check for start/end date parameters
     if let (Some(start), Some(end)) = (&params.start, &params.end) {
         if let (Ok(start_dt), Ok(end_dt)) =
@@ -194,7 +201,7 @@ pub async fn get_daily_trend<S: HasAnalytics>(
         {
             let trend = state
                 .analytics_service()
-                .get_daily_trend_for_range(start_dt, end_dt)
+                .get_daily_trend_for_range(tenant_id, start_dt, end_dt)
                 .await?;
             return Ok(Json(SuccessResponse::new(trend)));
         }
@@ -202,7 +209,7 @@ pub async fn get_daily_trend<S: HasAnalytics>(
 
     // Fallback to days parameter
     let days = params.days.unwrap_or(7);
-    let trend = state.analytics_service().get_daily_trend(days).await?;
+    let trend = state.analytics_service().get_daily_trend(tenant_id, days).await?;
     Ok(Json(SuccessResponse::new(trend)))
 }
 

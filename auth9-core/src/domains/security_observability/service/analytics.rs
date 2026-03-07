@@ -153,56 +153,58 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
         self.login_event_repo.create(&input).await
     }
 
-    /// Get login statistics for a time period
-    pub async fn get_stats(&self, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
-        self.login_event_repo.get_stats(start, end).await
+    /// Get login statistics for a time period, optionally filtered by tenant
+    pub async fn get_stats(&self, tenant_id: Option<StringUuid>, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
+        self.login_event_repo.get_stats(tenant_id, start, end).await
     }
 
-    /// Get login statistics for a date range (alias for get_stats)
+    /// Get login statistics for a date range
     pub async fn get_stats_for_range(
         &self,
+        tenant_id: Option<StringUuid>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
     ) -> Result<LoginStats> {
-        self.get_stats(start, end).await
+        self.get_stats(tenant_id, start, end).await
     }
 
     /// Get login statistics for the last N days
-    pub async fn get_stats_for_days(&self, days: i64) -> Result<LoginStats> {
+    pub async fn get_stats_for_days(&self, tenant_id: Option<StringUuid>, days: i64) -> Result<LoginStats> {
         let end = Utc::now();
         let start = end - Duration::days(days);
-        self.get_stats(start, end).await
+        self.get_stats(tenant_id, start, end).await
     }
 
     /// Get login statistics for the last 24 hours
-    pub async fn get_daily_stats(&self) -> Result<LoginStats> {
-        self.get_stats_for_days(1).await
+    pub async fn get_daily_stats(&self, tenant_id: Option<StringUuid>) -> Result<LoginStats> {
+        self.get_stats_for_days(tenant_id, 1).await
     }
 
     /// Get login statistics for the last 7 days
-    pub async fn get_weekly_stats(&self) -> Result<LoginStats> {
-        self.get_stats_for_days(7).await
+    pub async fn get_weekly_stats(&self, tenant_id: Option<StringUuid>) -> Result<LoginStats> {
+        self.get_stats_for_days(tenant_id, 7).await
     }
 
     /// Get login statistics for the last 30 days
-    pub async fn get_monthly_stats(&self) -> Result<LoginStats> {
-        self.get_stats_for_days(30).await
+    pub async fn get_monthly_stats(&self, tenant_id: Option<StringUuid>) -> Result<LoginStats> {
+        self.get_stats_for_days(tenant_id, 30).await
     }
 
     /// Get daily trend data for the last N days
-    pub async fn get_daily_trend(&self, days: i64) -> Result<Vec<DailyTrendPoint>> {
+    pub async fn get_daily_trend(&self, tenant_id: Option<StringUuid>, days: i64) -> Result<Vec<DailyTrendPoint>> {
         let end = Utc::now();
         let start = end - Duration::days(days);
-        self.login_event_repo.get_daily_trend(start, end).await
+        self.login_event_repo.get_daily_trend(tenant_id, start, end).await
     }
 
     /// Get daily trend data for a specific date range
     pub async fn get_daily_trend_for_range(
         &self,
+        tenant_id: Option<StringUuid>,
         start: DateTime<Utc>,
         end: DateTime<Utc>,
     ) -> Result<Vec<DailyTrendPoint>> {
-        self.login_event_repo.get_daily_trend(start, end).await
+        self.login_event_repo.get_daily_trend(tenant_id, start, end).await
     }
 
     /// List login events with pagination
@@ -322,7 +324,7 @@ mod tests {
     async fn test_get_weekly_stats() {
         let mut mock = MockLoginEventRepository::new();
 
-        mock.expect_get_stats().returning(|start, end| {
+        mock.expect_get_stats().returning(|_, start, end| {
             Ok(LoginStats {
                 total_logins: 100,
                 successful_logins: 80,
@@ -337,7 +339,7 @@ mod tests {
 
         let service = AnalyticsService::new(Arc::new(mock));
 
-        let stats = service.get_weekly_stats().await.unwrap();
+        let stats = service.get_weekly_stats(None).await.unwrap();
         assert_eq!(stats.total_logins, 100);
         assert_eq!(stats.successful_logins, 80);
     }
@@ -419,7 +421,7 @@ mod tests {
     async fn test_get_daily_stats() {
         let mut mock = MockLoginEventRepository::new();
 
-        mock.expect_get_stats().returning(|_, _| {
+        mock.expect_get_stats().returning(|_, _, _| {
             Ok(LoginStats {
                 total_logins: 10,
                 successful_logins: 8,
@@ -433,7 +435,7 @@ mod tests {
         });
 
         let service = AnalyticsService::new(Arc::new(mock));
-        let stats = service.get_daily_stats().await.unwrap();
+        let stats = service.get_daily_stats(None).await.unwrap();
         assert_eq!(stats.total_logins, 10);
     }
 
@@ -441,7 +443,7 @@ mod tests {
     async fn test_get_monthly_stats() {
         let mut mock = MockLoginEventRepository::new();
 
-        mock.expect_get_stats().returning(|_, _| {
+        mock.expect_get_stats().returning(|_, _, _| {
             Ok(LoginStats {
                 total_logins: 3000,
                 successful_logins: 2500,
@@ -455,7 +457,7 @@ mod tests {
         });
 
         let service = AnalyticsService::new(Arc::new(mock));
-        let stats = service.get_monthly_stats().await.unwrap();
+        let stats = service.get_monthly_stats(None).await.unwrap();
         assert_eq!(stats.total_logins, 3000);
     }
 
@@ -463,7 +465,7 @@ mod tests {
     async fn test_get_stats_for_range() {
         let mut mock = MockLoginEventRepository::new();
 
-        mock.expect_get_stats().returning(|_, _| {
+        mock.expect_get_stats().returning(|_, _, _| {
             Ok(LoginStats {
                 total_logins: 50,
                 ..Default::default()
@@ -473,7 +475,7 @@ mod tests {
         let service = AnalyticsService::new(Arc::new(mock));
         let start = Utc::now() - Duration::days(14);
         let end = Utc::now();
-        let stats = service.get_stats_for_range(start, end).await.unwrap();
+        let stats = service.get_stats_for_range(None, start, end).await.unwrap();
         assert_eq!(stats.total_logins, 50);
     }
 
@@ -481,7 +483,7 @@ mod tests {
     async fn test_get_stats_for_days() {
         let mut mock = MockLoginEventRepository::new();
 
-        mock.expect_get_stats().returning(|_, _| {
+        mock.expect_get_stats().returning(|_, _, _| {
             Ok(LoginStats {
                 total_logins: 90,
                 ..Default::default()
@@ -489,7 +491,7 @@ mod tests {
         });
 
         let service = AnalyticsService::new(Arc::new(mock));
-        let stats = service.get_stats_for_days(3).await.unwrap();
+        let stats = service.get_stats_for_days(None, 3).await.unwrap();
         assert_eq!(stats.total_logins, 90);
     }
 
