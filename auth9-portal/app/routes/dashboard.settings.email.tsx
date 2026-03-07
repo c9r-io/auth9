@@ -15,6 +15,7 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { translate } from "~/i18n/translate";
 import { resolveLocale } from "~/services/locale.server";
 import { getAccessToken } from "~/services/session.server";
+import { mapApiError } from "~/lib/error-messages";
 import { systemApi, type EmailProviderConfig } from "~/services/api";
 
 function getProviderLabel(locale: string, type: string) {
@@ -130,7 +131,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return Response.json({ error: result.message }, { status: 400 });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "common.errors.unknown");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 

@@ -11,6 +11,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 
 export const meta: MetaFunction<typeof loader> = ({ data, matches }) => {
   return buildMeta(resolveMetaLocale(matches), "tenants.services.metaTitle", undefined, {
@@ -53,7 +54,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
     const result = await tenantServiceApi.toggleService(tenantId, serviceId, enabled, accessToken || undefined);
     return { success: true, services: result.data };
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "tenants.errors.unknown");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 }

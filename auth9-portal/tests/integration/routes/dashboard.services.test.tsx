@@ -572,7 +572,7 @@ describe("action", () => {
         const result = await action({ request, params: {}, context: {} });
         expect(result).toBeInstanceOf(Response);
         const body = await (result as Response).json();
-        expect(body.error).toBe("Service name already exists");
+        expect(body.error).toBe("This value already exists. Please use a different one.");
         expect((result as Response).status).toBe(400);
     });
 
@@ -587,7 +587,7 @@ describe("action", () => {
         const result = await action({ request, params: {}, context: {} });
         expect(result).toBeInstanceOf(Response);
         const body = await (result as Response).json();
-        expect(body.error).toBe("Service not found");
+        expect(body.error).toBe("The requested resource was not found.");
         expect((result as Response).status).toBe(400);
     });
 

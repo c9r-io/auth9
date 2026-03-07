@@ -1,4 +1,4 @@
-import { API_BASE_URL, getHeaders, handleResponse, type ApiError } from "./client";
+import { API_BASE_URL, ApiResponseError, getHeaders, handleResponse, type ApiError } from "./client";
 
 export interface Webhook {
   id: string;
@@ -103,7 +103,7 @@ export const webhookApi = {
     );
     if (!response.ok) {
       const error: ApiError = await response.json();
-      throw new Error(error.message);
+      throw new ApiResponseError(error, response.status);
     }
   },
 

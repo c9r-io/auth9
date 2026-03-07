@@ -12,6 +12,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 
 export const meta: MetaFunction<typeof loader> = ({ data, matches }) => {
   return buildMeta(resolveMetaLocale(matches), "tenants.sso.metaTitle", undefined, {
@@ -103,7 +104,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       return { success: result.data.ok, message: result.data.message };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "tenants.webhooks.operationFailed");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 

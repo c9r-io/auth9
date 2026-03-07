@@ -689,7 +689,7 @@ describe("action", () => {
         const result = await action({ request, params: { id: "s1" }, context: {} });
         expect(result).toBeInstanceOf(Response);
         const body = await (result as Response).json();
-        expect(body.error).toBe("Client not found");
+        expect(body.error).toBe("The requested resource was not found.");
         expect((result as Response).status).toBe(400);
     });
 

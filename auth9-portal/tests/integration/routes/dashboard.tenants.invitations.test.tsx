@@ -1119,7 +1119,7 @@ describe("Invitations Page", () => {
 
       // Error should be displayed
       await waitFor(() => {
-        expect(screen.getByText("Email already invited")).toBeInTheDocument();
+        expect(screen.getByText("请输入有效的邮箱地址。")).toBeInTheDocument();
       });
     });
 

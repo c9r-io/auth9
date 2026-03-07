@@ -234,7 +234,7 @@ describe("Account Identities Page", () => {
         const request = createFormRequest({ intent: "unlink", identityId: "id-1" });
         const result = await action({ request, params: {}, context: {} });
 
-        expect(result).toEqual({ error: "Operation failed" });
+        expect(result).toEqual({ error: "Something went wrong. Please try again." });
     });
 
     it("action returns error for invalid intent", async () => {

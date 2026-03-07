@@ -144,7 +144,7 @@ describe("Account Profile Page", () => {
         });
 
         const result = await action({ request, params: {}, context: {} });
-        expect(result).toEqual({ error: "Failed to update profile" });
+        expect(result).toEqual({ error: "Something went wrong. Please try again." });
     });
 
     it("action sends undefined for empty fields", async () => {

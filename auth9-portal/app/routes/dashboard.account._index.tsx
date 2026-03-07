@@ -9,6 +9,7 @@ import { useFormatters } from "~/i18n/format";
 import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { userApi } from "~/services/api";
 import { getAccessToken } from "~/services/session.server";
 import { redirect } from "react-router";
@@ -59,8 +60,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return { error: translate(locale, "account.profile.serverUnavailable") };
     }
     const locale = await resolveLocale(request);
-    const message =
-      error instanceof Error ? error.message : translate(locale, "account.profile.updateFailed");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 }

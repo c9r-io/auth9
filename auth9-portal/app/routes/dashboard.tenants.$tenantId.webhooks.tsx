@@ -31,6 +31,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { useFormatters } from "~/i18n/format";
 
 const WEBHOOK_EVENTS = [
@@ -139,7 +140,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       return { error: translate(locale, "tenants.webhooks.testFailed", { error: result.data.error }) };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "tenants.webhooks.operationFailed");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 

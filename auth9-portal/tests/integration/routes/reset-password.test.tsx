@@ -257,7 +257,7 @@ describe("Reset Password Page", () => {
 
     const response = await action({ request, params: {}, context: {} });
 
-    expect(response).toEqual({ error: "密码重置失败" });
+    expect(response).toEqual({ error: "发生未知错误，请重试。" });
   });
 
   it("action returns error when password is empty", async () => {

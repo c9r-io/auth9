@@ -10,7 +10,7 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { emailTemplateApi, type EmailTemplateWithContent } from "~/services/api";
 import { getAccessToken } from "~/services/session.server";
 import { resolveLocale } from "~/services/locale.server";
-import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 
 export const meta: MetaFunction = ({ matches }) => buildMeta(resolveMetaLocale(matches), "settings.emailTemplatesPage.metaTitle");
 
@@ -22,7 +22,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const result = await emailTemplateApi.list(accessToken || undefined);
     return { templates: result.data, error: null };
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "settings.emailTemplatesPage.loadFailed");
+    const message = mapApiError(error, locale);
     return { templates: [] as EmailTemplateWithContent[], error: message };
   }
 }

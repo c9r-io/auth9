@@ -27,8 +27,8 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { tenantApi, type Tenant } from "~/services/api";
 import { getAccessTokenWithUpdate } from "~/services/session.server";
-import { formatErrorMessage } from "~/lib/error-messages";
-import { useI18n, useLocale } from "~/i18n";
+import { mapApiError } from "~/lib/error-messages";
+import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
@@ -99,7 +99,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return returnSuccess();
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "tenants.errors.unknown");
+    const message = mapApiError(error, locale);
     return returnError(message);
   }
 
@@ -112,7 +112,6 @@ function getStatusLabel(status: Tenant["status"], t: ReturnType<typeof useI18n>[
 
 export default function TenantsIndexPage() {
   const { t } = useI18n();
-  const { locale } = useLocale();
   const data = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -199,7 +198,7 @@ export default function TenantsIndexPage() {
               </div>
               {createError && (
                 <p id="create-tenant-form-error" className="text-sm text-[var(--accent-red)]">
-                  {formatErrorMessage(createError, locale)}
+                  {createError}
                 </p>
               )}
               <DialogFooter className="-mx-6 sm:mx-0">
@@ -485,7 +484,7 @@ export default function TenantsIndexPage() {
             </div>
             {updateError && (
               <p id="edit-tenant-form-error" className="text-sm text-[var(--accent-red)]">
-                {formatErrorMessage(updateError, locale)}
+                {updateError}
               </p>
             )}
             <DialogFooter>

@@ -16,6 +16,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { getActionContextReference, getActionTriggerLabel } from "~/lib/service-actions";
 
 export const meta: MetaFunction<typeof loader> = ({ data, matches }) => {
@@ -61,7 +62,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
     await api.actions.update(actionId, { name, description: description || undefined, script, enabled, strictMode, executionOrder, timeoutMs });
     return redirect(`/dashboard/services/${serviceId}/actions/${actionId}`);
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "serviceActions.errors.unknown");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 }

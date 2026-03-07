@@ -9,10 +9,10 @@ import { Switch } from "~/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { redirect } from "react-router";
 import { tenantApi, serviceApi, invitationApi, webhookApi, tenantServiceApi, tenantUserApi } from "~/services/api";
-import { formatErrorMessage } from "~/lib/error-messages";
+import { mapApiError } from "~/lib/error-messages";
 import { getAccessToken } from "~/services/session.server";
 import { FormattedDate } from "~/components/ui/formatted-date";
-import { useI18n, useLocale } from "~/i18n";
+import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
@@ -100,7 +100,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       return { success: true, settingsUpdated: true };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "tenants.errors.unknown");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 
@@ -121,7 +121,6 @@ function getStatusLabel(status: string, t: ReturnType<typeof useI18n>["t"]) {
 
 export default function TenantDetailPage() {
   const { t } = useI18n();
-  const { locale } = useLocale();
   const { tenant, usersCount, servicesCount, pendingInvitationsCount, webhooksCount, enabledServicesCount, totalGlobalServicesCount } =
     useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
@@ -231,7 +230,7 @@ export default function TenantDetailPage() {
                       <p className="text-sm text-[var(--accent-green)]">{t("tenants.detail.statusUpdated")}</p>
                     )}
                     {statusError && (
-                      <p className="text-sm text-[var(--accent-red)]">{formatErrorMessage(statusError, locale)}</p>
+                      <p className="text-sm text-[var(--accent-red)]">{statusError}</p>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -243,7 +242,7 @@ export default function TenantDetailPage() {
                 </div>
                 {actionData && "error" in actionData && (
                   <p className="text-sm text-[var(--accent-red)]">
-                    {formatErrorMessage(String(actionData.error), locale)}
+                    {String(actionData.error)}
                   </p>
                 )}
                 {actionData && "success" in actionData && actionData.success && (
@@ -284,7 +283,7 @@ export default function TenantDetailPage() {
                 <p className="text-sm text-[var(--accent-green)] mt-3">{t("tenants.detail.settingsUpdated")}</p>
               )}
               {settingsError && (
-                <p className="text-sm text-[var(--accent-red)] mt-3">{formatErrorMessage(settingsError, locale)}</p>
+                <p className="text-sm text-[var(--accent-red)] mt-3">{settingsError}</p>
               )}
             </CardContent>
           </Card>

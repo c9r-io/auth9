@@ -16,6 +16,7 @@ import {
 } from "~/components/ui/dialog";
 import { useI18n } from "~/i18n";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { resolveLocale } from "~/services/locale.server";
 import { tenantApi, type Tenant } from "~/services/api";
 import { getAccessToken } from "~/services/session.server";
@@ -61,8 +62,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   } catch (error) {
     const locale = await resolveLocale(request);
-    const message =
-      error instanceof Error ? error.message : translate(locale, "settings.organization.unknownError");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 

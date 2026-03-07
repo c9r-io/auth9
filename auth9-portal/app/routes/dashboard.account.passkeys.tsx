@@ -7,6 +7,7 @@ import { useFormatters } from "~/i18n/format";
 import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { webauthnApi, type WebAuthnCredential } from "~/services/api";
 import { LockClosedIcon, TrashIcon, PlusIcon } from "@radix-ui/react-icons";
 import { requireIdentityAuthWithUpdate } from "~/services/session.server";
@@ -56,8 +57,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   } catch (error) {
     const locale = await resolveLocale(request);
-    const message =
-      error instanceof Error ? error.message : translate(locale, "accountPasskeys.operationFailed");
+    const message = mapApiError(error, locale);
     return { success: undefined as true | undefined, message: undefined as string | undefined, error: message };
   }
 

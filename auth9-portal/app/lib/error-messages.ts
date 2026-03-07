@@ -1,5 +1,52 @@
 import type { AppLocale } from "~/i18n";
 import { translate } from "~/i18n/translate";
+import { ApiResponseError } from "~/services/api/client";
+
+const API_ERROR_CODE_MAP: Record<string, string> = {
+  not_found: "apiErrors.notFound",
+  bad_request: "apiErrors.badRequest",
+  unauthorized: "apiErrors.unauthorized",
+  forbidden: "apiErrors.forbidden",
+  conflict: "apiErrors.conflict",
+  database_error: "apiErrors.serverError",
+  cache_error: "apiErrors.serverError",
+  jwt_error: "apiErrors.sessionExpired",
+  keycloak_error: "apiErrors.authServiceError",
+  action_execution_failed: "apiErrors.serverError",
+  internal_error: "apiErrors.serverError",
+  method_not_allowed: "apiErrors.badRequest",
+  rate_limited: "apiErrors.rateLimited",
+  unsupported_media_type: "apiErrors.badRequest",
+  client_error: "apiErrors.badRequest",
+  validation_error: "apiErrors.badRequest",
+};
+
+/**
+ * Maps an API error (or any caught error) to a localized, user-friendly string.
+ *
+ * - ApiResponseError with a known code: translates via API_ERROR_CODE_MAP
+ * - ApiResponseError with code "validation": delegates to formatErrorMessage
+ * - Plain Error: delegates to formatErrorMessage for substring matching
+ * - Unknown: returns generic "something went wrong"
+ */
+export function mapApiError(
+  error: unknown,
+  locale: AppLocale = "en-US"
+): string {
+  if (error instanceof ApiResponseError) {
+    if (error.code === "validation") {
+      return formatErrorMessage(error.message, locale);
+    }
+    const i18nKey = API_ERROR_CODE_MAP[error.code];
+    if (i18nKey) {
+      return translate(locale, i18nKey);
+    }
+  }
+  if (error instanceof Error) {
+    return formatErrorMessage(error.message, locale);
+  }
+  return translate(locale, "apiErrors.unknown");
+}
 
 const ERROR_MESSAGES: Record<string, string> = {
   // Slug validation

@@ -184,7 +184,7 @@ describe("Identity Providers Page", () => {
     );
 
     const response = await action({ request, params: {}, context: {} });
-    expect(response).toEqual({ error: "Provider already exists" });
+    expect(response).toEqual({ error: "This value already exists. Please use a different one." });
   });
 
   it("action toggles provider enabled state", async () => {
@@ -1654,7 +1654,7 @@ describe("Identity Providers Page", () => {
       );
 
       const response = await action({ request, params: {}, context: {} });
-      expect(response).toEqual({ error: "操作失败" });
+      expect(response).toEqual({ error: "发生未知错误，请重试。" });
     });
 
     it("action handles delete API error", async () => {

@@ -26,7 +26,7 @@ import {
 } from "~/components/ui/dropdown-menu";
 import { serviceApi } from "~/services/api";
 import { getAccessToken } from "~/services/session.server";
-import { formatErrorMessage } from "~/lib/error-messages";
+import { mapApiError } from "~/lib/error-messages";
 import { FormattedDate } from "~/components/ui/formatted-date";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
@@ -84,7 +84,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return { success: true, intent };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "services.errors.unknown");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 
@@ -173,7 +173,7 @@ export default function ServicesPage() {
                 <Input id="create-logout-uris" name="logout_uris" placeholder={t("services.logoutUrisPlaceholder")} />
               </div>
               {actionData && "error" in actionData && (
-                <p className="text-sm text-[var(--accent-red)]">{formatErrorMessage(String(actionData.error))}</p>
+                <p className="text-sm text-[var(--accent-red)]">{String(actionData.error)}</p>
               )}
               <DialogFooter>
                 <Button type="button" variant="outline" className="bg-[var(--glass-bg)]" onClick={() => setIsCreateOpen(false)}>

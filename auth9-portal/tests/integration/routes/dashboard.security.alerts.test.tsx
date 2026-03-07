@@ -326,7 +326,7 @@ describe("Security Alerts Page", () => {
 
     const response = await action({ request, params: {}, context: {} });
 
-    expect(response).toEqual({ error: "Alert not found" });
+    expect(response).toEqual({ error: "The requested resource was not found." });
   });
 
   it("action returns error for invalid intent", async () => {
@@ -356,7 +356,7 @@ describe("Security Alerts Page", () => {
     });
 
     const response = await action({ request, params: {}, context: {} });
-    expect(response).toEqual({ error: "Operation failed" });
+    expect(response).toEqual({ error: "Something went wrong. Please try again." });
   });
 
   // ============================================================================

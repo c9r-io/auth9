@@ -1491,6 +1491,19 @@ export default {
     done: "Done",
     saveRoles: "Save Roles",
   },
+  apiErrors: {
+    notFound: "The requested resource was not found.",
+    badRequest: "The request is invalid. Please check your input.",
+    unauthorized: "Your session has expired. Please sign in again.",
+    forbidden: "You do not have permission to perform this action.",
+    conflict: "A resource with this identifier already exists.",
+    serverError: "A server error occurred. Please try again later.",
+    sessionExpired: "Your session has expired. Please sign in again.",
+    authServiceError:
+      "The authentication service is temporarily unavailable. Please try again later.",
+    rateLimited: "Too many requests. Please wait a moment and try again.",
+    unknown: "Something went wrong. Please try again.",
+  },
   validation: {
     required: "This field is required.",
     email: "Please enter a valid email address.",

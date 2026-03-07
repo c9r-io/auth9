@@ -116,7 +116,7 @@ describe("Account Security Page", () => {
         });
 
         const result = await action({ request, params: {}, context: {} });
-        expect(result).toEqual({ error: "Failed to change password" });
+        expect(result).toEqual({ error: "Something went wrong. Please try again." });
     });
 
     // ============================================================================

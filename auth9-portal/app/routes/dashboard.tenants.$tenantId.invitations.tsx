@@ -39,6 +39,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { useFormatters } from "~/i18n/format";
 
 export const meta: MetaFunction = ({ matches }) => {
@@ -158,7 +159,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
       return { success: true };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "tenants.errors.unknown");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 

@@ -7,6 +7,7 @@ import { useFormatters } from "~/i18n/format";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { resolveLocale } from "~/services/locale.server";
 import { securityAlertApi, type AlertSeverity, type SecurityAlert, type SecurityAlertType } from "~/services/api";
 import { getAccessToken } from "~/services/session.server";
@@ -60,7 +61,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return { success: true, message: translate(locale, "securityAlerts.resolved") };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "securityAlerts.operationFailed");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 

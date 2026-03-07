@@ -2060,7 +2060,7 @@ describe("Roles Page", () => {
             });
 
             const result = await action({ request, params: {}, context: {} });
-            expect(result).toEqual({ error: "Role already exists", intent: "create_role" });
+            expect(result).toEqual({ error: "This value already exists. Please use a different one.", intent: "create_role" });
         });
 
         it("returns error for invalid intent", async () => {

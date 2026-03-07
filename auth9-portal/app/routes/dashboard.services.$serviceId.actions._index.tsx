@@ -15,6 +15,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { getActionTriggerLabel, getActionTriggerLabelFromT } from "~/lib/service-actions";
 
 export const meta: MetaFunction = ({ matches }) => buildMeta(resolveMetaLocale(matches), "serviceActions.metaTitle");
@@ -68,7 +69,7 @@ export async function action({ params, request }: { params: Record<string, strin
       return { success: true };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "serviceActions.errors.unknown");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 

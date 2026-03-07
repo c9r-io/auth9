@@ -301,6 +301,18 @@ export default {
     enableMfaTitle: "MFAを有効化", disableMfaTitle: "MFAを無効化", mfaDescription: "{{email}}のMFAを{{action}}するにはパスワードを入力してください。", enabling: "有効化", disabling: "無効化", yourPassword: "パスワード", passwordConfirmPlaceholder: "確認のためパスワードを入力",
     assignRolesTitle: "ロールを割り当て", assignRolesDescription: "{{tenant}}でロールを割り当てます。", service: "サービス", selectService: "サービスを選択", noRolesDefined: "このサービスにはロールが定義されていません。", done: "完了", saveRoles: "ロールを保存",
   },
+  apiErrors: {
+    notFound: "リクエストされたリソースが見つかりません。",
+    badRequest: "リクエストが無効です。入力内容をご確認ください。",
+    unauthorized: "セッションの有効期限が切れました。再度ログインしてください。",
+    forbidden: "この操作を実行する権限がありません。",
+    conflict: "この識別子のリソースはすでに存在します。",
+    serverError: "サーバーエラーが発生しました。しばらくしてから再度お試しください。",
+    sessionExpired: "セッションの有効期限が切れました。再度ログインしてください。",
+    authServiceError: "認証サービスが一時的に利用できません。しばらくしてから再度お試しください。",
+    rateLimited: "リクエストが多すぎます。しばらく待ってから再度お試しください。",
+    unknown: "エラーが発生しました。再度お試しください。",
+  },
   validation: {
     required: "この項目は必須です。", email: "有効なメールアドレスを入力してください。", slug: "スラッグは小文字、数字、ハイフンのみ使用できます。先頭または末尾にハイフンは使えません。", length: "長さは1〜63文字である必要があります。", alreadyExists: "この値はすでに存在します。別の値を使用してください。", notFound: "リクエストされたリソースが見つかりません。", conflict: "この識別子のリソースはすでに存在します。", duplicateEntry: "この名前はすでに存在します。別の名前を使用してください。",
     fields: { slug: "スラッグ", name: "名前", email: "メール", logo_url: "ロゴURL" },

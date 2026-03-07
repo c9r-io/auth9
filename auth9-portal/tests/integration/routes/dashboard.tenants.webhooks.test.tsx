@@ -1234,7 +1234,7 @@ describe("Webhooks Page", () => {
 
       const response = await action({ request, params: { tenantId: "tenant-1" }, context: {} });
 
-      expect(response).toEqual({ error: "Webhook not found" });
+      expect(response).toEqual({ error: "The requested resource was not found." });
     });
 
     // ------------------------------------------------------------------
@@ -1417,7 +1417,7 @@ describe("Webhooks Page", () => {
 
       const response = await action({ request, params: { tenantId: "tenant-1" }, context: {} });
 
-      expect(response).toEqual({ error: "Operation failed" });
+      expect(response).toEqual({ error: "Something went wrong. Please try again." });
     });
 
     it("creates webhook with empty events JSON array", async () => {

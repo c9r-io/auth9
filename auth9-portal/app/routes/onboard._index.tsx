@@ -8,6 +8,7 @@ import { Label } from "~/components/ui/label";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
+import { mapApiError } from "~/lib/error-messages";
 import { requireAuthWithUpdate, commitSession, setActiveTenant } from "~/services/session.server";
 import { organizationApi } from "~/services/api";
 
@@ -54,12 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
     });
   } catch (error) {
     const locale = await resolveLocale(request);
-    const message =
-      error instanceof Error
-        ? error.message
-        : locale === "zh-CN"
-          ? "创建组织失败"
-          : "Failed to create organization";
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 }

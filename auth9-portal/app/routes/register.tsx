@@ -9,6 +9,7 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { ThemeToggle } from "~/components/ThemeToggle";
 import { userApi, publicBrandingApi } from "~/services/api";
 
@@ -52,7 +53,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return redirect("/login");
   } catch (error) {
     return Response.json(
-      { error: error instanceof Error ? error.message : translate(locale, "auth.register.failed") },
+      { error: mapApiError(error, locale) },
       { status: 400 }
     );
   }

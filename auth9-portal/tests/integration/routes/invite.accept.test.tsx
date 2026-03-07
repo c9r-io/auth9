@@ -154,7 +154,7 @@ describe("Invite Accept Page", () => {
 
       const response = await action({ request, params: {}, context: {} });
       const data = await (response as Response).json();
-      expect(data.error).toBe("Unknown error");
+      expect(data.error).toBe("Something went wrong. Please try again.");
     });
   });
 

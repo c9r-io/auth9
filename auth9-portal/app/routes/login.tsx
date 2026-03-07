@@ -9,6 +9,7 @@ import { ThemeToggle } from "~/components/ThemeToggle";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { useI18n } from "~/i18n";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { LockClosedIcon } from "@radix-ui/react-icons";
 import { resolveLocale } from "~/services/locale.server";
 import { commitSession, serializeOAuthState } from "~/services/session.server";
@@ -111,7 +112,7 @@ export async function action({ request }: ActionFunctionArgs) {
         headers: { "Set-Cookie": oauthCookie },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : translate(locale, "auth.login.authFailed");
+      const message = mapApiError(error, locale);
       return { error: message };
     }
   }

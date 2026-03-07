@@ -1,5 +1,6 @@
 import {
   API_BASE_URL,
+  ApiResponseError,
   getHeaders,
   handleResponse,
   type ApiError,
@@ -147,7 +148,7 @@ export const serviceApi = {
     });
     if (!response.ok) {
       const error: ApiError = await response.json();
-      throw new Error(error.message);
+      throw new ApiResponseError(error, response.status);
     }
   },
 
@@ -194,7 +195,7 @@ export const serviceApi = {
     );
     if (!response.ok) {
       const error: ApiError = await response.json();
-      throw new Error(error.message);
+      throw new ApiResponseError(error, response.status);
     }
   },
 

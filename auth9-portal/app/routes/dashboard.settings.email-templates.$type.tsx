@@ -23,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { resolveLocale } from "~/services/locale.server";
 import {
   emailTemplateApi,
@@ -112,7 +113,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         : { testEmailSuccess: false, testEmailError: result.message };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "common.errors.unknown");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 

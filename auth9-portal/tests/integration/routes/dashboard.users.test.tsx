@@ -1719,7 +1719,7 @@ describe("Users Page", () => {
             });
 
             const response = await action({ request, params: {}, context: {} });
-            expect(response).toEqual({ error: "User not found", intent: "update_user" });
+            expect(response).toEqual({ error: "The requested resource was not found.", intent: "update_user" });
         });
 
         it("returns error for invalid intent", async () => {

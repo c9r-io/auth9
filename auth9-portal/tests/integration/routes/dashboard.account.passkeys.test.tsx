@@ -126,7 +126,7 @@ describe("Account Passkeys Page", () => {
         const request = createFormRequest({ intent: "delete", credentialId: "bad" });
         const result = await action({ request, params: {}, context: {} });
 
-        expect(result).toEqual({ success: undefined, message: undefined, error: "Not found" });
+        expect(result).toEqual({ success: undefined, message: undefined, error: "The requested resource was not found." });
     });
 
     it("action returns generic error for non-Error throw", async () => {
@@ -135,7 +135,7 @@ describe("Account Passkeys Page", () => {
         const request = createFormRequest({ intent: "delete", credentialId: "pk-1" });
         const result = await action({ request, params: {}, context: {} });
 
-        expect(result).toEqual({ success: undefined, message: undefined, error: "Operation failed" });
+        expect(result).toEqual({ success: undefined, message: undefined, error: "Something went wrong. Please try again." });
     });
 
     it("action returns error for invalid intent", async () => {

@@ -16,6 +16,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { getActionContextReference, getActionScriptTemplates, getActionTriggerLabel, getDefaultActionScript } from "~/lib/service-actions";
 
 export const meta: MetaFunction = ({ matches }) => buildMeta(resolveMetaLocale(matches), "serviceActions.newMetaTitle");
@@ -55,7 +56,7 @@ export async function action({ params, request }: ActionFunctionArgs) {
     const result = await api.actions.create({ name, description: description || undefined, triggerId, script, enabled, strictMode, executionOrder, timeoutMs });
     return redirect(`/dashboard/services/${serviceId}/actions/${result.data.id}`);
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "serviceActions.errors.unknown");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 }

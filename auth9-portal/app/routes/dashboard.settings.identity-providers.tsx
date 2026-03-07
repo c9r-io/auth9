@@ -11,6 +11,7 @@ import { Switch } from "~/components/ui/switch";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { getAccessToken } from "~/services/session.server";
 import { resolveLocale } from "~/services/locale.server";
 import { identityProviderApi, type CreateIdentityProviderInput, type IdentityProvider } from "~/services/api";
@@ -108,7 +109,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return { success: true };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "settings.identityProvidersPage.operationFailed");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 

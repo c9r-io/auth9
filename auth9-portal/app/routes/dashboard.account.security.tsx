@@ -7,6 +7,7 @@ import { Label } from "~/components/ui/label";
 import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { passwordApi } from "~/services/api";
 import { getAccessToken } from "~/services/session.server";
 
@@ -33,8 +34,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return { success: true, message: translate(locale, "account.security.success") };
   } catch (error) {
     const locale = await resolveLocale(request);
-    const message =
-      error instanceof Error ? error.message : translate(locale, "account.security.failed");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 }

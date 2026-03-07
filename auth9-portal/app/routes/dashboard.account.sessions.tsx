@@ -7,6 +7,7 @@ import { useFormatters } from "~/i18n/format";
 import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { sessionApi, type SessionInfo } from "~/services/api";
 import {
   DesktopIcon,
@@ -55,8 +56,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   } catch (error) {
     const locale = await resolveLocale(request);
-    const message =
-      error instanceof Error ? error.message : translate(locale, "account.sessions.operationFailed");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 

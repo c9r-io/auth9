@@ -585,7 +585,7 @@ describe("Tenant Services Page", () => {
 
       expect(response).toBeInstanceOf(Response);
       const json = await (response as Response).json();
-      expect(json).toEqual({ error: "Service not found" });
+      expect(json).toEqual({ error: "请求的资源不存在。" });
     });
   });
 

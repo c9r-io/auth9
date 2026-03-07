@@ -250,7 +250,7 @@ describe("Register Page", () => {
         const data = await response.json();
 
         expect(response.status).toBe(400);
-        expect(data.error).toBe("User already exists");
+        expect(data.error).toBe("该值已存在，请使用其他值。");
     });
 
     it("action returns generic error when non-Error is thrown", async () => {
@@ -265,7 +265,7 @@ describe("Register Page", () => {
         const data = await response.json();
 
         expect(response.status).toBe(400);
-        expect(data.error).toBe("注册失败");
+        expect(data.error).toBe("发生未知错误，请重试。");
     });
 
     it("action creates user without display_name when not provided", async () => {

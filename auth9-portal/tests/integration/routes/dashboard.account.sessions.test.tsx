@@ -177,7 +177,7 @@ describe("Account Sessions Page", () => {
         const request = createFormRequest({ intent: "revoke", sessionId: "bad-id" });
         const result = await action({ request, params: {}, context: {} });
 
-        expect(result).toEqual({ error: "Session not found" });
+        expect(result).toEqual({ error: "The requested resource was not found." });
     });
 
     it("action returns generic error for non-Error throw", async () => {
@@ -186,7 +186,7 @@ describe("Account Sessions Page", () => {
         const request = createFormRequest({ intent: "revoke", sessionId: "s2" });
         const result = await action({ request, params: {}, context: {} });
 
-        expect(result).toEqual({ error: "Operation failed" });
+        expect(result).toEqual({ error: "Something went wrong. Please try again." });
     });
 
     it("action returns error for invalid intent", async () => {

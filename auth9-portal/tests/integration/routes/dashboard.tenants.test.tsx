@@ -852,7 +852,7 @@ describe("Tenants Page", () => {
             const response = await action({ request, params: {}, context: {} });
             expect(response).toBeInstanceOf(Response);
             const data = await (response as Response).json();
-            expect(data.error).toBe("Slug already exists");
+            expect(data.error).toBe("该值已存在，请使用其他值。");
         });
 
         it("returns error for invalid intent", async () => {

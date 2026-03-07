@@ -1484,6 +1484,18 @@ export default {
     done: "完成",
     saveRoles: "保存角色",
   },
+  apiErrors: {
+    notFound: "请求的资源不存在。",
+    badRequest: "请求无效，请检查您的输入。",
+    unauthorized: "您的会话已过期，请重新登录。",
+    forbidden: "您没有权限执行此操作。",
+    conflict: "具有相同标识的资源已存在。",
+    serverError: "服务器发生错误，请稍后重试。",
+    sessionExpired: "您的会话已过期，请重新登录。",
+    authServiceError: "认证服务暂时不可用，请稍后重试。",
+    rateLimited: "请求过于频繁，请稍后再试。",
+    unknown: "发生未知错误，请重试。",
+  },
   validation: {
     required: "此字段为必填项。",
     email: "请输入有效的邮箱地址。",

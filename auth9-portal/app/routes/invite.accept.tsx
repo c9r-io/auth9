@@ -7,6 +7,7 @@ import { Label } from "~/components/ui/label";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { resolveLocale } from "~/services/locale.server";
 import { invitationApi } from "~/services/api";
 
@@ -47,8 +48,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return { success: true, invitation: response.data };
   } catch (error) {
     const locale = await resolveLocale(request);
-    const message =
-      error instanceof Error ? error.message : translate(locale, "invite.unknownError");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 }

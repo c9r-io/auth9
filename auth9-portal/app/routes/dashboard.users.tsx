@@ -3,7 +3,7 @@ import { Form, useActionData, useLoaderData, useNavigation, useSubmit, useNaviga
 import { Card, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { userApi, tenantApi, rbacApi, serviceApi, sessionApi, type User, type Tenant, type Service, type Role, type TenantUserWithTenant } from "~/services/api";
 import { getAccessToken, getSession, destroySession } from "~/services/session.server";
-import { formatErrorMessage } from "~/lib/error-messages";
+import { mapApiError } from "~/lib/error-messages";
 import { FormattedDate } from "~/components/ui/formatted-date";
 
 // Type for tenant info embedded in user-tenant response
@@ -202,7 +202,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
 
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "usersPage.unknownError");
+    const message = mapApiError(error, locale);
     return { error: message, intent };
   }
 
@@ -296,7 +296,7 @@ export default function UsersPage() {
     }
     // Show MFA errors in the confirmation dialog
     if (actionData && "error" in actionData && (actionData.intent === "enable_mfa" || actionData.intent === "disable_mfa")) {
-      setMfaError(formatErrorMessage(String(actionData.error)));
+      setMfaError(String(actionData.error));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [actionData]);
@@ -710,7 +710,7 @@ export default function UsersPage() {
               </Select>
             </div>
             {actionData && "error" in actionData && actionData.intent === "create_user" && (
-              <p role="alert" className="text-sm text-[var(--accent-red)]">{formatErrorMessage(String(actionData.error))}</p>
+              <p role="alert" className="text-sm text-[var(--accent-red)]">{String(actionData.error)}</p>
             )}
             <DialogFooter>
               <Button type="button" variant="outline" className="bg-[var(--glass-bg)]" onClick={() => {
@@ -834,7 +834,7 @@ export default function UsersPage() {
                 <Button type="submit">{t("usersPage.add")}</Button>
               </Form>
               {actionData && "error" in actionData && actionData.intent === "add_to_tenant" && (
-                <p className="text-sm text-[var(--accent-red)]">{formatErrorMessage(String(actionData.error))}</p>
+                <p className="text-sm text-[var(--accent-red)]">{String(actionData.error)}</p>
               )}
             </div>
           </div>

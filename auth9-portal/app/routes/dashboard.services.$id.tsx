@@ -38,6 +38,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 
 export const meta: MetaFunction = ({ data, matches }) => {
   const locale = resolveMetaLocale(matches);
@@ -147,7 +148,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       return { success: true, intent };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "services.errors.unknown");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 

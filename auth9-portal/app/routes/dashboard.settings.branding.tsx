@@ -13,6 +13,7 @@ import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 
 const DEFAULT_BRANDING: BrandingConfig = {
   primary_color: "#007AFF",
@@ -65,7 +66,7 @@ export async function action({ request }: ActionFunctionArgs) {
       return { success: true, message: translate(locale, "settings.brandingPage.successReset"), reset: true };
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "common.errors.unknown");
+    const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
   }
 

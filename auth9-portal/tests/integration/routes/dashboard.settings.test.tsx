@@ -472,6 +472,6 @@ describe("Settings action", () => {
         const result = await action({ request, params: {}, context: {} });
         expect(result).toBeInstanceOf(Response);
         const body = await (result as Response).json();
-        expect(body.error).toBe("Unknown error");
+        expect(body.error).toBe("Something went wrong. Please try again.");
     });
 });

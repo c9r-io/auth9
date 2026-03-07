@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { formatErrorMessage } from "~/lib/error-messages";
+import { formatErrorMessage, mapApiError } from "~/lib/error-messages";
+import { ApiResponseError } from "~/services/api/client";
 
 describe("formatErrorMessage", () => {
   // ============================================================================
@@ -154,5 +155,182 @@ describe("formatErrorMessage", () => {
   it("matches NOT FOUND case-insensitively", () => {
     const result = formatErrorMessage("NOT FOUND");
     expect(result).toBe("The requested resource was not found.");
+  });
+});
+
+// =============================================================================
+// mapApiError
+// =============================================================================
+
+function makeApiError(code: string, message: string, status = 400): ApiResponseError {
+  return new ApiResponseError({ error: code, message }, status);
+}
+
+describe("mapApiError", () => {
+  // ===========================================================================
+  // Known error code mapping (ApiResponseError)
+  // ===========================================================================
+
+  it("maps not_found to localized message", () => {
+    const err = makeApiError("not_found", "Tenant not found", 404);
+    expect(mapApiError(err)).toBe("The requested resource was not found.");
+  });
+
+  it("maps bad_request to localized message", () => {
+    const err = makeApiError("bad_request", "Invalid input", 400);
+    expect(mapApiError(err)).toBe("The request is invalid. Please check your input.");
+  });
+
+  it("maps unauthorized to localized message", () => {
+    const err = makeApiError("unauthorized", "Token expired", 401);
+    expect(mapApiError(err)).toBe("Your session has expired. Please sign in again.");
+  });
+
+  it("maps forbidden to localized message", () => {
+    const err = makeApiError("forbidden", "Access denied", 403);
+    expect(mapApiError(err)).toBe("You do not have permission to perform this action.");
+  });
+
+  it("maps conflict to localized message", () => {
+    const err = makeApiError("conflict", "Resource already exists", 409);
+    expect(mapApiError(err)).toBe("A resource with this identifier already exists.");
+  });
+
+  it("maps database_error to server error", () => {
+    const err = makeApiError("database_error", "A database error occurred", 500);
+    expect(mapApiError(err)).toBe("A server error occurred. Please try again later.");
+  });
+
+  it("maps cache_error to server error", () => {
+    const err = makeApiError("cache_error", "A cache error occurred", 500);
+    expect(mapApiError(err)).toBe("A server error occurred. Please try again later.");
+  });
+
+  it("maps jwt_error to session expired", () => {
+    const err = makeApiError("jwt_error", "Invalid or expired token", 401);
+    expect(mapApiError(err)).toBe("Your session has expired. Please sign in again.");
+  });
+
+  it("maps keycloak_error to auth service error", () => {
+    const err = makeApiError("keycloak_error", "Authentication service error", 502);
+    expect(mapApiError(err)).toBe(
+      "The authentication service is temporarily unavailable. Please try again later."
+    );
+  });
+
+  it("maps internal_error to server error", () => {
+    const err = makeApiError("internal_error", "An internal error occurred", 500);
+    expect(mapApiError(err)).toBe("A server error occurred. Please try again later.");
+  });
+
+  it("maps action_execution_failed to server error", () => {
+    const err = makeApiError("action_execution_failed", "Script failed", 500);
+    expect(mapApiError(err)).toBe("A server error occurred. Please try again later.");
+  });
+
+  it("maps rate_limited to rate limit message", () => {
+    const err = makeApiError("rate_limited", "Too many requests", 429);
+    expect(mapApiError(err)).toBe("Too many requests. Please wait a moment and try again.");
+  });
+
+  it("maps method_not_allowed to bad request", () => {
+    const err = makeApiError("method_not_allowed", "Method not allowed", 405);
+    expect(mapApiError(err)).toBe("The request is invalid. Please check your input.");
+  });
+
+  it("maps validation_error to bad request", () => {
+    const err = makeApiError("validation_error", "Validation failed", 422);
+    expect(mapApiError(err)).toBe("The request is invalid. Please check your input.");
+  });
+
+  // ===========================================================================
+  // Validation code delegates to formatErrorMessage
+  // ===========================================================================
+
+  it("delegates validation code to formatErrorMessage", () => {
+    const err = makeApiError("validation", "slug: invalid_slug", 422);
+    expect(mapApiError(err)).toBe(
+      "Slug: Slug can only contain lowercase letters, numbers, and hyphens. It cannot start or end with a hyphen."
+    );
+  });
+
+  it("delegates validation code with simple field error", () => {
+    const err = makeApiError("validation", "email: required", 422);
+    expect(mapApiError(err)).toBe("Email: This field is required.");
+  });
+
+  // ===========================================================================
+  // Unknown ApiResponseError code
+  // ===========================================================================
+
+  it("falls back to formatErrorMessage for unknown ApiResponseError code", () => {
+    const err = makeApiError("some_new_code", "already exists", 400);
+    expect(mapApiError(err)).toBe(
+      "This value already exists. Please use a different one."
+    );
+  });
+
+  // ===========================================================================
+  // Plain Error fallback
+  // ===========================================================================
+
+  it("delegates plain Error to formatErrorMessage", () => {
+    const err = new Error("Resource not found");
+    expect(mapApiError(err)).toBe("The requested resource was not found.");
+  });
+
+  it("delegates plain Error with unmatched message", () => {
+    const err = new Error("Something unexpected happened");
+    expect(mapApiError(err)).toBe("Something unexpected happened");
+  });
+
+  // ===========================================================================
+  // Non-Error fallback
+  // ===========================================================================
+
+  it("returns generic unknown error for non-Error values", () => {
+    expect(mapApiError("string error")).toBe("Something went wrong. Please try again.");
+    expect(mapApiError(42)).toBe("Something went wrong. Please try again.");
+    expect(mapApiError(null)).toBe("Something went wrong. Please try again.");
+    expect(mapApiError(undefined)).toBe("Something went wrong. Please try again.");
+  });
+
+  // ===========================================================================
+  // Locale support
+  // ===========================================================================
+
+  it("maps error to zh-CN locale", () => {
+    const err = makeApiError("forbidden", "Access denied", 403);
+    expect(mapApiError(err, "zh-CN")).toBe("您没有权限执行此操作。");
+  });
+
+  it("maps error to ja locale", () => {
+    const err = makeApiError("forbidden", "Access denied", 403);
+    expect(mapApiError(err, "ja")).toBe("この操作を実行する権限がありません。");
+  });
+
+  it("maps not_found to zh-CN locale", () => {
+    const err = makeApiError("not_found", "User not found", 404);
+    expect(mapApiError(err, "zh-CN")).toBe("请求的资源不存在。");
+  });
+
+  it("maps rate_limited to ja locale", () => {
+    const err = makeApiError("rate_limited", "Too many requests", 429);
+    expect(mapApiError(err, "ja")).toBe(
+      "リクエストが多すぎます。しばらく待ってから再度お試しください。"
+    );
+  });
+
+  it("maps unknown error to zh-CN locale", () => {
+    expect(mapApiError(null, "zh-CN")).toBe("发生未知错误，请重试。");
+  });
+
+  it("maps unknown error to ja locale", () => {
+    expect(mapApiError(null, "ja")).toBe("エラーが発生しました。再度お試しください。");
+  });
+
+  it("delegates validation code to formatErrorMessage with zh-CN", () => {
+    const err = makeApiError("validation", "email: required", 422);
+    expect(mapApiError(err, "zh-CN")).toBe("邮箱: 此字段为必填项。");
   });
 });

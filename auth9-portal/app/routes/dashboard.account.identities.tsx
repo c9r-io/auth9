@@ -8,6 +8,7 @@ import { useFormatters } from "~/i18n/format";
 import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { identityProviderApi, type LinkedIdentity } from "~/services/api";
 import { getAccessToken, requireAuthWithUpdate } from "~/services/session.server";
 import { Cross2Icon } from "@radix-ui/react-icons";
@@ -150,10 +151,8 @@ export async function action({ request }: ActionFunctionArgs) {
       return { success: true, message: translate(await resolveLocale(request), "accountIdentities.unlinkSuccess") };
     }
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : translate(await resolveLocale(request), "accountIdentities.operationFailed");
+    const locale = await resolveLocale(request);
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 

@@ -691,7 +691,7 @@ describe("Tenant Detail Page", () => {
 
       expect(response).toBeInstanceOf(Response);
       const json = await (response as Response).json();
-      expect(json).toEqual({ error: "Slug already exists" });
+      expect(json).toEqual({ error: "This value already exists. Please use a different one." });
     });
 
     it("returns error for invalid intent", async () => {

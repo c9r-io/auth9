@@ -11,6 +11,7 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
+import { mapApiError } from "~/lib/error-messages";
 import { passwordApi } from "~/services/api";
 
 export const meta: MetaFunction = ({ matches }) => {
@@ -52,7 +53,7 @@ export async function action({ request }: ActionFunctionArgs) {
     await passwordApi.resetPassword(token, password);
     return { success: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : translate(locale, "auth.resetPassword.failed");
+    const message = mapApiError(error, locale);
     return { error: message };
   }
 }
