@@ -318,6 +318,18 @@ impl KeycloakSeeder {
             );
             obj.insert("loginTheme".to_string(), serde_json::json!("auth9"));
             obj.insert("registrationAllowed".to_string(), serde_json::json!(false));
+            obj.insert(
+                "internationalizationEnabled".to_string(),
+                serde_json::json!(true),
+            );
+            obj.insert(
+                "supportedLocales".to_string(),
+                serde_json::json!(["en", "ja", "zh-CN"]),
+            );
+            obj.insert(
+                "defaultLocale".to_string(),
+                serde_json::json!("en"),
+            );
             obj.insert("eventsEnabled".to_string(), serde_json::json!(true));
             obj.insert(
                 "eventsListeners".to_string(),
@@ -361,7 +373,7 @@ impl KeycloakSeeder {
         }
 
         info!(
-            "Updated realm '{}': SSL='{}', loginTheme='auth9', registrationAllowed=false, eventsEnabled=true, eventsListeners={:?}",
+            "Updated realm '{}': SSL='{}', loginTheme='auth9', registrationAllowed=false, i18n=true, supportedLocales=[en,ja,zh-CN], eventsEnabled=true, eventsListeners={:?}",
             self.config.realm, self.config.ssl_required, events_listeners
         );
 
