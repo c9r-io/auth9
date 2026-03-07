@@ -26,9 +26,9 @@ Run a repeatable governance loop for QA documentation quality, consistency, and 
 Use this priority order:
 
 1. `P0`: Broken navigability or unusable test flow.
-: Examples: missing checklist, misleading auth/session steps, README index drift.
+: Examples: missing checklist, misleading auth/session steps, README index drift, **missing gate check for high-risk prerequisite** (Token type, test data format, environment state).
 2. `P1`: Governance drift.
-: Examples: >5 scenarios in one file, missing UI entry visibility in UI-facing docs.
+: Examples: >5 scenarios in one file, missing UI entry visibility in UI-facing docs, **INSERT SQL using non-UUID id values**.
 3. `P2`: Style consistency improvements.
 : Examples: naming alignment, wording normalization.
 
@@ -38,11 +38,16 @@ Apply these rules in order:
 
 1. Fix executable correctness first.
 : Replace "close browser => unauthenticated" with explicit methods (incognito, clear `auth9_session`, sign out).
-2. Enforce visibility-first UI flows.
+2. **Enforce gate checks for high-risk prerequisites.**
+: Scenarios requiring Tenant Access Token → must have `步骤 0: 验证 Token 类型` with `echo $TOKEN | ... | jq` command.
+: Scenarios with manual INSERT SQL → all `id` fields must use `UUID()` or valid UUID literals; must have `步骤 0: 验证测试数据完整性` with REGEXP query.
+: Scenarios depending on specific environment config → must have `步骤 0: 验证环境状态` with executable check command.
+: Passive blockquote notes (`> **重要**`) must NOT be the only mechanism for conditions that cause test failure if ignored.
+3. Enforce visibility-first UI flows.
 : UI scenarios start from visible entry points (sidebar, tab, button, quick links), not direct URL.
-3. Enforce scenario cap.
+4. Enforce scenario cap.
 : Keep each file `<=5` numbered scenarios. Split long files into `base/advanced` or topic-specific docs.
-4. Keep checklists mandatory.
+5. Keep checklists mandatory.
 : Every doc includes `## 检查清单` or `## 回归测试检查清单`.
 
 ## Step 4: Sync Governance Artifacts

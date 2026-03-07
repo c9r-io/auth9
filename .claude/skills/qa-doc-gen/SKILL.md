@@ -60,6 +60,23 @@ Read `references/qa-doc-template.md` for the exact format template.
 5. **curl examples**: Provide complete commands for API-tested scenarios
 6. **SQL verification**: Every scenario with data mutations needs a 预期数据状态 section with verification SQL
 7. **Checklist**: End with a checklist table listing all scenarios (including any 通用场景)
+8. **Gate Check rules**: Scenarios with high-risk prerequisites MUST include a「步骤 0」verification step with executable commands (not passive blockquote notes). See below.
+
+### Gate Check rules (步骤 0)
+
+Ignoring prerequisites is the #1 cause of false-positive QA tickets. When a scenario has any of the following conditions, generate a **步骤 0** verification step with copy-paste-ready commands **before** the main test steps.
+
+| Condition | Gate type | Template |
+|-----------|-----------|----------|
+| Requires Tenant Access Token (not Identity Token) | Token 类型 | `echo $TOKEN \| cut -d. -f2 \| base64 -d 2>/dev/null \| jq '{token_type, tenant_id}'` — must show `"token_type": "access"` and non-empty `tenant_id` |
+| Contains manual INSERT SQL for test data | 数据格式 | All `id` fields must use `UUID()` or valid UUID literals. Add a `SELECT COUNT(*) ... WHERE id NOT REGEXP '^[0-9a-f]{8}-...'` check after inserts |
+| Depends on specific environment config (IdP, MFA, observability stack, etc.) | 环境状态 | Provide a query or curl command that verifies the required state exists, with remediation instructions if it doesn't |
+
+**Rules**:
+- Gate steps use heading `### 步骤 0: 验证 {gate_type}` (or `#### 步骤 0:` inside test operation flow sections)
+- Each gate contains a code block (bash or sql) that the tester executes
+- Include a brief comment line showing expected output and what to do if validation fails
+- Passive blockquote notes (`> **重要**:`) are reserved for design explanations and informational context only — never for conditions that, if ignored, cause test failure
 
 ### UI 可见性规则（功能追加/更新/重构时必须遵循）
 

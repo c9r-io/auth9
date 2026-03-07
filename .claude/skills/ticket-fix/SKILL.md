@@ -36,6 +36,9 @@ Resolve QA tickets end-to-end: read the ticket, confirm the issue, fix or dismis
      - Prerequisites incomplete or ambiguous (e.g., "webhook must exist" without creation steps).
      - Environment assumptions wrong (e.g., assuming signature verification is disabled when Docker default enables it).
      - Test data referencing non-existent entities without fallback handling.
+     - **Wrong Token type**: Used Identity Token where Tenant Access Token is required (403 with "Identity token is only allowed for tenant selection and exchange"). Check if scenario has a「步骤 0: 验证 Token 类型」gate.
+     - **Non-UUID test data**: Manual INSERT SQL used non-UUID strings for `id` fields, causing `ColumnDecode` errors on subsequent API calls. Check if scenario has a「步骤 0: 验证测试数据完整性」gate.
+     - **Missing environment config**: Test assumed a service/config was present that requires explicit setup (IdP, MFA brute-force protection, observability stack). Check if scenario has a「步骤 0: 验证环境状态」gate.
    - If confirmed as false positive:
      1. Identify the **root cause in the QA document** (not the code).
      2. Update the referenced QA doc (`docs/qa/`) to prevent recurrence:

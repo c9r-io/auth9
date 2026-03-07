@@ -143,7 +143,12 @@ Extract from confirmed document:
 ### 3.1 Pre-execution
 
 1. Read scenario details (initial state, steps, expected results, expected data state)
-2. Prepare test data if required
+2. **Execute Gate Checks (步骤 0)**: If the scenario contains any「步骤 0」verification step, run it **before** proceeding. Common gates:
+   - **Token 类型**: Decode token and verify `token_type` and `tenant_id` fields
+   - **数据格式**: Run the REGEXP validation query to confirm no non-UUID `id` values
+   - **环境状态**: Run the prerequisite check (curl/sql) to confirm required config exists
+   - If a gate check fails, fix the prerequisite first (regenerate token, re-insert data with `UUID()`, configure missing service). **Do NOT skip gates and proceed** — this is the primary cause of false-positive tickets.
+3. Prepare test data if required
 
 ### 3.2 Browser Execution (playwright-cli)
 
@@ -373,6 +378,9 @@ SELECT p.* FROM permissions p JOIN role_permissions rp ON rp.permission_id = p.i
 | Browser fails | `curl http://localhost:3000`, check auth9-portal logs |
 | DB connection fails | `docker ps \| grep tidb`, reconnect |
 | Services not responding | `docker ps`, restart services, reset env |
+| 403 "Identity token is only allowed for tenant selection and exchange" | Using Identity Token instead of Tenant Access Token. Run gate check: `echo $TOKEN \| cut -d. -f2 \| base64 -d \| jq .token_type` — regenerate with `gen-test-tokens.js tenant-owner` |
+| 500 ColumnDecode error on API call | Non-UUID `id` values in database (from manual INSERT). Run: `SELECT id FROM {table} WHERE id NOT REGEXP '^[0-9a-f]{8}-'` — delete and re-insert with `UUID()` |
+| Feature appears missing or unconfigured | Environment prerequisite not met (e.g., IdP not configured, init not run). Check the scenario's 步骤 0 for required state verification |
 
 ## Mailpit (Email Testing)
 
