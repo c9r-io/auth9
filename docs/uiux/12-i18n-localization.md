@@ -148,7 +148,7 @@ console.log(document.documentElement.lang);
 - 可访问 `Settings / Email`、`Identity Providers`、`Users`、`Invitations`
 
 ### 目的
-验证表单的 `label`、`placeholder`、校验错误、成功提示、确认弹窗在三种语言下都完整可读。
+验证表单的 `label`、`placeholder`、校验错误、成功提示、确认弹窗在三种语言下都完整可读。API 错误通过 `mapApiError()` 映射，表单验证错误通过 `formatErrorMessage()` 格式化，均使用 i18n locale 文件中的翻译。详细的错误映射覆盖测试见 [15-error-message-ux.md](./15-error-message-ux.md) 场景 5。
 
 ### 测试操作流程
 1. 进入 `Settings -> Email`，观察 provider 配置表单 placeholder
@@ -159,7 +159,8 @@ console.log(document.documentElement.lang);
 
 ### 预期视觉效果
 - 表单 `label` 与 `placeholder` 语言一致
-- 校验错误、成功提示、确认弹窗均切换到当前语言
+- 校验错误通过 `mapApiError` → `formatErrorMessage` 映射，跟随当前 locale 切换
+- 成功提示、确认弹窗均切换到当前语言
 - 日语下 placeholder（如「you@example.com」）和 label（如「メール」「パスワード」）正确显示
 - 敏感字段遮罩 placeholder（如 `***`）保持功能语义，不影响本地化完整性
 - 移动端下长 placeholder 不应顶破输入框布局

@@ -40,7 +40,7 @@
 | [12-i18n-localization.md](./12-i18n-localization.md) | 国际化切换、首屏协商、格式化一致性 | 5 |
 | [13-landing-page-interactions.md](./13-landing-page-interactions.md) | Landing 页卡片悬停效果、Navbar 控件可点击性、入场动画 | 4 |
 | [14-global-controls-placement.md](./14-global-controls-placement.md) | 主题/语言切换控件在 Landing 和 Dashboard 中的无重叠布局 | 5 |
-| [15-error-message-ux.md](./15-error-message-ux.md) | 错误消息人类可读性、表单内联错误、Toast 通知友好性 | 5 |
+| [15-error-message-ux.md](./15-error-message-ux.md) | 错误消息人类可读性、mapApiError 两层映射、内联错误本地化 | 5 |
 | [16-keycloak-theme-i18n.md](./16-keycloak-theme-i18n.md) | Keycloak 认证页 i18n 文案覆盖、语言参数透传 | 4 |
 
 ---
@@ -221,6 +221,7 @@ box-shadow: 0 8px 32px var(--glass-shadow),
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-08 | 1.5.0 | 错误消息映射重构：重写 `15`（错误消息 UX）反映 `mapApiError` 两层映射架构、16 种 error code 三语覆盖表、内联错误展示（非 Toast）；Cross-doc 更新 `12` 场景 5 引用新映射架构 |
 | 2026-03-07 | 1.4.0 | i18n 三语扩展：更新 `12`（Portal 国际化）和 `16`（Keycloak 主题 i18n）追加日语场景；Cross-doc 同步更新 `14`（全局控件布局）和 `15`（错误消息 UX）的语言描述为三语 |
 | 2026-03-07 | 1.3.0 | 新增 4 个缺陷回归专项 UI/UX 测试文档：Landing 页卡片交互（`13`）、全局控件布局无重叠（`14`）、错误消息用户体验（`15`）、Keycloak 主题 i18n（`16`）；共 16 个文档 77 个场景 |
 | 2026-03-07 | 1.2.0 | 新增 Portal 国际化与本地化 UI/UX 测试文档（`12-i18n-localization.md`），覆盖语言切换入口、SSR 首屏协商、格式化一致性、表单本地化；并同步修正文档中的语言相关说明；共 12 个文档 59 个场景 |
