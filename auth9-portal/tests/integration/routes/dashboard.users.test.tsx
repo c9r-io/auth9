@@ -1341,7 +1341,8 @@ describe("Users Page", () => {
 
             const manageTenantsDialog = await screen.findByRole("dialog", { name: /Manage Tenants for/i });
             await waitFor(() => expect(within(manageTenantsDialog).getByText("Tenant 1")).toBeInTheDocument());
-            await user.click(within(manageTenantsDialog).getByRole("button", { name: /Roles/i }));
+            const rolesButton = await within(manageTenantsDialog).findByRole("button", { name: /Roles/i });
+            await user.click(rolesButton);
 
             await waitFor(() => expect(screen.getByText("Assign Roles")).toBeInTheDocument());
         }

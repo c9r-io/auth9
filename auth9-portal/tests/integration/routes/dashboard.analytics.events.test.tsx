@@ -14,15 +14,16 @@ vi.mock("~/services/api", () => ({
 
 vi.mock("~/services/session.server", () => ({
   getAccessToken: vi.fn().mockResolvedValue("mock-access-token"),
-    requireAuthWithUpdate: vi.fn().mockResolvedValue({
-        session: {
-            accessToken: "test-token",
-            refreshToken: "test-refresh-token",
-            idToken: "test-id-token",
-            expiresAt: Date.now() + 3600000,
-        },
-        headers: undefined,
-    }),
+  getSession: vi.fn().mockResolvedValue({ activeTenantId: undefined }),
+  requireAuthWithUpdate: vi.fn().mockResolvedValue({
+    session: {
+      accessToken: "test-token",
+      refreshToken: "test-refresh-token",
+      idToken: "test-id-token",
+      expiresAt: Date.now() + 3600000,
+    },
+    headers: undefined,
+  }),
 }));
 
 const mockEvents = [
@@ -88,7 +89,7 @@ describe("Login Events Page", () => {
       events: mockEvents,
       pagination: mockPagination,
     });
-    expect(analyticsApi.listEvents).toHaveBeenCalledWith(1, 20, undefined, "mock-access-token");
+    expect(analyticsApi.listEvents).toHaveBeenCalledWith(1, 20, undefined, "mock-access-token", undefined);
   });
 
   it("loader uses page parameter from URL", async () => {
@@ -102,7 +103,7 @@ describe("Login Events Page", () => {
     );
     const response = await loader({ request, params: {}, context: {} });
 
-    expect(analyticsApi.listEvents).toHaveBeenCalledWith(2, 20, undefined, "mock-access-token");
+    expect(analyticsApi.listEvents).toHaveBeenCalledWith(2, 20, undefined, "mock-access-token", undefined);
     expect(response.pagination.page).toBe(2);
   });
 

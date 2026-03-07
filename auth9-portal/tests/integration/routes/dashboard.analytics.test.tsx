@@ -15,15 +15,16 @@ vi.mock("~/services/api", () => ({
 
 vi.mock("~/services/session.server", () => ({
   getAccessToken: vi.fn().mockResolvedValue("mock-access-token"),
-    requireAuthWithUpdate: vi.fn().mockResolvedValue({
-        session: {
-            accessToken: "test-token",
-            refreshToken: "test-refresh-token",
-            idToken: "test-id-token",
-            expiresAt: Date.now() + 3600000,
-        },
-        headers: undefined,
-    }),
+  getSession: vi.fn().mockResolvedValue({ activeTenantId: undefined }),
+  requireAuthWithUpdate: vi.fn().mockResolvedValue({
+    session: {
+      accessToken: "test-token",
+      refreshToken: "test-refresh-token",
+      idToken: "test-id-token",
+      expiresAt: Date.now() + 3600000,
+    },
+    headers: undefined,
+  }),
 }));
 
 const mockDailyTrend = [
@@ -88,7 +89,7 @@ describe("Analytics Page", () => {
       rangeLabel: "Last 7 days",
     });
     expect(analyticsApi.getStats).toHaveBeenCalled();
-    expect(analyticsApi.getDailyTrend).toHaveBeenCalledWith(7, "mock-access-token", undefined, undefined);
+    expect(analyticsApi.getDailyTrend).toHaveBeenCalledWith(7, "mock-access-token", undefined, undefined, undefined);
   });
 
   it("loader uses custom days parameter", async () => {

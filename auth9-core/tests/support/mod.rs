@@ -2586,7 +2586,7 @@ impl LoginEventRepository for TestLoginEventRepository {
             .count() as i64)
     }
 
-    async fn get_stats(&self, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
+    async fn get_stats(&self, _tenant_id: Option<StringUuid>, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
         let events = self.events.read().await;
         let filtered: Vec<_> = events
             .iter()
@@ -2727,6 +2727,7 @@ impl LoginEventRepository for TestLoginEventRepository {
 
     async fn get_daily_trend(
         &self,
+        _tenant_id: Option<StringUuid>,
         _start: DateTime<Utc>,
         _end: DateTime<Utc>,
     ) -> Result<Vec<auth9_core::domain::DailyTrendPoint>> {
