@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resources, SUPPORTED_LOCALES, DEFAULT_LOCALE, type AppLocale } from "~/i18n/resources";
+import { resources, SUPPORTED_LOCALES, DEFAULT_LOCALE } from "~/i18n/resources";
 import { translate, getLocaleDisplayName } from "~/i18n/translate";
 import zhCN from "~/i18n/locales/zh-CN";
 import enUS from "~/i18n/locales/en-US";

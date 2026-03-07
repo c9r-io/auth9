@@ -3281,151 +3281,6 @@ impl Default for TestServicesBuilder {
 }
 
 // ============================================================================
-// Tests
-// ============================================================================
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_tenant_repository_crud() {
-        let repo = TestTenantRepository::new();
-
-        // Create
-        let input = CreateTenantInput {
-            name: "Test".to_string(),
-            slug: "test".to_string(),
-            domain: None,
-            logo_url: None,
-            settings: None,
-        };
-        let tenant = repo.create(&input).await.unwrap();
-        assert_eq!(tenant.name, "Test");
-
-        // Read
-        let found = repo.find_by_id(tenant.id).await.unwrap();
-        assert!(found.is_some());
-
-        // List
-        let list = repo.list(0, 10).await.unwrap();
-        assert_eq!(list.len(), 1);
-
-        // Update
-        let update_input = UpdateTenantInput {
-            name: Some("Updated".to_string()),
-            logo_url: None,
-            settings: None,
-            status: None,
-        };
-        let updated = repo.update(tenant.id, &update_input).await.unwrap();
-        assert_eq!(updated.name, "Updated");
-
-        // Delete
-        repo.delete(tenant.id).await.unwrap();
-        let deleted = repo.find_by_id(tenant.id).await.unwrap();
-        assert!(deleted.is_none());
-    }
-
-    #[tokio::test]
-    async fn test_user_repository_crud() {
-        let repo = TestUserRepository::new();
-
-        // Create
-        let input = CreateUserInput {
-            email: "test@example.com".to_string(),
-            display_name: Some("Test".to_string()),
-            avatar_url: None,
-        };
-        let user = repo.create("kc-123", &input).await.unwrap();
-        assert_eq!(user.email, "test@example.com");
-
-        // Read
-        let found = repo.find_by_id(user.id).await.unwrap();
-        assert!(found.is_some());
-
-        // Find by email
-        let by_email = repo.find_by_email("test@example.com").await.unwrap();
-        assert!(by_email.is_some());
-    }
-
-    #[tokio::test]
-    async fn test_service_repository_crud() {
-        let repo = TestServiceRepository::new();
-
-        // Create
-        let input = CreateServiceInput {
-            tenant_id: Some(Uuid::new_v4()),
-            name: "Test Service".to_string(),
-            client_id: "test-client".to_string(),
-            base_url: Some("https://test.com".to_string()),
-            redirect_uris: vec!["https://test.com/cb".to_string()],
-            logout_uris: None,
-        };
-        let service = repo.create(&input).await.unwrap();
-        assert_eq!(service.name, "Test Service");
-
-        // Create client
-        let client = repo
-            .create_client(*service.id, "client-1", "hash", Some("Client".to_string()))
-            .await
-            .unwrap();
-        assert_eq!(client.client_id, "client-1");
-    }
-
-    #[tokio::test]
-    async fn test_rbac_repository_operations() {
-        let repo = TestRbacRepository::new();
-        let service_id = Uuid::new_v4();
-
-        // Create role
-        let role_input = CreateRoleInput {
-            service_id,
-            name: "admin".to_string(),
-            description: Some("Admin role".to_string()),
-            parent_role_id: None,
-            permission_ids: None,
-        };
-        let role = repo.create_role(&role_input).await.unwrap();
-        assert_eq!(role.name, "admin");
-
-        // Create permission
-        let perm_input = CreatePermissionInput {
-            service_id,
-            code: "user:read".to_string(),
-            name: "Read Users".to_string(),
-            description: Some("Read users".to_string()),
-        };
-        let perm = repo.create_permission(&perm_input).await.unwrap();
-        assert_eq!(perm.code, "user:read");
-
-        // Assign permission to role
-        repo.assign_permission_to_role(role.id, perm.id)
-            .await
-            .unwrap();
-
-        // Find role permissions
-        let perms = repo.find_role_permissions(role.id).await.unwrap();
-        assert_eq!(perms.len(), 1);
-    }
-
-    #[tokio::test]
-    async fn test_services_builder() {
-        let builder = TestServicesBuilder::new();
-
-        // Add test data
-        let tenant = create_test_tenant(None);
-        builder.tenant_repo.add_tenant(tenant.clone()).await;
-
-        // Build service and verify
-        let tenant_service = builder.build_tenant_service();
-        let result = tenant_service.get(tenant.id).await;
-        assert!(result.is_ok());
-        assert_eq!(result.unwrap().name, "Test Tenant");
-    }
-}
-
-// ============================================================================
 // Test SCIM Repositories
 // ============================================================================
 
@@ -3649,5 +3504,150 @@ impl ScimProvisioningLogRepository for TestScimLogRepository {
             .iter()
             .filter(|l| l.connector_id == connector_id)
             .count() as i64)
+    }
+}
+
+// ============================================================================
+// Tests
+// ============================================================================
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn test_tenant_repository_crud() {
+        let repo = TestTenantRepository::new();
+
+        // Create
+        let input = CreateTenantInput {
+            name: "Test".to_string(),
+            slug: "test".to_string(),
+            domain: None,
+            logo_url: None,
+            settings: None,
+        };
+        let tenant = repo.create(&input).await.unwrap();
+        assert_eq!(tenant.name, "Test");
+
+        // Read
+        let found = repo.find_by_id(tenant.id).await.unwrap();
+        assert!(found.is_some());
+
+        // List
+        let list = repo.list(0, 10).await.unwrap();
+        assert_eq!(list.len(), 1);
+
+        // Update
+        let update_input = UpdateTenantInput {
+            name: Some("Updated".to_string()),
+            logo_url: None,
+            settings: None,
+            status: None,
+        };
+        let updated = repo.update(tenant.id, &update_input).await.unwrap();
+        assert_eq!(updated.name, "Updated");
+
+        // Delete
+        repo.delete(tenant.id).await.unwrap();
+        let deleted = repo.find_by_id(tenant.id).await.unwrap();
+        assert!(deleted.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_user_repository_crud() {
+        let repo = TestUserRepository::new();
+
+        // Create
+        let input = CreateUserInput {
+            email: "test@example.com".to_string(),
+            display_name: Some("Test".to_string()),
+            avatar_url: None,
+        };
+        let user = repo.create("kc-123", &input).await.unwrap();
+        assert_eq!(user.email, "test@example.com");
+
+        // Read
+        let found = repo.find_by_id(user.id).await.unwrap();
+        assert!(found.is_some());
+
+        // Find by email
+        let by_email = repo.find_by_email("test@example.com").await.unwrap();
+        assert!(by_email.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_service_repository_crud() {
+        let repo = TestServiceRepository::new();
+
+        // Create
+        let input = CreateServiceInput {
+            tenant_id: Some(Uuid::new_v4()),
+            name: "Test Service".to_string(),
+            client_id: "test-client".to_string(),
+            base_url: Some("https://test.com".to_string()),
+            redirect_uris: vec!["https://test.com/cb".to_string()],
+            logout_uris: None,
+        };
+        let service = repo.create(&input).await.unwrap();
+        assert_eq!(service.name, "Test Service");
+
+        // Create client
+        let client = repo
+            .create_client(*service.id, "client-1", "hash", Some("Client".to_string()))
+            .await
+            .unwrap();
+        assert_eq!(client.client_id, "client-1");
+    }
+
+    #[tokio::test]
+    async fn test_rbac_repository_operations() {
+        let repo = TestRbacRepository::new();
+        let service_id = Uuid::new_v4();
+
+        // Create role
+        let role_input = CreateRoleInput {
+            service_id,
+            name: "admin".to_string(),
+            description: Some("Admin role".to_string()),
+            parent_role_id: None,
+            permission_ids: None,
+        };
+        let role = repo.create_role(&role_input).await.unwrap();
+        assert_eq!(role.name, "admin");
+
+        // Create permission
+        let perm_input = CreatePermissionInput {
+            service_id,
+            code: "user:read".to_string(),
+            name: "Read Users".to_string(),
+            description: Some("Read users".to_string()),
+        };
+        let perm = repo.create_permission(&perm_input).await.unwrap();
+        assert_eq!(perm.code, "user:read");
+
+        // Assign permission to role
+        repo.assign_permission_to_role(role.id, perm.id)
+            .await
+            .unwrap();
+
+        // Find role permissions
+        let perms = repo.find_role_permissions(role.id).await.unwrap();
+        assert_eq!(perms.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_services_builder() {
+        let builder = TestServicesBuilder::new();
+
+        // Add test data
+        let tenant = create_test_tenant(None);
+        builder.tenant_repo.add_tenant(tenant.clone()).await;
+
+        // Build service and verify
+        let tenant_service = builder.build_tenant_service();
+        let result = tenant_service.get(tenant.id).await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().name, "Test Tenant");
     }
 }
