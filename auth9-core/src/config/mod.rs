@@ -513,6 +513,68 @@ impl Config {
             .any(|e| e.eq_ignore_ascii_case(email))
     }
 
+    #[cfg(test)]
+    pub(crate) fn for_tests() -> Self {
+        Self {
+            environment: ENV_DEVELOPMENT.to_string(),
+            http_host: "127.0.0.1".to_string(),
+            http_port: 8080,
+            grpc_host: "127.0.0.1".to_string(),
+            grpc_port: 50051,
+            database: DatabaseConfig {
+                url: "mysql://localhost/test".to_string(),
+                max_connections: 10,
+                min_connections: 2,
+                acquire_timeout_secs: 30,
+                idle_timeout_secs: 600,
+            },
+            redis: RedisConfig {
+                url: "redis://localhost:6379".to_string(),
+            },
+            jwt: JwtConfig {
+                secret: "test-secret".to_string(),
+                issuer: "test".to_string(),
+                access_token_ttl_secs: 3600,
+                refresh_token_ttl_secs: 604800,
+                private_key_pem: None,
+                public_key_pem: None,
+                previous_public_key_pem: None,
+            },
+            keycloak: KeycloakConfig {
+                url: "http://localhost:8081".to_string(),
+                public_url: "http://localhost:8081".to_string(),
+                realm: "test".to_string(),
+                admin_client_id: "admin-cli".to_string(),
+                admin_client_secret: "secret".to_string(),
+                ssl_required: "external".to_string(),
+                core_public_url: None,
+                portal_url: None,
+                webhook_secret: None,
+            },
+            grpc_security: GrpcSecurityConfig::default(),
+            rate_limit: RateLimitConfig::default(),
+            cors: CorsConfig::default(),
+            webauthn: WebAuthnConfig {
+                rp_id: "localhost".to_string(),
+                rp_name: "Auth9".to_string(),
+                rp_origin: "http://localhost:3000".to_string(),
+                challenge_ttl_secs: 300,
+            },
+            server: ServerConfig::default(),
+            telemetry: TelemetryConfig::default(),
+            password_reset: PasswordResetConfig {
+                hmac_key: "test-password-reset-key".to_string(),
+                token_ttl_secs: 3600,
+            },
+            platform_admin_emails: vec!["admin@auth9.local".to_string()],
+            jwt_tenant_access_allowed_audiences: vec![],
+            security_headers: SecurityHeadersConfig::default(),
+            portal_client_id: None,
+            async_action: AsyncActionConfig::default(),
+            branding_allowed_domains: vec![],
+        }
+    }
+
     /// Load configuration from environment variables
     pub fn from_env() -> Result<Self> {
         let environment = env::var("ENVIRONMENT").unwrap_or_else(|_| ENV_DEVELOPMENT.to_string());
@@ -818,64 +880,7 @@ mod tests {
     use super::*;
 
     fn test_config() -> Config {
-        Config {
-            environment: ENV_DEVELOPMENT.to_string(),
-            http_host: "127.0.0.1".to_string(),
-            http_port: 8080,
-            grpc_host: "127.0.0.1".to_string(),
-            grpc_port: 50051,
-            database: DatabaseConfig {
-                url: "mysql://localhost/test".to_string(),
-                max_connections: 10,
-                min_connections: 2,
-                acquire_timeout_secs: 30,
-                idle_timeout_secs: 600,
-            },
-            redis: RedisConfig {
-                url: "redis://localhost:6379".to_string(),
-            },
-            jwt: JwtConfig {
-                secret: "test-secret".to_string(),
-                issuer: "test".to_string(),
-                access_token_ttl_secs: 3600,
-                refresh_token_ttl_secs: 604800,
-                private_key_pem: None,
-                public_key_pem: None,
-                previous_public_key_pem: None,
-            },
-            keycloak: KeycloakConfig {
-                url: "http://localhost:8081".to_string(),
-                public_url: "http://localhost:8081".to_string(),
-                realm: "test".to_string(),
-                admin_client_id: "admin-cli".to_string(),
-                admin_client_secret: "secret".to_string(),
-                ssl_required: "external".to_string(),
-                core_public_url: None,
-                portal_url: None,
-                webhook_secret: None,
-            },
-            grpc_security: GrpcSecurityConfig::default(),
-            rate_limit: RateLimitConfig::default(),
-            cors: CorsConfig::default(),
-            webauthn: WebAuthnConfig {
-                rp_id: "localhost".to_string(),
-                rp_name: "Auth9".to_string(),
-                rp_origin: "http://localhost:3000".to_string(),
-                challenge_ttl_secs: 300,
-            },
-            server: ServerConfig::default(),
-            telemetry: TelemetryConfig::default(),
-            password_reset: PasswordResetConfig {
-                hmac_key: "test-password-reset-key".to_string(),
-                token_ttl_secs: 3600,
-            },
-            platform_admin_emails: vec!["admin@auth9.local".to_string()],
-            jwt_tenant_access_allowed_audiences: vec![],
-            security_headers: SecurityHeadersConfig::default(),
-            portal_client_id: None,
-            async_action: AsyncActionConfig::default(),
-            branding_allowed_domains: vec![],
-        }
+        Config::for_tests()
     }
 
     #[test]
