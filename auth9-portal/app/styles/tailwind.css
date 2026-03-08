@@ -385,6 +385,7 @@
   .sidebar-footer {
     padding: 12px;
     border-top: 1px solid var(--glass-border-subtle);
+    flex-shrink: 0;
   }
 
   .sidebar-item {

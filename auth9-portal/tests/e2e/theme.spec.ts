@@ -19,30 +19,31 @@ test.describe("Theme Toggle", () => {
     await expect(themeToggle).toBeVisible();
   });
 
-  test("should switch to dark mode when clicking moon icon", async ({ page }) => {
+  test("should switch to dark mode when clicking toggle in light mode", async ({ page }) => {
     await page.goto("/");
 
-    // Initially should be in light mode (no data-theme attribute or light)
     const html = page.locator("html");
 
-    // Click dark mode button
+    // In light mode, only the dark-switch button (moon) is visible
     const darkModeBtn = page.locator('[data-testid="theme-dark"]');
+    await expect(darkModeBtn).toBeVisible();
     await darkModeBtn.click();
 
-    // Should have data-theme="dark" attribute
     await expect(html).toHaveAttribute("data-theme", "dark");
   });
 
-  test("should switch back to light mode when clicking sun icon", async ({ page }) => {
+  test("should switch back to light mode after switching to dark", async ({ page }) => {
     await page.goto("/");
 
     // Switch to dark mode first
     await page.locator('[data-testid="theme-dark"]').click();
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 
-    // Then switch back to light mode
-    await page.locator('[data-testid="theme-light"]').click();
+    // In dark mode, only the light-switch button (sun) is visible
+    const lightModeBtn = page.locator('[data-testid="theme-light"]');
+    await expect(lightModeBtn).toBeVisible();
+    await lightModeBtn.click();
 
-    // Should not have data-theme="dark"
     const html = page.locator("html");
     const theme = await html.getAttribute("data-theme");
     expect(theme).not.toBe("dark");
@@ -54,14 +55,11 @@ test.describe("Theme Toggle", () => {
     // Switch to dark mode
     await page.locator('[data-testid="theme-dark"]').click();
 
-    // Check localStorage
     const storedTheme = await page.evaluate(() => localStorage.getItem("auth9-theme"));
     expect(storedTheme).toBe("dark");
 
-    // Reload page
     await page.reload();
 
-    // Should still be in dark mode
     const html = page.locator("html");
     await expect(html).toHaveAttribute("data-theme", "dark");
   });
@@ -69,20 +67,16 @@ test.describe("Theme Toggle", () => {
   test("should persist light theme preference after reload", async ({ page }) => {
     await page.goto("/");
 
-    // Switch to dark mode first
+    // Switch to dark, then back to light
     await page.locator('[data-testid="theme-dark"]').click();
-
-    // Then switch to light mode
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await page.locator('[data-testid="theme-light"]').click();
 
-    // Check localStorage
     const storedTheme = await page.evaluate(() => localStorage.getItem("auth9-theme"));
     expect(storedTheme).toBe("light");
 
-    // Reload page
     await page.reload();
 
-    // Should still be in light mode
     const html = page.locator("html");
     const theme = await html.getAttribute("data-theme");
     expect(theme).not.toBe("dark");

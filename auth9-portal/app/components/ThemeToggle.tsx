@@ -8,28 +8,29 @@ export function ThemeToggle() {
 
   return (
     <div className="theme-toggle" role="group" aria-label={t("common.theme.label")} data-testid="theme-toggle">
-      <button
-        className={cn("theme-btn", theme === "light" && "active")}
-        onClick={() => setTheme("light")}
-        title={t("common.theme.light")}
-        aria-label={t("common.theme.switchToLight")}
-        aria-pressed={theme === "light"}
-        tabIndex={0}
-        data-testid="theme-light"
-      >
-        <SunIcon />
-      </button>
-      <button
-        className={cn("theme-btn", theme === "dark" && "active")}
-        onClick={() => setTheme("dark")}
-        title={t("common.theme.dark")}
-        aria-label={t("common.theme.switchToDark")}
-        aria-pressed={theme === "dark"}
-        tabIndex={0}
-        data-testid="theme-dark"
-      >
-        <MoonIcon />
-      </button>
+      {theme === "light" ? (
+        <button
+          className={cn("theme-btn", "active")}
+          onClick={() => setTheme("dark")}
+          title={t("common.theme.switchToDark")}
+          aria-label={t("common.theme.switchToDark")}
+          tabIndex={0}
+          data-testid="theme-dark"
+        >
+          <MoonIcon />
+        </button>
+      ) : (
+        <button
+          className={cn("theme-btn", "active")}
+          onClick={() => setTheme("light")}
+          title={t("common.theme.switchToLight")}
+          aria-label={t("common.theme.switchToLight")}
+          tabIndex={0}
+          data-testid="theme-light"
+        >
+          <SunIcon />
+        </button>
+      )}
     </div>
   );
 }

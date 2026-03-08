@@ -284,6 +284,8 @@ export default function ServicesPage() {
             <Button
               type="button"
               variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0"
               onClick={async () => {
                 if (newSecret) {
                   await navigator.clipboard.writeText(newSecret);
@@ -291,8 +293,9 @@ export default function ServicesPage() {
                   setTimeout(() => setCopied(false), 2000);
                 }
               }}
+              title={copied ? t("common.buttons.copy") : t("common.buttons.copy")}
             >
-              <CopyIcon className="mr-2 h-4 w-4" /> {copied ? "Copied" : "Copy"}
+              {copied ? <span className="text-xs text-[var(--accent-green)]">&#10003;</span> : <CopyIcon className="h-4 w-4" />}
             </Button>
             <Button type="button" onClick={() => setNewSecret(null)}>{t("services.close")}</Button>
           </DialogFooter>
