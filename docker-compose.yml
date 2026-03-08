@@ -229,8 +229,6 @@ services:
     container_name: auth9-theme-builder
     volumes:
       - keycloak-theme:/theme-output
-    profiles:
-      - build
 
   # ==================== Keycloak Events SPI Builder ====================
   # Run with: docker-compose --profile build up auth9-keycloak-events-builder
@@ -241,8 +239,6 @@ services:
     container_name: auth9-keycloak-events-builder
     volumes:
       - keycloak-theme:/events-output
-    profiles:
-      - build
 
   # ==================== Keycloak (Auth Engine) ====================
   keycloak:
@@ -276,6 +272,11 @@ services:
       timeout: 5s
       retries: 20
       start_period: 60s
+    depends_on:
+      auth9-theme-builder:
+        condition: service_completed_successfully
+      auth9-keycloak-events-builder:
+        condition: service_completed_successfully
     networks:
       - auth9-network
     restart: unless-stopped

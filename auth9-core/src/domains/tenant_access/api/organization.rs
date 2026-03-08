@@ -3,7 +3,7 @@
 use crate::error::Result;
 use crate::http_support::SuccessResponse;
 use crate::middleware::auth::AuthUser;
-use crate::models::tenant::{CreateOrganizationInput, Tenant};
+use crate::models::tenant::CreateOrganizationInput;
 use crate::models::user::AddUserToTenantInput;
 use crate::state::HasServices;
 use axum::{
@@ -12,14 +12,7 @@ use axum::{
     response::IntoResponse,
     Json,
 };
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-
-#[derive(Debug, Serialize, ToSchema)]
-pub struct CreateOrganizationResponse {
-    #[serde(flatten)]
-    pub organization: Tenant,
-}
+use serde::Deserialize;
 
 /// POST /api/v1/organizations
 /// Self-service organization creation for authenticated users.
@@ -55,9 +48,7 @@ pub async fn create_organization<S: HasServices>(
 
     Ok((
         StatusCode::CREATED,
-        Json(SuccessResponse::new(CreateOrganizationResponse {
-            organization: tenant,
-        })),
+        Json(SuccessResponse::new(tenant)),
     ))
 }
 

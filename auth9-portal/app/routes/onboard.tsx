@@ -1,5 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
-import { redirect, Outlet } from "react-router";
+import { redirect, Outlet, useLoaderData } from "react-router";
 import { ThemeToggle } from "~/components/ThemeToggle";
 import { requireAuthWithUpdate } from "~/services/session.server";
 import { userApi } from "~/services/api";
@@ -35,6 +35,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 export default function OnboardLayout() {
+  const { email } = useLoaderData<typeof loader>();
   return (
     <>
       <div className="fixed top-6 right-6 z-20">
@@ -43,7 +44,7 @@ export default function OnboardLayout() {
 
       <div className="min-h-screen flex items-center justify-center px-6 relative">
         <div className="page-backdrop" />
-        <Outlet />
+        <Outlet context={{ email }} />
       </div>
     </>
   );

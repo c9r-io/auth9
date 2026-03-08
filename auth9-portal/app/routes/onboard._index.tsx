@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 import type { MetaFunction, ActionFunctionArgs } from "react-router";
-import { redirect, Form, useActionData, useNavigation, Link } from "react-router";
+import {
+  redirect,
+  Form,
+  useActionData,
+  useNavigation,
+  Link,
+  useOutletContext,
+} from "react-router";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -73,16 +80,28 @@ export default function OnboardIndex() {
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+  const { email } = useOutletContext<{ email: string }>();
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [domain, setDomain] = useState("");
+  const [domainManuallyEdited, setDomainManuallyEdited] = useState(false);
 
   useEffect(() => {
     if (!slugManuallyEdited && name) {
       setSlug(slugify(name));
     }
   }, [name, slugManuallyEdited]);
+
+  useEffect(() => {
+    if (domainManuallyEdited) {
+      return;
+    }
+
+    const emailDomain = email.split("@")[1]?.toLowerCase() || "";
+    setDomain(emailDomain);
+  }, [domainManuallyEdited, email]);
 
   return (
     <Card className="w-full max-w-lg relative z-10 animate-fade-in-up">
@@ -132,6 +151,11 @@ export default function OnboardIndex() {
               name="domain"
               required
               placeholder={t("onboarding.emailDomainPlaceholder")}
+              value={domain}
+              onChange={(e) => {
+                setDomain(e.target.value);
+                setDomainManuallyEdited(true);
+              }}
             />
             <p className="text-xs text-[var(--text-tertiary)]">
               {t("onboarding.emailDomainHint")}
