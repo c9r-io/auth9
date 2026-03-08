@@ -96,6 +96,16 @@
 > - 打开：`.sidebar.open { translate: 0 0; }` — 显示
 > - 桌面端：`@media (min-width: 1024px) { .sidebar { translate: 0 0; } }` — 始终显示
 
+> **⚠️ 自动化测试注意**：Playwright 的 `isVisible()` 方法 **不检测元素是否在视口内**。
+> 使用 `translate: -100% 0` 隐藏的侧边栏，`isVisible()` 仍然返回 `true`（因为元素未设置 `display: none` 或 `visibility: hidden`）。
+>
+> **正确的自动化验证方式**：使用 `boundingBox()` 检查元素的实际位置是否在视口内：
+> ```javascript
+> const sidebar = page.locator('.sidebar');
+> const box = await sidebar.boundingBox();
+> const isActuallyVisible = box && box.x + box.width > 0;
+> ```
+
 ```javascript
 // 检查侧边栏状态
 const sidebar = document.querySelector('.sidebar');
@@ -121,7 +131,21 @@ if (windowWidth >= 1024) {
     console.log('Mobile: Sidebar should be full-width (100vw) when opened');
   }
 }
+
+// 使用 boundingBox 验证可见性（自动化测试推荐）
+const rect = sidebar.getBoundingClientRect();
+const actuallyVisible = rect.x + rect.width > 0;
+console.log('Sidebar bounding rect x:', rect.x, 'width:', rect.width);
+console.log('Sidebar actually visible in viewport:', actuallyVisible);
 ```
+
+#### 常见误报排查
+
+| 症状 | 原因 | 解决方案 |
+|------|------|---------|
+| Playwright `isVisible()` 返回 `true` 但侧边栏不可见 | `isVisible()` 不检测视口位置，`translate: -100%` 隐藏的元素仍被判定为"可见" | 使用 `boundingBox()` 检查 `x + width > 0` |
+| 768px 下侧边栏报告为"显示" | 自动化测试使用了错误的可见性检查方法 | 检查 `translate` CSS 属性值或 `boundingBox().x` |
+| 移动端侧边栏"可见"但实际不可见 | 同上，CSS `translate` 不影响 `display`/`visibility` | 同上 |
 
 ---
 
