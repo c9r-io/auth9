@@ -1,14 +1,15 @@
 //! Service/Client API handlers
 
-use crate::api::{
+use crate::config::Config;
+use crate::domain::common::StringUuid;
+use crate::domain::service::{
+    CreateClientInput, CreateServiceInput, Service, ServiceStatus, UpdateServiceInput,
+};
+use crate::error::{AppError, Result};
+use crate::http_support::{
     deserialize_page, deserialize_per_page, extract_actor_id_generic, extract_ip,
     write_audit_log_generic, MessageResponse, PaginatedResponse, SuccessResponse,
 };
-use crate::config::Config;
-use crate::domain::{
-    CreateClientInput, CreateServiceInput, Service, ServiceStatus, StringUuid, UpdateServiceInput,
-};
-use crate::error::{AppError, Result};
 use crate::keycloak::KeycloakOidcClient;
 use crate::middleware::auth::AuthUser;
 use crate::policy::{
@@ -472,7 +473,7 @@ pub async fn create_client<S: HasServices>(
             service.name,
             input.name.clone().unwrap_or("Client".to_string())
         )),
-        enabled: service.status == crate::domain::ServiceStatus::Active,
+        enabled: service.status == crate::domain::service::ServiceStatus::Active,
         protocol: "openid-connect".to_string(),
         base_url: service.base_url.clone(),
         root_url: service.base_url.clone(),
@@ -994,7 +995,7 @@ async fn log_access_denied<S: HasServices>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{CreateServiceInput, ServiceStatus, UpdateServiceInput};
+    use crate::domain::service::{CreateServiceInput, ServiceStatus, UpdateServiceInput};
 
     #[test]
     fn test_list_services_query_defaults() {
@@ -1478,7 +1479,7 @@ mod tests {
     #[test]
     fn test_merge_service_update_all_fields() {
         let before = Service {
-            id: crate::domain::StringUuid::new_v4(),
+            id: crate::domain::common::StringUuid::new_v4(),
             tenant_id: None,
             name: "Old Name".to_string(),
             base_url: Some("https://old.example.com".to_string()),
@@ -1509,7 +1510,7 @@ mod tests {
     #[test]
     fn test_merge_service_update_partial() {
         let before = Service {
-            id: crate::domain::StringUuid::new_v4(),
+            id: crate::domain::common::StringUuid::new_v4(),
             tenant_id: None,
             name: "Original".to_string(),
             base_url: Some("https://original.com".to_string()),

@@ -3,7 +3,6 @@
 //! This crate provides the core functionality for the Auth9 identity service,
 //! including REST API, gRPC services, and integration with Keycloak.
 
-pub mod api;
 pub mod cache;
 pub mod config;
 pub mod crypto;
@@ -12,6 +11,7 @@ pub mod domains;
 pub mod email;
 pub mod error;
 pub mod grpc;
+pub mod http_support;
 pub mod jwt;
 pub mod keycloak;
 pub mod middleware;

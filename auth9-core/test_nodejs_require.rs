@@ -1,7 +1,8 @@
 #[tokio::test]
 async fn test_nodejs_require_blocked() {
     use crate::service::action_engine::{ActionEngine, MockActionRepository};
-    use crate::domain::{Action, ActionContext, ActionTrigger, StringUuid};
+    use crate::domain::action::{Action, ActionContext, ActionTrigger};
+    use crate::domain::common::{StringUuid};
     use std::sync::Arc;
     use chrono::Utc;
     

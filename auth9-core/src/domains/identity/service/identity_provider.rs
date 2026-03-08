@@ -3,10 +3,13 @@
 //! Manages social login and enterprise SSO identity providers.
 //! IdP configuration is stored in Keycloak, Auth9 provides the management UI.
 
-use crate::domain::{
-    CreateIdentityProviderInput, CreateLinkedIdentityInput, IdentityProvider,
-    IdentityProviderTemplate, LinkedIdentity, LinkedIdentityInfo, StringUuid,
+use crate::domain::common::StringUuid;
+use crate::domain::identity_provider::{
+    CreateIdentityProviderInput, IdentityProvider, IdentityProviderTemplate,
     UpdateIdentityProviderInput,
+};
+use crate::domain::linked_identity::{
+    CreateLinkedIdentityInput, LinkedIdentity, LinkedIdentityInfo,
 };
 use crate::error::{AppError, Result};
 use crate::keycloak::{KeycloakClient, KeycloakIdentityProvider};

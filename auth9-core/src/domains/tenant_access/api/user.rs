@@ -1,11 +1,12 @@
 //! User API handlers
 
-use crate::api::{
+use crate::config::Config;
+use crate::domain::common::StringUuid;
+use crate::domain::user::{AddUserToTenantInput, CreateUserInput, UpdateUserInput, User};
+use crate::error::{AppError, Result};
+use crate::http_support::{
     write_audit_log_generic, MessageResponse, PaginatedResponse, PaginationQuery, SuccessResponse,
 };
-use crate::config::Config;
-use crate::domain::{AddUserToTenantInput, CreateUserInput, StringUuid, UpdateUserInput, User};
-use crate::error::{AppError, Result};
 use crate::keycloak::{CreateKeycloakUserInput, KeycloakCredential, KeycloakUserUpdate};
 use crate::middleware::auth::{AuthUser, TokenType};
 use crate::policy::{
@@ -30,12 +31,12 @@ use validator::Validate;
 pub struct UserListQuery {
     #[serde(
         default = "default_page",
-        deserialize_with = "crate::api::deserialize_page"
+        deserialize_with = "crate::http_support::deserialize_page"
     )]
     pub page: i64,
     #[serde(
         default = "default_per_page",
-        deserialize_with = "crate::api::deserialize_per_page",
+        deserialize_with = "crate::http_support::deserialize_per_page",
         alias = "limit"
     )]
     pub per_page: i64,
@@ -430,7 +431,7 @@ pub async fn create<S: HasServices + HasBranding>(
                 .await?;
             tenant.password_policy.unwrap_or_default()
         } else {
-            crate::domain::PasswordPolicy::default()
+            crate::domain::password::PasswordPolicy::default()
         };
         if let Err(errors) = policy.validate_password(password) {
             return Err(AppError::Validation(errors.join("; ")));
@@ -1057,8 +1058,8 @@ pub async fn list_by_tenant<S: HasServices>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::{MessageResponse, PaginatedResponse, SuccessResponse};
-    use crate::domain::{CreateUserInput, TenantUser, UpdateUserInput, User};
+    use crate::domain::user::{CreateUserInput, TenantUser, UpdateUserInput, User};
+    use crate::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
 
     #[test]
     fn test_create_user_request_deserialization() {
@@ -1282,9 +1283,9 @@ mod tests {
     #[test]
     fn test_success_response_with_tenant_user() {
         let tenant_user = TenantUser {
-            id: crate::domain::StringUuid::new_v4(),
-            tenant_id: crate::domain::StringUuid::new_v4(),
-            user_id: crate::domain::StringUuid::new_v4(),
+            id: crate::domain::common::StringUuid::new_v4(),
+            tenant_id: crate::domain::common::StringUuid::new_v4(),
+            user_id: crate::domain::common::StringUuid::new_v4(),
             role_in_tenant: "member".to_string(),
             joined_at: chrono::Utc::now(),
         };
@@ -1319,9 +1320,9 @@ mod tests {
     #[test]
     fn test_success_response_with_vec_tenant_users() {
         let tenant_user = TenantUser {
-            id: crate::domain::StringUuid::new_v4(),
-            tenant_id: crate::domain::StringUuid::new_v4(),
-            user_id: crate::domain::StringUuid::new_v4(),
+            id: crate::domain::common::StringUuid::new_v4(),
+            tenant_id: crate::domain::common::StringUuid::new_v4(),
+            user_id: crate::domain::common::StringUuid::new_v4(),
             role_in_tenant: "admin".to_string(),
             joined_at: chrono::Utc::now(),
         };

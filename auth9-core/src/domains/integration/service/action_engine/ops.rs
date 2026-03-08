@@ -1,7 +1,7 @@
 //! Deno ops for ActionEngine: op_fetch, op_set_timeout, op_console_log
 //! Also includes SSRF protection (is_private_ip) and related types.
 
-use crate::domain::AsyncActionConfig;
+use crate::domain::action::AsyncActionConfig;
 use deno_core::OpState;
 use std::cell::RefCell;
 use std::collections::HashMap;

@@ -12,18 +12,31 @@ pub use mock_keycloak::MockKeycloakServer;
 use async_trait::async_trait;
 pub use auth9_core::cache::NoOpCacheManager;
 pub use auth9_core::config::JwtConfig;
-pub use auth9_core::domain::{
-    Action, AddUserToTenantInput, AlertSeverity, AssignRolesInput, Client, CreateActionInput,
-    CreateInvitationInput, CreateLinkedIdentityInput, CreateLoginEventInput, CreatePasskeyInput,
-    CreatePasswordResetTokenInput, CreatePermissionInput, CreateRoleInput,
-    CreateSecurityAlertInput, CreateServiceInput, CreateSessionInput, CreateTenantInput,
-    CreateUserInput, CreateWebhookInput, Invitation, InvitationStatus, LinkedIdentity, LoginEvent,
-    LoginEventType, LoginStats, PasswordResetToken, Permission, Role, SecurityAlert,
-    SecurityAlertType, Service, ServiceStatus, Session, StoredPasskey, StringUuid,
-    SystemSettingRow, Tenant, TenantSettings, TenantStatus, TenantUser, UpdateActionInput,
-    UpdateRoleInput, UpdateServiceInput, UpdateTenantInput, UpdateUserInput, UpdateWebhookInput,
-    UpsertSystemSettingInput, User, UserRolesInTenant, Webhook,
+pub use auth9_core::domain::action::{Action, CreateActionInput, UpdateActionInput};
+pub use auth9_core::domain::analytics::{
+    AlertSeverity, CreateLoginEventInput, CreateSecurityAlertInput, CreateWebhookInput, LoginEvent,
+    LoginEventType, LoginStats, SecurityAlert, SecurityAlertType, UpdateWebhookInput, Webhook,
 };
+pub use auth9_core::domain::common::StringUuid;
+pub use auth9_core::domain::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
+pub use auth9_core::domain::linked_identity::{CreateLinkedIdentityInput, LinkedIdentity};
+pub use auth9_core::domain::password::{CreatePasswordResetTokenInput, PasswordResetToken};
+pub use auth9_core::domain::rbac::{
+    AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role, UpdateRoleInput,
+    UserRolesInTenant,
+};
+pub use auth9_core::domain::service::{
+    Client, CreateServiceInput, Service, ServiceStatus, UpdateServiceInput,
+};
+pub use auth9_core::domain::session::{CreateSessionInput, Session};
+pub use auth9_core::domain::system_settings::{SystemSettingRow, UpsertSystemSettingInput};
+pub use auth9_core::domain::tenant::{
+    CreateTenantInput, Tenant, TenantSettings, TenantStatus, UpdateTenantInput,
+};
+pub use auth9_core::domain::user::{
+    AddUserToTenantInput, CreateUserInput, TenantUser, UpdateUserInput, User,
+};
+pub use auth9_core::domain::webauthn::{CreatePasskeyInput, StoredPasskey};
 pub use auth9_core::domains::authorization::service::{ClientService, RbacService};
 pub use auth9_core::domains::tenant_access::service::{
     TenantRepositoryBundle, TenantService, UserRepositoryBundle, UserService,
@@ -310,7 +323,7 @@ impl TenantRepository for TestTenantRepository {
     async fn update_password_policy(
         &self,
         id: StringUuid,
-        policy: &auth9_core::domain::PasswordPolicy,
+        policy: &auth9_core::domain::password::PasswordPolicy,
     ) -> Result<Tenant> {
         let mut tenants = self.tenants.write().await;
         let tenant = tenants
@@ -620,19 +633,19 @@ impl UserRepository for TestUserRepository {
     async fn find_user_tenants_with_tenant(
         &self,
         user_id: StringUuid,
-    ) -> Result<Vec<auth9_core::domain::TenantUserWithTenant>> {
+    ) -> Result<Vec<auth9_core::domain::user::TenantUserWithTenant>> {
         // Create mock TenantUserWithTenant from TenantUser data
         let tenant_users = self.tenant_users.read().await;
         Ok(tenant_users
             .iter()
             .filter(|tu| tu.user_id == user_id)
-            .map(|tu| auth9_core::domain::TenantUserWithTenant {
+            .map(|tu| auth9_core::domain::user::TenantUserWithTenant {
                 id: tu.id,
                 tenant_id: tu.tenant_id,
                 user_id: tu.user_id,
                 role_in_tenant: tu.role_in_tenant.clone(),
                 joined_at: tu.joined_at,
-                tenant: auth9_core::domain::TenantInfo {
+                tenant: auth9_core::domain::user::TenantInfo {
                     id: tu.tenant_id,
                     name: format!("Tenant {}", tu.tenant_id),
                     slug: format!("tenant-{}", tu.tenant_id),
@@ -2224,19 +2237,22 @@ impl ActionRepository for TestActionRepository {
     async fn find_execution_by_id(
         &self,
         _id: StringUuid,
-    ) -> Result<Option<auth9_core::domain::ActionExecution>> {
+    ) -> Result<Option<auth9_core::domain::action::ActionExecution>> {
         Ok(None)
     }
 
     async fn query_logs(
         &self,
-        _filter: &auth9_core::domain::LogQueryFilter,
-    ) -> Result<Vec<auth9_core::domain::ActionExecution>> {
+        _filter: &auth9_core::domain::action::LogQueryFilter,
+    ) -> Result<Vec<auth9_core::domain::action::ActionExecution>> {
         // For test repository, return empty logs
         Ok(vec![])
     }
 
-    async fn count_logs(&self, _filter: &auth9_core::domain::LogQueryFilter) -> Result<i64> {
+    async fn count_logs(
+        &self,
+        _filter: &auth9_core::domain::action::LogQueryFilter,
+    ) -> Result<i64> {
         Ok(0)
     }
 
@@ -2586,7 +2602,12 @@ impl LoginEventRepository for TestLoginEventRepository {
             .count() as i64)
     }
 
-    async fn get_stats(&self, _tenant_id: Option<StringUuid>, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
+    async fn get_stats(
+        &self,
+        _tenant_id: Option<StringUuid>,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+    ) -> Result<LoginStats> {
         let events = self.events.read().await;
         let filtered: Vec<_> = events
             .iter()
@@ -2730,7 +2751,7 @@ impl LoginEventRepository for TestLoginEventRepository {
         _tenant_id: Option<StringUuid>,
         _start: DateTime<Utc>,
         _end: DateTime<Utc>,
-    ) -> Result<Vec<auth9_core::domain::DailyTrendPoint>> {
+    ) -> Result<Vec<auth9_core::domain::analytics::DailyTrendPoint>> {
         Ok(vec![])
     }
 }
@@ -3020,7 +3041,7 @@ impl WebAuthnRepository for TestWebAuthnRepository {
 // ============================================================================
 
 pub struct TestServiceBrandingRepository {
-    brandings: RwLock<Vec<auth9_core::domain::ServiceBranding>>,
+    brandings: RwLock<Vec<auth9_core::domain::branding::ServiceBranding>>,
 }
 
 impl TestServiceBrandingRepository {
@@ -3042,7 +3063,7 @@ impl ServiceBrandingRepository for TestServiceBrandingRepository {
     async fn get_by_service_id(
         &self,
         service_id: StringUuid,
-    ) -> Result<Option<auth9_core::domain::ServiceBranding>> {
+    ) -> Result<Option<auth9_core::domain::branding::ServiceBranding>> {
         let brandings = self.brandings.read().await;
         Ok(brandings
             .iter()
@@ -3053,11 +3074,11 @@ impl ServiceBrandingRepository for TestServiceBrandingRepository {
     async fn upsert(
         &self,
         service_id: StringUuid,
-        config: &auth9_core::domain::BrandingConfig,
-    ) -> Result<auth9_core::domain::ServiceBranding> {
+        config: &auth9_core::domain::branding::BrandingConfig,
+    ) -> Result<auth9_core::domain::branding::ServiceBranding> {
         let mut brandings = self.brandings.write().await;
         brandings.retain(|b| b.service_id != service_id.to_string());
-        let branding = auth9_core::domain::ServiceBranding {
+        let branding = auth9_core::domain::branding::ServiceBranding {
             id: StringUuid::new_v4().to_string(),
             service_id: service_id.to_string(),
             config: config.clone(),

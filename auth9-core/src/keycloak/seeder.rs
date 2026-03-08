@@ -326,10 +326,7 @@ impl KeycloakSeeder {
                 "supportedLocales".to_string(),
                 serde_json::json!(["en", "ja", "zh-CN"]),
             );
-            obj.insert(
-                "defaultLocale".to_string(),
-                serde_json::json!("en"),
-            );
+            obj.insert("defaultLocale".to_string(), serde_json::json!("en"));
             obj.insert("eventsEnabled".to_string(), serde_json::json!(true));
             obj.insert(
                 "eventsListeners".to_string(),

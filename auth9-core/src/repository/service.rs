@@ -1,6 +1,6 @@
 //! Service repository
 
-use crate::domain::{CreateServiceInput, Service, ServiceStatus, UpdateServiceInput};
+use crate::domain::service::{CreateServiceInput, Service, ServiceStatus, UpdateServiceInput};
 use crate::error::{AppError, Result};
 use async_trait::async_trait;
 use sqlx::MySqlPool;
@@ -16,15 +16,15 @@ pub trait ServiceRepository: Send + Sync {
         client_id: &str,
         secret_hash: &str,
         name: Option<String>,
-    ) -> Result<crate::domain::Client>;
+    ) -> Result<crate::domain::service::Client>;
     async fn find_by_id(&self, id: Uuid) -> Result<Option<Service>>;
     async fn find_by_client_id(&self, client_id: &str) -> Result<Option<Service>>;
     async fn find_client_by_client_id(
         &self,
         client_id: &str,
-    ) -> Result<Option<crate::domain::Client>>;
+    ) -> Result<Option<crate::domain::service::Client>>;
     async fn list(&self, tenant_id: Option<Uuid>, offset: i64, limit: i64) -> Result<Vec<Service>>;
-    async fn list_clients(&self, service_id: Uuid) -> Result<Vec<crate::domain::Client>>;
+    async fn list_clients(&self, service_id: Uuid) -> Result<Vec<crate::domain::service::Client>>;
     async fn count(&self, tenant_id: Option<Uuid>) -> Result<i64>;
     async fn update(&self, id: Uuid, input: &UpdateServiceInput) -> Result<Service>;
     async fn delete(&self, id: Uuid) -> Result<()>;
@@ -85,7 +85,7 @@ impl ServiceRepository for ServiceRepositoryImpl {
         client_id: &str,
         secret_hash: &str,
         name: Option<String>,
-    ) -> Result<crate::domain::Client> {
+    ) -> Result<crate::domain::service::Client> {
         let id = Uuid::new_v4();
         sqlx::query(
             r#"
@@ -101,11 +101,12 @@ impl ServiceRepository for ServiceRepositoryImpl {
         .execute(&self.pool)
         .await?;
 
-        let client =
-            sqlx::query_as::<_, crate::domain::Client>("SELECT * FROM clients WHERE id = ?")
-                .bind(id.to_string())
-                .fetch_one(&self.pool)
-                .await?;
+        let client = sqlx::query_as::<_, crate::domain::service::Client>(
+            "SELECT * FROM clients WHERE id = ?",
+        )
+        .bind(id.to_string())
+        .fetch_one(&self.pool)
+        .await?;
 
         Ok(client)
     }
@@ -144,12 +145,13 @@ impl ServiceRepository for ServiceRepositoryImpl {
     async fn find_client_by_client_id(
         &self,
         client_id: &str,
-    ) -> Result<Option<crate::domain::Client>> {
-        let client =
-            sqlx::query_as::<_, crate::domain::Client>("SELECT * FROM clients WHERE client_id = ?")
-                .bind(client_id)
-                .fetch_optional(&self.pool)
-                .await?;
+    ) -> Result<Option<crate::domain::service::Client>> {
+        let client = sqlx::query_as::<_, crate::domain::service::Client>(
+            "SELECT * FROM clients WHERE client_id = ?",
+        )
+        .bind(client_id)
+        .fetch_optional(&self.pool)
+        .await?;
 
         Ok(client)
     }
@@ -188,8 +190,8 @@ impl ServiceRepository for ServiceRepositoryImpl {
         Ok(services)
     }
 
-    async fn list_clients(&self, service_id: Uuid) -> Result<Vec<crate::domain::Client>> {
-        let clients = sqlx::query_as::<_, crate::domain::Client>(
+    async fn list_clients(&self, service_id: Uuid) -> Result<Vec<crate::domain::service::Client>> {
+        let clients = sqlx::query_as::<_, crate::domain::service::Client>(
             "SELECT * FROM clients WHERE service_id = ? ORDER BY created_at DESC",
         )
         .bind(service_id.to_string())

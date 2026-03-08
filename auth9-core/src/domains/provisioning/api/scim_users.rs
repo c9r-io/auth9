@@ -1,7 +1,7 @@
 //! SCIM User CRUD API handlers
 
+use crate::domain::common::StringUuid;
 use crate::domain::scim::{ScimError, ScimRequestContext, ScimUser};
-use crate::domain::StringUuid;
 use crate::domains::provisioning::api::ScimJson;
 use crate::domains::provisioning::context::ProvisioningContext;
 use axum::extract::{Extension, Path, Query, State};

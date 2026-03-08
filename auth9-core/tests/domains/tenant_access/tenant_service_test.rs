@@ -4,7 +4,7 @@
 //! These tests verify the service layer behavior that API handlers depend on.
 
 use crate::support::*;
-use auth9_core::domain::{
+use auth9_core::domain::tenant::{
     CreateTenantInput, TenantBranding, TenantSettings, TenantStatus, UpdateTenantInput,
 };
 use auth9_core::error::AppError;

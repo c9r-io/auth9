@@ -1,9 +1,10 @@
 //! impl RbacRepository for RbacRepositoryImpl
 
 use super::{RbacRepository, RbacRepositoryImpl};
-use crate::domain::{
-    AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role, StringUuid,
-    UpdateRoleInput, UserRolesInTenant,
+use crate::domain::common::StringUuid;
+use crate::domain::rbac::{
+    AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role, UpdateRoleInput,
+    UserRolesInTenant,
 };
 use crate::error::{AppError, Result};
 use async_trait::async_trait;

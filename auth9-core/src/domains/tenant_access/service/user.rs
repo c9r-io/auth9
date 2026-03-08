@@ -1,8 +1,9 @@
 //! User business logic
 
-use crate::domain::{
-    AddUserToTenantInput, CreateUserInput, StringUuid, TenantUser, TenantUserWithTenant,
-    UpdateUserInput, User, WebhookEvent,
+use crate::domain::analytics::WebhookEvent;
+use crate::domain::common::StringUuid;
+use crate::domain::user::{
+    AddUserToTenantInput, CreateUserInput, TenantUser, TenantUserWithTenant, UpdateUserInput, User,
 };
 use crate::domains::integration::service::WebhookEventPublisher;
 use crate::error::{AppError, Result};

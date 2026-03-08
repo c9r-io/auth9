@@ -5,7 +5,7 @@
 use crate::support::http::{build_test_router, post_json_with_auth, TestAppState};
 use crate::support::mock_keycloak::MockKeycloakServer;
 use crate::support::{create_test_permission, create_test_role, create_test_tenant_access_token};
-use auth9_core::api::MessageResponse;
+use auth9_core::http_support::MessageResponse;
 use axum::http::StatusCode;
 use serde_json::json;
 use uuid::Uuid;

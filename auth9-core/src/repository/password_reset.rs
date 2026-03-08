@@ -1,6 +1,7 @@
 //! Password reset token repository
 
-use crate::domain::{CreatePasswordResetTokenInput, PasswordResetToken, StringUuid};
+use crate::domain::common::StringUuid;
+use crate::domain::password::{CreatePasswordResetTokenInput, PasswordResetToken};
 use crate::error::{AppError, Result};
 use async_trait::async_trait;
 use sqlx::MySqlPool;

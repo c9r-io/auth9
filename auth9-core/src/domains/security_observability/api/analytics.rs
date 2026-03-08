@@ -1,11 +1,12 @@
 //! Analytics API handlers
 
-use crate::api::{
+use crate::domain::analytics::{DailyTrendPoint, LoginEvent, LoginStats};
+use crate::domain::common::StringUuid;
+use crate::error::AppError;
+use crate::http_support::{
     default_page, default_per_page, deserialize_page, deserialize_per_page, PaginatedResponse,
     PaginationQuery, SuccessResponse,
 };
-use crate::domain::{DailyTrendPoint, LoginEvent, LoginStats, StringUuid};
-use crate::error::AppError;
 use crate::state::HasAnalytics;
 use axum::{
     extract::{Path, Query, State},
@@ -45,11 +46,24 @@ pub async fn get_stats<S: HasAnalytics>(
     // Fallback to period/days parameters
     let stats = match params.period.as_deref() {
         Some("daily") | Some("day") => state.analytics_service().get_daily_stats(tenant_id).await?,
-        Some("weekly") | Some("week") => state.analytics_service().get_weekly_stats(tenant_id).await?,
-        Some("monthly") | Some("month") => state.analytics_service().get_monthly_stats(tenant_id).await?,
+        Some("weekly") | Some("week") => {
+            state
+                .analytics_service()
+                .get_weekly_stats(tenant_id)
+                .await?
+        }
+        Some("monthly") | Some("month") => {
+            state
+                .analytics_service()
+                .get_monthly_stats(tenant_id)
+                .await?
+        }
         _ => {
             let days = params.days.unwrap_or(7);
-            state.analytics_service().get_stats_for_days(tenant_id, days).await?
+            state
+                .analytics_service()
+                .get_stats_for_days(tenant_id, days)
+                .await?
         }
     };
 
@@ -209,7 +223,10 @@ pub async fn get_daily_trend<S: HasAnalytics>(
 
     // Fallback to days parameter
     let days = params.days.unwrap_or(7);
-    let trend = state.analytics_service().get_daily_trend(tenant_id, days).await?;
+    let trend = state
+        .analytics_service()
+        .get_daily_trend(tenant_id, days)
+        .await?;
     Ok(Json(SuccessResponse::new(trend)))
 }
 

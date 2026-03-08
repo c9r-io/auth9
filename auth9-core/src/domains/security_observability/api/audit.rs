@@ -1,7 +1,7 @@
 //! Audit log API handlers
 
-use crate::api::PaginatedResponse;
 use crate::error::Result;
+use crate::http_support::PaginatedResponse;
 use crate::middleware::auth::AuthUser;
 use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
 use crate::repository::audit::AuditLogQuery;
@@ -40,7 +40,10 @@ pub async fn list<S: HasServices>(
     let logs = state.audit_repo().find_with_actor(&query).await?;
     let total = state.audit_repo().count(&query).await?;
 
-    let per_page = query.limit.unwrap_or(50).min(crate::api::MAX_PER_PAGE);
+    let per_page = query
+        .limit
+        .unwrap_or(50)
+        .min(crate::http_support::MAX_PER_PAGE);
     let page = calculate_page(query.offset, Some(per_page));
 
     Ok(Json(PaginatedResponse::new(logs, page, per_page, total)))

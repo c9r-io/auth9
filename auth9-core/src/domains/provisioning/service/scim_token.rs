@@ -1,7 +1,7 @@
 //! SCIM Token generation and validation service
 
+use crate::domain::common::StringUuid;
 use crate::domain::scim::{ScimRequestContext, ScimToken, ScimTokenResponse};
-use crate::domain::StringUuid;
 use crate::error::{AppError, Result};
 use crate::repository::scim_token::ScimTokenRepository;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};

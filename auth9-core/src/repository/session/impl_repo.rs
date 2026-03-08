@@ -1,7 +1,8 @@
 //! impl SessionRepository for SessionRepositoryImpl
 
 use super::{SessionRepository, SessionRepositoryImpl};
-use crate::domain::{CreateSessionInput, Session, StringUuid};
+use crate::domain::common::StringUuid;
+use crate::domain::session::{CreateSessionInput, Session};
 use crate::error::{AppError, Result};
 use async_trait::async_trait;
 

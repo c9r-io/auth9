@@ -3,7 +3,7 @@
 //! Tests for RBAC-related operations using mock repositories.
 
 use crate::support::*;
-use auth9_core::domain::{CreatePermissionInput, CreateRoleInput, UpdateRoleInput};
+use auth9_core::domain::rbac::{CreatePermissionInput, CreateRoleInput, UpdateRoleInput};
 use auth9_core::error::AppError;
 use uuid::Uuid;
 

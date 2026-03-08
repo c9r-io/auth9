@@ -1,8 +1,9 @@
 //! Tenant-Service toggle API handlers
 
-use crate::api::SuccessResponse;
-use crate::domain::{ServiceWithStatus, StringUuid, ToggleServiceInput};
+use crate::domain::common::StringUuid;
+use crate::domain::tenant::{ServiceWithStatus, ToggleServiceInput};
 use crate::error::{AppError, Result};
+use crate::http_support::SuccessResponse;
 use crate::middleware::auth::AuthUser;
 use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::{HasDbPool, HasServices};

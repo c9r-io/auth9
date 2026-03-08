@@ -1,8 +1,10 @@
 //! System settings API handlers
 
-use crate::api::{require_platform_admin_with_db, write_audit_log_generic, SuccessResponse};
-use crate::domain::EmailProviderConfig;
+use crate::domain::email::EmailProviderConfig;
 use crate::error::{AppError, Result};
+use crate::http_support::{
+    require_platform_admin_with_db, write_audit_log_generic, SuccessResponse,
+};
 use crate::middleware::auth::AuthUser;
 use crate::state::{HasServices, HasSystemSettings};
 use axum::{

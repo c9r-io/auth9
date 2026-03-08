@@ -1,6 +1,6 @@
 //! System settings repository
 
-use crate::domain::{SystemSettingRow, UpsertSystemSettingInput};
+use crate::domain::system_settings::{SystemSettingRow, UpsertSystemSettingInput};
 use crate::error::Result;
 use async_trait::async_trait;
 use sqlx::MySqlPool;

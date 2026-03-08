@@ -1,7 +1,7 @@
 //! Audit HTTP API handler tests
 
 use crate::support::http::{get_json_with_auth, MockKeycloakServer, TestAppState};
-use auth9_core::api::PaginatedResponse;
+use auth9_core::http_support::PaginatedResponse;
 use auth9_core::repository::audit::{AuditLogWithActor, CreateAuditLogInput};
 use auth9_core::repository::AuditRepository;
 use axum::http::StatusCode;

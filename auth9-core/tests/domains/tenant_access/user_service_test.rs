@@ -3,7 +3,7 @@
 //! Tests for user-related operations using mock repositories.
 
 use crate::support::*;
-use auth9_core::domain::{AddUserToTenantInput, CreateUserInput, UpdateUserInput};
+use auth9_core::domain::user::{AddUserToTenantInput, CreateUserInput, UpdateUserInput};
 use auth9_core::error::AppError;
 
 // ============================================================================

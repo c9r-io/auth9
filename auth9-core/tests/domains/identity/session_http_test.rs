@@ -7,9 +7,10 @@ use crate::support::http::{
     delete_json_with_auth, get_json, get_json_with_auth, post_json, post_json_with_auth,
     MockKeycloakServer, TestAppState,
 };
-use auth9_core::api::{MessageResponse, SuccessResponse};
-use auth9_core::domain::{Session, SessionInfo, StringUuid};
+use auth9_core::domain::common::StringUuid;
+use auth9_core::domain::session::{Session, SessionInfo};
 use auth9_core::domains::identity::api::session::RevokeSessionsResponse;
+use auth9_core::http_support::{MessageResponse, SuccessResponse};
 use auth9_core::repository::SessionRepository;
 use axum::http::StatusCode;
 use chrono::Utc;

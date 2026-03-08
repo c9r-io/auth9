@@ -1,9 +1,12 @@
 //! Password management business logic
 
-use crate::domain::{
+use crate::domain::action::{
     ActionContext, ActionContextRequest, ActionContextTenant, ActionContextUser,
+};
+use crate::domain::common::StringUuid;
+use crate::domain::password::{
     ChangePasswordInput, CreatePasswordResetTokenInput, ForgotPasswordInput, PasswordPolicy,
-    ResetPasswordInput, StringUuid, UpdatePasswordPolicyInput,
+    ResetPasswordInput, UpdatePasswordPolicyInput,
 };
 use crate::domains::integration::service::ActionEngine;
 use crate::domains::platform::service::{EmailService, KeycloakSyncService};
@@ -383,7 +386,7 @@ impl<
     }
 
     /// Execute post-change-password actions (best-effort, non-blocking).
-    async fn execute_post_change_password_actions(&self, user: &crate::domain::User) {
+    async fn execute_post_change_password_actions(&self, user: &crate::domain::user::User) {
         let Some(action_engine) = &self.action_engine else {
             return;
         };
@@ -494,7 +497,7 @@ fn verify_token(token: &str, hash: &str) -> Result<bool> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::PasswordResetToken;
+    use crate::domain::password::PasswordResetToken;
     use crate::domains::platform::service::SystemSettingsService;
     use crate::repository::password_reset::MockPasswordResetRepository;
     use crate::repository::system_settings::MockSystemSettingsRepository;
@@ -945,7 +948,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_request_reset_user_found_success() {
-        use crate::domain::User;
+        use crate::domain::user::User;
         use wiremock::MockServer;
 
         let mock_server = MockServer::start().await;
@@ -997,7 +1000,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_reset_password_success() {
-        use crate::domain::User;
+        use crate::domain::user::User;
         use wiremock::matchers::{method, path_regex};
         use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -1099,7 +1102,7 @@ mod tests {
             });
 
         user_mock.expect_find_by_id().returning(move |_| {
-            Ok(Some(crate::domain::User {
+            Ok(Some(crate::domain::user::User {
                 id: user_id,
                 keycloak_id: "kc-1".to_string(),
                 email: "user@example.com".to_string(),
@@ -1126,7 +1129,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_change_password_wrong_current_password() {
-        use crate::domain::User;
+        use crate::domain::user::User;
         use wiremock::matchers::{method, path, path_regex};
         use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -1196,7 +1199,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_change_password_success() {
-        use crate::domain::User;
+        use crate::domain::user::User;
         use wiremock::matchers::{method, path, path_regex};
         use wiremock::{Mock, MockServer, ResponseTemplate};
 
@@ -1353,7 +1356,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_policy_with_tenant_repo() {
-        use crate::domain::Tenant;
+        use crate::domain::tenant::Tenant;
         use crate::repository::tenant::MockTenantRepository;
 
         let password_reset_mock = MockPasswordResetRepository::new();
@@ -1447,7 +1450,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_update_policy_with_tenant_repo() {
-        use crate::domain::Tenant;
+        use crate::domain::tenant::Tenant;
         use crate::repository::tenant::MockTenantRepository;
 
         let password_reset_mock = MockPasswordResetRepository::new();
@@ -1470,7 +1473,7 @@ mod tests {
         tenant_mock
             .expect_update_password_policy()
             .returning(|id, policy| {
-                Ok(crate::domain::Tenant {
+                Ok(crate::domain::tenant::Tenant {
                     id,
                     password_policy: Some(policy.clone()),
                     ..Default::default()
@@ -1515,7 +1518,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_resolve_user_password_policy_with_tenant() {
-        use crate::domain::{Tenant, TenantUser};
+        use crate::domain::tenant::Tenant;
+        use crate::domain::user::TenantUser;
         use crate::repository::tenant::MockTenantRepository;
 
         let password_reset_mock = MockPasswordResetRepository::new();
@@ -1589,7 +1593,7 @@ mod tests {
         let user_id = StringUuid::new_v4();
 
         user_mock.expect_find_by_id().returning(move |_| {
-            Ok(Some(crate::domain::User {
+            Ok(Some(crate::domain::user::User {
                 id: user_id,
                 keycloak_id: "kc-1".to_string(),
                 email: "user@example.com".to_string(),

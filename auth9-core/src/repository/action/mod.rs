@@ -1,8 +1,9 @@
 //! Action repository
 
-use crate::domain::{
-    Action, ActionExecution, CreateActionInput, LogQueryFilter, StringUuid, UpdateActionInput,
+use crate::domain::action::{
+    Action, ActionExecution, CreateActionInput, LogQueryFilter, UpdateActionInput,
 };
+use crate::domain::common::StringUuid;
 use crate::error::Result;
 use async_trait::async_trait;
 use sqlx::MySqlPool;

@@ -1,9 +1,10 @@
 //! Login event repository
 
 #[allow(unused_imports)]
-use crate::domain::{
-    CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginEventType, LoginStats, StringUuid,
+use crate::domain::analytics::{
+    CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginEventType, LoginStats,
 };
+use crate::domain::common::StringUuid;
 use crate::error::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -37,7 +38,12 @@ pub trait LoginEventRepository: Send + Sync {
     async fn count_by_user(&self, user_id: StringUuid) -> Result<i64>;
     async fn count_by_tenant(&self, tenant_id: StringUuid) -> Result<i64>;
     async fn count_by_email(&self, email: &str) -> Result<i64>;
-    async fn get_stats(&self, tenant_id: Option<StringUuid>, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats>;
+    async fn get_stats(
+        &self,
+        tenant_id: Option<StringUuid>,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+    ) -> Result<LoginStats>;
     async fn count_failed_by_ip(&self, ip_address: &str, since: DateTime<Utc>) -> Result<i64>;
     async fn count_failed_by_ip_multi_user(
         &self,

@@ -1,8 +1,9 @@
 //! Organization self-service API handlers (B2B onboarding)
 
-use crate::api::SuccessResponse;
-use crate::domain::{AddUserToTenantInput, CreateOrganizationInput, Tenant};
+use crate::domain::tenant::{CreateOrganizationInput, Tenant};
+use crate::domain::user::AddUserToTenantInput;
 use crate::error::Result;
+use crate::http_support::SuccessResponse;
 use crate::middleware::auth::AuthUser;
 use crate::state::HasServices;
 use axum::{

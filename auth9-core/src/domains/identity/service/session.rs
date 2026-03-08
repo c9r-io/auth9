@@ -1,8 +1,8 @@
 //! Session management business logic
 
-use crate::domain::{
-    parse_user_agent, CreateSessionInput, Session, SessionInfo, StringUuid, WebhookEvent,
-};
+use crate::domain::analytics::WebhookEvent;
+use crate::domain::common::StringUuid;
+use crate::domain::session::{parse_user_agent, CreateSessionInput, Session, SessionInfo};
 use crate::domains::integration::service::WebhookEventPublisher;
 use crate::error::{AppError, Result};
 use crate::keycloak::KeycloakClient;
@@ -230,7 +230,7 @@ impl<S: SessionRepository, U: UserRepository> SessionService<S, U> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::User;
+    use crate::domain::user::User;
     use crate::repository::session::MockSessionRepository;
     use crate::repository::user::MockUserRepository;
     use mockall::predicate::*;

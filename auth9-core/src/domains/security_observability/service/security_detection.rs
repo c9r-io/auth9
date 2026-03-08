@@ -1,9 +1,10 @@
 //! Security detection service for identifying suspicious activity
 
-use crate::domain::{
+use crate::domain::analytics::{
     AlertSeverity, CreateSecurityAlertInput, LoginEvent, LoginEventType, SecurityAlert,
-    SecurityAlertType, StringUuid, WebhookEvent,
+    SecurityAlertType, WebhookEvent,
 };
+use crate::domain::common::StringUuid;
 use crate::domains::integration::service::{WebhookEventPublisher, WebhookService};
 use crate::error::Result;
 use crate::repository::WebhookRepository;

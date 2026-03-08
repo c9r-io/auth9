@@ -3,7 +3,7 @@
 //! Provides simple variable substitution for email templates.
 //! Variables are specified using {{variable_name}} syntax.
 
-use crate::domain::{EmailTemplateContent, EmailTemplateType};
+use crate::domain::email_template::{EmailTemplateContent, EmailTemplateType};
 use std::collections::HashMap;
 
 /// Available email templates

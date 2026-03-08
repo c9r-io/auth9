@@ -1280,7 +1280,7 @@ where
     // When METRICS_TOKEN is set, requires Bearer token auth.
     // In production without METRICS_TOKEN, returns 404.
     // ============================================================
-    let metrics_state = crate::api::metrics::MetricsState {
+    let metrics_state = crate::http_support::metrics::MetricsState {
         handle: prometheus_handle.clone(),
         required_token: state.config().telemetry.metrics_token.clone(),
     };
@@ -1293,7 +1293,7 @@ where
         } else {
             tracing::info!("ℹ️  /metrics endpoint disabled (set METRICS_TOKEN to enable)");
         }
-        crate::api::metrics::MetricsState {
+        crate::http_support::metrics::MetricsState {
             handle: Arc::new(None), // Disable metrics endpoint
             required_token: None,
         }
@@ -1302,7 +1302,10 @@ where
     };
 
     let metrics_route: Router<()> = Router::new()
-        .route("/metrics", get(crate::api::metrics::metrics_handler))
+        .route(
+            "/metrics",
+            get(crate::http_support::metrics::metrics_handler),
+        )
         .with_state(effective_metrics_state);
 
     // Server resource limits

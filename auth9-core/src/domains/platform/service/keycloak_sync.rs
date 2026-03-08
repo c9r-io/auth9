@@ -4,7 +4,8 @@
 //! When Auth9 settings change (e.g., branding configuration, email settings), this service
 //! ensures the corresponding Keycloak realm settings are updated.
 
-use crate::domain::{BrandingConfig, PasswordPolicy};
+use crate::domain::branding::BrandingConfig;
+use crate::domain::password::PasswordPolicy;
 use crate::error::Result;
 use crate::keycloak::{KeycloakClient, RealmUpdate, SmtpServerConfig};
 use async_trait::async_trait;

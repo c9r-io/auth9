@@ -4,7 +4,8 @@
 //! This enables real-time security monitoring and analytics for authentication events.
 
 use crate::cache::CacheOperations;
-use crate::domain::{CreateLoginEventInput, LoginEventType, StringUuid};
+use crate::domain::analytics::{CreateLoginEventInput, LoginEventType};
+use crate::domain::common::StringUuid;
 use crate::error::AppError;
 use crate::state::{HasAnalytics, HasCache, HasSecurityAlerts, HasServices};
 use axum::{
@@ -458,12 +459,14 @@ pub async fn process_keycloak_event<
         .clone()
         .or_else(|| event.details.username.clone());
     let ip_address = event.ip_address.clone().or_else(|| {
-        headers.and_then(crate::api::extract_ip).or_else(|| {
-            headers
-                .and_then(|h| h.get("x-forwarded-for"))
-                .and_then(|v| v.to_str().ok())
-                .map(str::to_string)
-        })
+        headers
+            .and_then(crate::http_support::extract_ip)
+            .or_else(|| {
+                headers
+                    .and_then(|h| h.get("x-forwarded-for"))
+                    .and_then(|v| v.to_str().ok())
+                    .map(str::to_string)
+            })
     });
 
     let input = CreateLoginEventInput {

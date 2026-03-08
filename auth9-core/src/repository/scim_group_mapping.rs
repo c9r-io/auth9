@@ -1,6 +1,7 @@
 //! SCIM Group-Role mapping repository
 
-use crate::domain::{ScimGroupRoleMapping, StringUuid};
+use crate::domain::common::StringUuid;
+use crate::domain::scim::ScimGroupRoleMapping;
 use crate::error::{AppError, Result};
 use async_trait::async_trait;
 use sqlx::MySqlPool;

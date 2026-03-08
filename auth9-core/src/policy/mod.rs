@@ -3,7 +3,7 @@
 pub(crate) mod abac;
 
 use crate::config::Config;
-use crate::domain::StringUuid;
+use crate::domain::common::StringUuid;
 use crate::error::AppError;
 use crate::middleware::auth::{AuthUser, TokenType};
 use crate::state::HasServices;

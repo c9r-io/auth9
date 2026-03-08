@@ -10,10 +10,11 @@ use crate::support::{
     create_test_action, create_test_service, create_test_tenant, create_test_tenant_access_token,
     create_test_tenant_access_token_for_tenant, MockKeycloakServer,
 };
-use auth9_core::api::{MessageResponse, SuccessResponse};
-use auth9_core::domain::{
-    Action, ActionStats, ActionTrigger, CreateActionInput, StringUuid, UpdateActionInput,
+use auth9_core::domain::action::{
+    Action, ActionStats, ActionTrigger, CreateActionInput, UpdateActionInput,
 };
+use auth9_core::domain::common::StringUuid;
+use auth9_core::http_support::{MessageResponse, SuccessResponse};
 use auth9_core::jwt::JwtManager;
 use axum::http::StatusCode;
 use serde_json::json;
@@ -52,9 +53,9 @@ async fn setup_tenant_and_service(state: &TestAppState, tenant_id: Uuid) -> Uuid
     let service = create_test_service(Some(service_id), Some(tenant_id));
     state.service_repo.add_service(service).await;
 
-    let client = auth9_core::domain::Client {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        service_id: auth9_core::domain::StringUuid::from(service_id),
+    let client = auth9_core::domain::service::Client {
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        service_id: auth9_core::domain::common::StringUuid::from(service_id),
         client_id: "test-service-client".to_string(),
         client_secret_hash: "hash".to_string(), // pragma: allowlist secret
         name: Some("Test Client".to_string()),
@@ -1342,9 +1343,9 @@ async fn test_cross_service_access_returns_403() {
     let service_b_id = Uuid::new_v4();
     let service_b = create_test_service(Some(service_b_id), Some(tenant_id));
     state.service_repo.add_service(service_b).await;
-    let client_b = auth9_core::domain::Client {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        service_id: auth9_core::domain::StringUuid::from(service_b_id),
+    let client_b = auth9_core::domain::service::Client {
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        service_id: auth9_core::domain::common::StringUuid::from(service_b_id),
         client_id: "service-b-client".to_string(),
         client_secret_hash: "hash".to_string(), // pragma: allowlist secret
         name: Some("Service B Client".to_string()),

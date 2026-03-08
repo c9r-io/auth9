@@ -1,8 +1,8 @@
 //! User repository
 
-use crate::domain::{
-    AddUserToTenantInput, CreateUserInput, StringUuid, TenantUser, TenantUserWithTenant,
-    UpdateUserInput, User,
+use crate::domain::common::StringUuid;
+use crate::domain::user::{
+    AddUserToTenantInput, CreateUserInput, TenantUser, TenantUserWithTenant, UpdateUserInput, User,
 };
 use crate::error::Result;
 use async_trait::async_trait;

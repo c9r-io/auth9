@@ -2,7 +2,7 @@
 
 use super::{keys, ttl};
 use crate::config::RedisConfig;
-use crate::domain::UserRolesInTenant;
+use crate::domain::rbac::UserRolesInTenant;
 use crate::error::{AppError, Result};
 use redis::{aio::ConnectionManager, AsyncCommands};
 use serde::{de::DeserializeOwned, Serialize};

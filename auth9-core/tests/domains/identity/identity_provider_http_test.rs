@@ -6,10 +6,10 @@ use crate::support::create_test_user;
 use crate::support::http::{
     delete_json, get_json, post_json, put_json, MockKeycloakServer, TestAppState,
 };
-use auth9_core::api::{MessageResponse, SuccessResponse};
-use auth9_core::domain::{
-    IdentityProvider, IdentityProviderTemplate, LinkedIdentity, LinkedIdentityInfo, StringUuid,
-};
+use auth9_core::domain::common::StringUuid;
+use auth9_core::domain::identity_provider::{IdentityProvider, IdentityProviderTemplate};
+use auth9_core::domain::linked_identity::{LinkedIdentity, LinkedIdentityInfo};
+use auth9_core::http_support::{MessageResponse, SuccessResponse};
 use auth9_core::repository::LinkedIdentityRepository;
 use axum::http::StatusCode;
 use chrono::Utc;
@@ -210,13 +210,15 @@ async fn test_unlink_identity_success() {
 
     let app = build_idp_test_router(state.clone());
 
-    let (status, body): (StatusCode, Option<auth9_core::api::MessageResponse>) =
-        crate::support::http::delete_json_with_auth(
-            &app,
-            &format!("/api/v1/me/linked-identities/{}", identity_id),
-            &token,
-        )
-        .await;
+    let (status, body): (
+        StatusCode,
+        Option<auth9_core::http_support::MessageResponse>,
+    ) = crate::support::http::delete_json_with_auth(
+        &app,
+        &format!("/api/v1/me/linked-identities/{}", identity_id),
+        &token,
+    )
+    .await;
 
     assert_eq!(status, StatusCode::OK);
     assert!(body.is_some());

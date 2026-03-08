@@ -10,8 +10,8 @@ use crate::support::{
     create_test_identity_token, create_test_tenant, create_test_tenant_access_token,
     create_test_tenant_access_token_for_tenant, MockKeycloakServer,
 };
-use auth9_core::api::{MessageResponse, PaginatedResponse, SuccessResponse};
-use auth9_core::domain::{Tenant, TenantStatus};
+use auth9_core::domain::tenant::{Tenant, TenantStatus};
+use auth9_core::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use serde_json::json;
@@ -420,7 +420,7 @@ async fn test_delete_tenant_returns_200() {
     // Verify the tenant is physically deleted (not just disabled)
     let service = state.tenant_service.clone();
     let result = service
-        .get(auth9_core::domain::StringUuid::from(tenant_id))
+        .get(auth9_core::domain::common::StringUuid::from(tenant_id))
         .await;
     assert!(result.is_err(), "Tenant should be physically deleted");
 }

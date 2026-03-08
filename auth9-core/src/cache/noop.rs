@@ -1,6 +1,6 @@
 //! NoOpCacheManager struct and inherent methods
 
-use crate::domain::UserRolesInTenant;
+use crate::domain::rbac::UserRolesInTenant;
 use crate::error::Result;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;

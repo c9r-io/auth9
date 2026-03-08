@@ -1,6 +1,6 @@
 //! Enterprise SSO domain models (tenant-scoped connectors).
 
-use crate::domain::StringUuid;
+use crate::domain::common::StringUuid;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

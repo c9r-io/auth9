@@ -1,7 +1,7 @@
 //! SMTP email provider implementation using lettre
 
 use super::provider::{EmailProvider, EmailProviderError};
-use crate::domain::{EmailMessage, EmailSendResult, OracleEmailConfig, SmtpConfig};
+use crate::domain::email::{EmailMessage, EmailSendResult, OracleEmailConfig, SmtpConfig};
 use async_trait::async_trait;
 use lettre::{
     message::{header::ContentType, Mailbox, MultiPart, SinglePart},

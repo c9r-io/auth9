@@ -1,8 +1,9 @@
 //! Analytics service for login statistics and event tracking
 
-use crate::domain::{
-    CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginEventType, LoginStats, StringUuid,
+use crate::domain::analytics::{
+    CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginEventType, LoginStats,
 };
+use crate::domain::common::StringUuid;
 use crate::error::Result;
 use crate::repository::LoginEventRepository;
 use chrono::{DateTime, Duration, Utc};
@@ -154,7 +155,12 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
     }
 
     /// Get login statistics for a time period, optionally filtered by tenant
-    pub async fn get_stats(&self, tenant_id: Option<StringUuid>, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
+    pub async fn get_stats(
+        &self,
+        tenant_id: Option<StringUuid>,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+    ) -> Result<LoginStats> {
         self.login_event_repo.get_stats(tenant_id, start, end).await
     }
 
@@ -169,7 +175,11 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
     }
 
     /// Get login statistics for the last N days
-    pub async fn get_stats_for_days(&self, tenant_id: Option<StringUuid>, days: i64) -> Result<LoginStats> {
+    pub async fn get_stats_for_days(
+        &self,
+        tenant_id: Option<StringUuid>,
+        days: i64,
+    ) -> Result<LoginStats> {
         let end = Utc::now();
         let start = end - Duration::days(days);
         self.get_stats(tenant_id, start, end).await
@@ -191,10 +201,16 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
     }
 
     /// Get daily trend data for the last N days
-    pub async fn get_daily_trend(&self, tenant_id: Option<StringUuid>, days: i64) -> Result<Vec<DailyTrendPoint>> {
+    pub async fn get_daily_trend(
+        &self,
+        tenant_id: Option<StringUuid>,
+        days: i64,
+    ) -> Result<Vec<DailyTrendPoint>> {
         let end = Utc::now();
         let start = end - Duration::days(days);
-        self.login_event_repo.get_daily_trend(tenant_id, start, end).await
+        self.login_event_repo
+            .get_daily_trend(tenant_id, start, end)
+            .await
     }
 
     /// Get daily trend data for a specific date range
@@ -204,7 +220,9 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
         start: DateTime<Utc>,
         end: DateTime<Utc>,
     ) -> Result<Vec<DailyTrendPoint>> {
-        self.login_event_repo.get_daily_trend(tenant_id, start, end).await
+        self.login_event_repo
+            .get_daily_trend(tenant_id, start, end)
+            .await
     }
 
     /// List login events with pagination

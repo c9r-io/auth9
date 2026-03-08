@@ -1,8 +1,9 @@
 //! Tenant business logic
 
 use crate::cache::CacheManager;
-use crate::domain::{
-    CreateOrganizationInput, CreateTenantInput, StringUuid, Tenant, TenantStatus, UpdateTenantInput,
+use crate::domain::common::StringUuid;
+use crate::domain::tenant::{
+    CreateOrganizationInput, CreateTenantInput, Tenant, TenantStatus, UpdateTenantInput,
 };
 use crate::error::{AppError, Result};
 use crate::repository::{
@@ -559,7 +560,8 @@ impl<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{StringUuid, TenantSettings};
+    use crate::domain::common::StringUuid;
+    use crate::domain::tenant::TenantSettings;
     use crate::repository::action::MockActionRepository;
     use crate::repository::invitation::MockInvitationRepository;
     use crate::repository::login_event::MockLoginEventRepository;
@@ -1062,7 +1064,7 @@ mod tests {
 
         // One service for this tenant
         service_repo.expect_list_by_tenant().returning(move |_| {
-            Ok(vec![crate::domain::Service {
+            Ok(vec![crate::domain::service::Service {
                 id: service_id,
                 tenant_id: Some(id),
                 name: "Test Service".to_string(),

@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use auth9_core::domain::UpdateUserInput;
+    use auth9_core::domain::user::UpdateUserInput;
     use serde_json::json;
 
     #[test]

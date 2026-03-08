@@ -12,8 +12,8 @@ use crate::support::{
     create_test_tenant_access_token_for_tenant, create_test_tenant_access_token_for_user,
     create_test_user,
 };
-use auth9_core::api::{MessageResponse, PaginatedResponse, SuccessResponse};
-use auth9_core::domain::{TenantUser, TenantUserWithTenant, User};
+use auth9_core::domain::user::{TenantUser, TenantUserWithTenant, User};
+use auth9_core::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
 use axum::http::StatusCode;
 use serde_json::json;
 use uuid::Uuid;
@@ -39,9 +39,9 @@ async fn test_list_users_returns_200() {
         state
             .user_repo
             .add_tenant_user(TenantUser {
-                id: auth9_core::domain::StringUuid::new_v4(),
-                user_id: auth9_core::domain::StringUuid::from(user_id),
-                tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+                id: auth9_core::domain::common::StringUuid::new_v4(),
+                user_id: auth9_core::domain::common::StringUuid::from(user_id),
+                tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
                 role_in_tenant: "member".to_string(),
                 joined_at: chrono::Utc::now(),
             })
@@ -76,9 +76,9 @@ async fn test_list_users_pagination() {
         state
             .user_repo
             .add_tenant_user(TenantUser {
-                id: auth9_core::domain::StringUuid::new_v4(),
-                user_id: auth9_core::domain::StringUuid::from(user_id),
-                tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+                id: auth9_core::domain::common::StringUuid::new_v4(),
+                user_id: auth9_core::domain::common::StringUuid::from(user_id),
+                tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
                 role_in_tenant: "member".to_string(),
                 joined_at: chrono::Utc::now(),
             })
@@ -408,9 +408,9 @@ async fn test_add_user_to_tenant() {
 
     // Auth user must be owner of the target tenant
     let owner_tu = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(auth_user_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(auth_user_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
         role_in_tenant: "owner".to_string(),
         joined_at: chrono::Utc::now(),
     };
@@ -452,9 +452,9 @@ async fn test_remove_user_from_tenant() {
 
     // Auth user must be owner of the target tenant
     let owner_tu = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(auth_user_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(auth_user_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
         role_in_tenant: "owner".to_string(),
         joined_at: chrono::Utc::now(),
     };
@@ -462,9 +462,9 @@ async fn test_remove_user_from_tenant() {
 
     // Add target user to tenant
     let tenant_user = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(user_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(user_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
         role_in_tenant: "member".to_string(),
         joined_at: chrono::Utc::now(),
     };
@@ -500,16 +500,16 @@ async fn test_get_user_tenants() {
 
     // Add user to two tenants
     let tu1 = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(user_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id1),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(user_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id1),
         role_in_tenant: "admin".to_string(),
         joined_at: chrono::Utc::now(),
     };
     let tu2 = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(user_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id2),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(user_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id2),
         role_in_tenant: "member".to_string(),
         joined_at: chrono::Utc::now(),
     };
@@ -552,16 +552,16 @@ async fn test_list_users_by_tenant() {
 
     // Add users to tenant
     let tu1 = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(user1_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(user1_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
         role_in_tenant: "member".to_string(),
         joined_at: chrono::Utc::now(),
     };
     let tu2 = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(user2_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(user2_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
         role_in_tenant: "admin".to_string(),
         joined_at: chrono::Utc::now(),
     };
@@ -891,9 +891,9 @@ async fn test_list_users_tenant_access_token() {
     state.user_repo.add_user(user).await;
 
     let tu = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(user_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(user_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
         role_in_tenant: "member".to_string(),
         joined_at: chrono::Utc::now(),
     };
@@ -986,9 +986,9 @@ async fn test_get_user_tenant_access_with_admin_role() {
     state
         .user_repo
         .add_tenant_user(TenantUser {
-            id: auth9_core::domain::StringUuid::new_v4(),
-            user_id: auth9_core::domain::StringUuid::from(other_user_id),
-            tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+            id: auth9_core::domain::common::StringUuid::new_v4(),
+            user_id: auth9_core::domain::common::StringUuid::from(other_user_id),
+            tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
             role_in_tenant: "member".to_string(),
             joined_at: chrono::Utc::now(),
         })
@@ -1029,9 +1029,9 @@ async fn test_get_user_cross_tenant_returns_404() {
     state
         .user_repo
         .add_tenant_user(TenantUser {
-            id: auth9_core::domain::StringUuid::new_v4(),
-            user_id: auth9_core::domain::StringUuid::from(other_user_id),
-            tenant_id: auth9_core::domain::StringUuid::from(tenant_a),
+            id: auth9_core::domain::common::StringUuid::new_v4(),
+            user_id: auth9_core::domain::common::StringUuid::from(other_user_id),
+            tenant_id: auth9_core::domain::common::StringUuid::from(tenant_a),
             role_in_tenant: "member".to_string(),
             joined_at: chrono::Utc::now(),
         })
@@ -1174,9 +1174,9 @@ async fn test_add_user_to_tenant_invalid_role_returns_400() {
 
     // Auth user is owner
     let owner_tu = TenantUser {
-        id: auth9_core::domain::StringUuid::new_v4(),
-        user_id: auth9_core::domain::StringUuid::from(auth_user_id),
-        tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+        id: auth9_core::domain::common::StringUuid::new_v4(),
+        user_id: auth9_core::domain::common::StringUuid::from(auth_user_id),
+        tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
         role_in_tenant: "owner".to_string(),
         joined_at: chrono::Utc::now(),
     };
@@ -1250,9 +1250,9 @@ async fn test_list_users_with_search() {
     state
         .user_repo
         .add_tenant_user(TenantUser {
-            id: auth9_core::domain::StringUuid::new_v4(),
-            user_id: auth9_core::domain::StringUuid::from(user1_id),
-            tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+            id: auth9_core::domain::common::StringUuid::new_v4(),
+            user_id: auth9_core::domain::common::StringUuid::from(user1_id),
+            tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
             role_in_tenant: "member".to_string(),
             joined_at: chrono::Utc::now(),
         })
@@ -1284,9 +1284,9 @@ async fn test_list_users_with_empty_search() {
     state
         .user_repo
         .add_tenant_user(TenantUser {
-            id: auth9_core::domain::StringUuid::new_v4(),
-            user_id: auth9_core::domain::StringUuid::from(user_id),
-            tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+            id: auth9_core::domain::common::StringUuid::new_v4(),
+            user_id: auth9_core::domain::common::StringUuid::from(user_id),
+            tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
             role_in_tenant: "member".to_string(),
             joined_at: chrono::Utc::now(),
         })
@@ -1321,9 +1321,9 @@ async fn test_tenant_access_with_user_write_permission_can_delete() {
     state
         .user_repo
         .add_tenant_user(TenantUser {
-            id: auth9_core::domain::StringUuid::new_v4(),
-            user_id: auth9_core::domain::StringUuid::from(user_id),
-            tenant_id: auth9_core::domain::StringUuid::from(tenant_id),
+            id: auth9_core::domain::common::StringUuid::new_v4(),
+            user_id: auth9_core::domain::common::StringUuid::from(user_id),
+            tenant_id: auth9_core::domain::common::StringUuid::from(tenant_id),
             role_in_tenant: "member".to_string(),
             joined_at: chrono::Utc::now(),
         })

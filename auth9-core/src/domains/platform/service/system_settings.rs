@@ -1,9 +1,9 @@
 //! System settings service
 
 use crate::crypto::{decrypt, encrypt, EncryptionKey};
-use crate::domain::{
-    EmailProviderConfig, SettingCategory, SettingKey, SystemSettingResponse, SystemSettingRow,
-    UpsertSystemSettingInput,
+use crate::domain::email::EmailProviderConfig;
+use crate::domain::system_settings::{
+    SettingCategory, SettingKey, SystemSettingResponse, SystemSettingRow, UpsertSystemSettingInput,
 };
 use crate::domains::platform::service::KeycloakSyncService;
 use crate::error::{AppError, Result};
@@ -243,7 +243,7 @@ impl<R: SystemSettingsRepository> SystemSettingsService<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::SmtpConfig;
+    use crate::domain::email::SmtpConfig;
     use crate::repository::system_settings::MockSystemSettingsRepository;
     use mockall::predicate::*;
 
@@ -506,7 +506,7 @@ mod tests {
 
     #[test]
     fn test_validate_ses_config_valid() {
-        use crate::domain::SesConfig;
+        use crate::domain::email::SesConfig;
 
         let mock = MockSystemSettingsRepository::new();
         let service = SystemSettingsService::new(Arc::new(mock), None);
@@ -525,7 +525,7 @@ mod tests {
 
     #[test]
     fn test_validate_oracle_config_valid() {
-        use crate::domain::OracleEmailConfig;
+        use crate::domain::email::OracleEmailConfig;
 
         let mock = MockSystemSettingsRepository::new();
         let service = SystemSettingsService::new(Arc::new(mock), None);
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_validate_oracle_config_invalid_email() {
-        use crate::domain::OracleEmailConfig;
+        use crate::domain::email::OracleEmailConfig;
 
         let mock = MockSystemSettingsRepository::new();
         let service = SystemSettingsService::new(Arc::new(mock), None);

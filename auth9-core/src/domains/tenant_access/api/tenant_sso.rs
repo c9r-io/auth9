@@ -1,11 +1,11 @@
 //! Tenant-scoped enterprise SSO connector APIs.
 
-use crate::api::{write_audit_log_generic, MessageResponse, SuccessResponse};
-use crate::domain::{
-    CreateEnterpriseSsoConnectorInput, EnterpriseSsoConnector, StringUuid,
-    UpdateEnterpriseSsoConnectorInput,
+use crate::domain::common::StringUuid;
+use crate::domain::enterprise_sso::{
+    CreateEnterpriseSsoConnectorInput, EnterpriseSsoConnector, UpdateEnterpriseSsoConnectorInput,
 };
 use crate::error::{AppError, Result};
+use crate::http_support::{write_audit_log_generic, MessageResponse, SuccessResponse};
 use crate::keycloak::KeycloakIdentityProvider;
 use crate::middleware::auth::AuthUser;
 use crate::policy::{self, PolicyAction, PolicyInput, ResourceScope};

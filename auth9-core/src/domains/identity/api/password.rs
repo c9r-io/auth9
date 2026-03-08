@@ -1,10 +1,10 @@
 //! Password management API handlers
 
-use crate::api::{write_audit_log_generic, MessageResponse, SuccessResponse};
-use crate::domain::{
-    AdminSetPasswordInput, ChangePasswordInput, ForgotPasswordInput, ResetPasswordInput, StringUuid,
-};
+use crate::domain::common::StringUuid;
+use crate::domain::password::{ChangePasswordInput, ForgotPasswordInput, ResetPasswordInput};
+use crate::domain::user::AdminSetPasswordInput;
 use crate::error::AppError;
+use crate::http_support::{write_audit_log_generic, MessageResponse, SuccessResponse};
 use crate::middleware::auth::AuthUser;
 use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::{HasPasswordManagement, HasServices};
@@ -118,7 +118,7 @@ pub async fn get_password_policy<S: HasPasswordManagement + HasServices>(
     State(state): State<S>,
     auth: AuthUser,
     Path(tenant_id): Path<StringUuid>,
-) -> Result<Json<SuccessResponse<crate::domain::PasswordPolicy>>, AppError> {
+) -> Result<Json<SuccessResponse<crate::domain::password::PasswordPolicy>>, AppError> {
     enforce(
         state.config(),
         &auth,
@@ -147,7 +147,7 @@ pub async fn update_password_policy<S: HasPasswordManagement + HasServices>(
     headers: HeaderMap,
     Path(tenant_id): Path<StringUuid>,
     Json(body): Json<serde_json::Value>,
-) -> Result<Json<SuccessResponse<crate::domain::PasswordPolicy>>, AppError> {
+) -> Result<Json<SuccessResponse<crate::domain::password::PasswordPolicy>>, AppError> {
     // Authorization check MUST run before input validation
     enforce(
         state.config(),
@@ -158,7 +158,7 @@ pub async fn update_password_policy<S: HasPasswordManagement + HasServices>(
         },
     )?;
 
-    let input: crate::domain::UpdatePasswordPolicyInput =
+    let input: crate::domain::password::UpdatePasswordPolicyInput =
         serde_json::from_value(body).map_err(|e| AppError::Validation(e.to_string()))?;
     let policy = state
         .password_service()

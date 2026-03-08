@@ -1,11 +1,14 @@
 //! Branding API handlers
 
-use crate::api::MessageResponse;
-use crate::api::{require_platform_admin_with_db, write_audit_log_generic, SuccessResponse};
-use crate::domain::{
-    PublicBrandingQuery, StringUuid, UpdateBrandingRequest, UpdateServiceBrandingRequest,
+use crate::domain::branding::{
+    PublicBrandingQuery, UpdateBrandingRequest, UpdateServiceBrandingRequest,
 };
+use crate::domain::common::StringUuid;
 use crate::error::Result;
+use crate::http_support::MessageResponse;
+use crate::http_support::{
+    require_platform_admin_with_db, write_audit_log_generic, SuccessResponse,
+};
 use crate::middleware::auth::AuthUser;
 use crate::state::{HasBranding, HasServices};
 use axum::{
@@ -215,7 +218,7 @@ pub async fn delete_service_branding<S: HasBranding + HasServices>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::BrandingConfig;
+    use crate::domain::branding::BrandingConfig;
 
     #[test]
     fn test_update_branding_request_deserialization() {

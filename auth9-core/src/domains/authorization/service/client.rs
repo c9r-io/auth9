@@ -1,9 +1,9 @@
 //! Service/Client business logic
 
 use crate::cache::CacheManager;
-use crate::domain::{
-    Client, ClientWithSecret, CreateServiceInput, Service, ServiceWithClient, StringUuid,
-    UpdateServiceInput,
+use crate::domain::common::StringUuid;
+use crate::domain::service::{
+    Client, ClientWithSecret, CreateServiceInput, Service, ServiceWithClient, UpdateServiceInput,
 };
 use crate::error::{AppError, Result};
 use crate::repository::action::ActionRepository;
@@ -394,7 +394,7 @@ impl<
         // Ensure service is active? (Service struct has status, checked in use cases usually?)
         // Existing code checked status in api/service.rs? No, domain/service.rs defines Active/Inactive
         // Logic might want to check if service.status is Active.
-        if service.status != crate::domain::ServiceStatus::Active {
+        if service.status != crate::domain::service::ServiceStatus::Active {
             return Err(AppError::Unauthorized("Service is inactive".to_string()));
         }
 
@@ -524,7 +524,7 @@ mod tests {
                 base_url: input.base_url.clone(),
                 redirect_uris: input.redirect_uris.clone(),
                 logout_uris: input.logout_uris.clone().unwrap_or_default(),
-                status: crate::domain::ServiceStatus::Active,
+                status: crate::domain::service::ServiceStatus::Active,
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
             })
@@ -532,7 +532,7 @@ mod tests {
 
         mock.expect_create_client()
             .returning(move |sid, cid, _hash, name| {
-                Ok(crate::domain::Client {
+                Ok(crate::domain::service::Client {
                     id: StringUuid(Uuid::new_v4()),
                     service_id: StringUuid(sid),
                     client_id: cid.to_string(),
@@ -567,7 +567,7 @@ mod tests {
         mock.expect_find_client_by_client_id()
             .with(eq("existing-client"))
             .returning(|_| {
-                Ok(Some(crate::domain::Client {
+                Ok(Some(crate::domain::service::Client {
                     id: StringUuid::new_v4(),
                     service_id: StringUuid::new_v4(),
                     client_id: "existing-client".to_string(),
@@ -627,7 +627,7 @@ mod tests {
 
         mock.expect_create_client()
             .returning(move |sid, cid, _hash, _| {
-                Ok(crate::domain::Client {
+                Ok(crate::domain::service::Client {
                     id: StringUuid::new_v4(),
                     service_id: StringUuid(sid),
                     client_id: cid.to_string(),
@@ -674,7 +674,7 @@ mod tests {
                     base_url: None,
                     redirect_uris: vec![],
                     logout_uris: vec![],
-                    status: crate::domain::ServiceStatus::Active,
+                    status: crate::domain::service::ServiceStatus::Active,
                     created_at: chrono::Utc::now(),
                     updated_at: chrono::Utc::now(),
                 }))
@@ -684,7 +684,7 @@ mod tests {
             .expect_create_client()
             .times(1)
             .returning(move |sid, cid, _hash, name| {
-                Ok(crate::domain::Client {
+                Ok(crate::domain::service::Client {
                     id: StringUuid(Uuid::new_v4()),
                     service_id: StringUuid(sid),
                     client_id: cid.to_string(),
@@ -731,7 +731,7 @@ mod tests {
             .returning(move |_| {
                 Ok(Some(Service {
                     id: StringUuid(service_id),
-                    status: crate::domain::ServiceStatus::Active,
+                    status: crate::domain::service::ServiceStatus::Active,
                     ..Default::default()
                 }))
             });
@@ -741,7 +741,7 @@ mod tests {
             .returning(|_| Ok(None));
 
         mock.expect_create_client().returning(|sid, cid, _, name| {
-            Ok(crate::domain::Client {
+            Ok(crate::domain::service::Client {
                 id: StringUuid::new_v4(),
                 service_id: StringUuid(sid),
                 client_id: cid.to_string(),
@@ -774,7 +774,7 @@ mod tests {
         mock.expect_find_by_id().returning(move |_| {
             Ok(Some(Service {
                 id: StringUuid(service_id),
-                status: crate::domain::ServiceStatus::Active,
+                status: crate::domain::service::ServiceStatus::Active,
                 ..Default::default()
             }))
         });
@@ -782,7 +782,7 @@ mod tests {
         mock.expect_find_client_by_client_id()
             .with(eq("existing-id"))
             .returning(|_| {
-                Ok(Some(crate::domain::Client {
+                Ok(Some(crate::domain::service::Client {
                     id: StringUuid::new_v4(),
                     service_id: StringUuid::new_v4(),
                     client_id: "existing-id".to_string(),
@@ -819,7 +819,7 @@ mod tests {
                 Ok(Some(Service {
                     id: StringUuid(service_id),
                     name: "My Service".to_string(),
-                    status: crate::domain::ServiceStatus::Active,
+                    status: crate::domain::service::ServiceStatus::Active,
                     ..Default::default()
                 }))
             });
@@ -949,7 +949,7 @@ mod tests {
         mock.expect_list_clients()
             .with(eq(service_id))
             .returning(|_| {
-                Ok(vec![crate::domain::Client {
+                Ok(vec![crate::domain::service::Client {
                     id: StringUuid::new_v4(),
                     service_id: StringUuid::new_v4(),
                     client_id: "client-1".to_string(),
@@ -979,7 +979,7 @@ mod tests {
                 Ok(Some(Service {
                     id: StringUuid(service_id),
                     name: "Old Name".to_string(),
-                    status: crate::domain::ServiceStatus::Active,
+                    status: crate::domain::service::ServiceStatus::Active,
                     ..Default::default()
                 }))
             });
@@ -990,7 +990,7 @@ mod tests {
                 status: input
                     .status
                     .clone()
-                    .unwrap_or(crate::domain::ServiceStatus::Active),
+                    .unwrap_or(crate::domain::service::ServiceStatus::Active),
                 ..Default::default()
             })
         });
@@ -1045,7 +1045,7 @@ mod tests {
             .with(eq(client_id))
             .times(1)
             .returning(move |_| {
-                Ok(Some(crate::domain::Client {
+                Ok(Some(crate::domain::service::Client {
                     id: StringUuid(Uuid::new_v4()),
                     service_id: StringUuid(Uuid::new_v4()),
                     client_id: client_id.to_string(),
@@ -1099,7 +1099,7 @@ mod tests {
             .returning(move |_| {
                 Ok(Some(Service {
                     id: StringUuid(service_id),
-                    status: crate::domain::ServiceStatus::Active,
+                    status: crate::domain::service::ServiceStatus::Active,
                     ..Default::default()
                 }))
             });
@@ -1173,7 +1173,7 @@ mod tests {
         mock.expect_find_client_by_client_id()
             .with(eq("valid-client"))
             .returning(move |_| {
-                Ok(Some(crate::domain::Client {
+                Ok(Some(crate::domain::service::Client {
                     id: StringUuid::new_v4(),
                     service_id: StringUuid(service_id),
                     client_id: "valid-client".to_string(),
@@ -1188,7 +1188,7 @@ mod tests {
             .returning(move |_| {
                 Ok(Some(Service {
                     id: StringUuid(service_id),
-                    status: crate::domain::ServiceStatus::Active,
+                    status: crate::domain::service::ServiceStatus::Active,
                     ..Default::default()
                 }))
             });
@@ -1221,7 +1221,7 @@ mod tests {
         mock.expect_find_client_by_client_id()
             .with(eq("my-client"))
             .returning(move |_| {
-                Ok(Some(crate::domain::Client {
+                Ok(Some(crate::domain::service::Client {
                     id: StringUuid::new_v4(),
                     service_id: StringUuid::new_v4(),
                     client_id: "my-client".to_string(),
@@ -1245,7 +1245,7 @@ mod tests {
         let secret_hash = hash_secret(client_secret).unwrap();
 
         mock.expect_find_client_by_client_id().returning(move |_| {
-            Ok(Some(crate::domain::Client {
+            Ok(Some(crate::domain::service::Client {
                 id: StringUuid::new_v4(),
                 service_id: StringUuid(service_id),
                 client_id: "client".to_string(),
@@ -1258,7 +1258,7 @@ mod tests {
         mock.expect_find_by_id().returning(move |_| {
             Ok(Some(Service {
                 id: StringUuid(service_id),
-                status: crate::domain::ServiceStatus::Inactive, // Inactive service
+                status: crate::domain::service::ServiceStatus::Inactive, // Inactive service
                 ..Default::default()
             }))
         });

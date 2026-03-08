@@ -1,6 +1,6 @@
 //! Email service for sending emails through configured providers
 
-use crate::domain::{
+use crate::domain::email::{
     EmailAddress, EmailMessage, EmailProviderConfig, EmailSendResult, TenantEmailSettings,
 };
 use crate::domains::platform::service::SystemSettingsService;
@@ -353,8 +353,8 @@ impl<R: SystemSettingsRepository> EmailService<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::SmtpConfig;
-    use crate::domain::SystemSettingRow;
+    use crate::domain::email::SmtpConfig;
+    use crate::domain::system_settings::SystemSettingRow;
     use crate::repository::system_settings::MockSystemSettingsRepository;
     use mockall::predicate::*;
 
@@ -495,7 +495,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_oracle_provider() {
-        use crate::domain::OracleEmailConfig;
+        use crate::domain::email::OracleEmailConfig;
 
         let mock = MockSystemSettingsRepository::new();
         let settings_service = Arc::new(SystemSettingsService::new(Arc::new(mock), None));
@@ -518,7 +518,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_ses_provider() {
-        use crate::domain::SesConfig;
+        use crate::domain::email::SesConfig;
 
         let mock = MockSystemSettingsRepository::new();
         let settings_service = Arc::new(SystemSettingsService::new(Arc::new(mock), None));

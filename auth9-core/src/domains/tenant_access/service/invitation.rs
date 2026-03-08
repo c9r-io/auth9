@@ -1,8 +1,8 @@
 //! Invitation service for managing user invitations
 
-use crate::domain::{
-    CreateInvitationInput, EmailAddress, Invitation, InvitationStatus, StringUuid,
-};
+use crate::domain::common::StringUuid;
+use crate::domain::email::EmailAddress;
+use crate::domain::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
 use crate::domains::platform::service::EmailService;
 use crate::email::{EmailTemplate, TemplateEngine};
 use crate::error::{AppError, Result};
@@ -359,7 +359,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::Tenant;
+    use crate::domain::tenant::Tenant;
     use crate::domains::platform::service::SystemSettingsService;
     use crate::repository::invitation::MockInvitationRepository;
     use crate::repository::system_settings::MockSystemSettingsRepository;

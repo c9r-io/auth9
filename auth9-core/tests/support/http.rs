@@ -119,7 +119,7 @@ pub fn create_test_config(keycloak_url: &str) -> Config {
             hmac_key: "test-password-reset-hmac-key".to_string(),
             token_ttl_secs: 3600,
         },
-        async_action: auth9_core::domain::AsyncActionConfig::default(),
+        async_action: auth9_core::domain::action::AsyncActionConfig::default(),
         branding_allowed_domains: vec![],
     }
 }
@@ -423,7 +423,7 @@ impl TestAppState {
 
     /// Enable public registration by setting allow_registration to true in branding config
     pub async fn enable_public_registration(&self) {
-        use auth9_core::domain::BrandingConfig;
+        use auth9_core::domain::branding::BrandingConfig;
         let config = BrandingConfig {
             allow_registration: true,
             ..Default::default()

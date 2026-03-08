@@ -1,6 +1,6 @@
 //! ActionEngine struct and all impl methods.
 
-use crate::domain::{Action, ActionContext, AsyncActionConfig};
+use crate::domain::action::{Action, ActionContext, AsyncActionConfig};
 use crate::error::{AppError, Result};
 use crate::repository::ActionRepository;
 use metrics::{counter, histogram};
@@ -58,7 +58,7 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
     /// If any action fails in strict_mode, the entire flow is aborted.
     pub async fn execute_trigger(
         &self,
-        service_id: crate::domain::StringUuid,
+        service_id: crate::domain::common::StringUuid,
         trigger_id: &str,
         mut context: ActionContext,
     ) -> Result<ActionContext> {
@@ -100,7 +100,7 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
     /// Finds all actions matching the trigger across services belonging to the tenant.
     pub async fn execute_trigger_by_tenant(
         &self,
-        tenant_id: crate::domain::StringUuid,
+        tenant_id: crate::domain::common::StringUuid,
         trigger_id: &str,
         mut context: ActionContext,
     ) -> Result<ActionContext> {
@@ -647,9 +647,10 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::{
-        ActionContextRequest, ActionContextTenant, ActionContextUser, AsyncActionConfig, StringUuid,
+    use crate::domain::action::{
+        ActionContextRequest, ActionContextTenant, ActionContextUser, AsyncActionConfig,
     };
+    use crate::domain::common::StringUuid;
     use crate::repository::action::MockActionRepository;
     use chrono::Utc;
     use std::collections::HashMap;

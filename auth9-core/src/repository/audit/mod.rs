@@ -1,6 +1,6 @@
 //! Audit log repository
 
-use crate::domain::StringUuid;
+use crate::domain::common::StringUuid;
 use crate::error::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};

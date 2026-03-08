@@ -7,9 +7,10 @@ use crate::support::http::{
     MockKeycloakServer, TestAppState,
 };
 use crate::support::{create_test_identity_token, create_test_tenant};
-use auth9_core::api::{MessageResponse, SuccessResponse};
-use auth9_core::domain::{StringUuid, Webhook};
+use auth9_core::domain::analytics::Webhook;
+use auth9_core::domain::common::StringUuid;
 use auth9_core::domains::integration::service::WebhookTestResult;
+use auth9_core::http_support::{MessageResponse, SuccessResponse};
 use auth9_core::repository::WebhookRepository;
 use axum::http::StatusCode;
 use chrono::Utc;

@@ -7,7 +7,7 @@ use crate::support::http::{
     build_system_settings_test_router, get_json_with_auth, post_json_with_auth, put_json_with_auth,
     MockKeycloakServer, TestAppState,
 };
-use auth9_core::domain::SystemSettingRow;
+use auth9_core::domain::system_settings::SystemSettingRow;
 use auth9_core::domains::platform::api::system_settings::TestEmailResponse;
 use axum::http::StatusCode;
 use chrono::Utc;

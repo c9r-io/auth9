@@ -1,14 +1,14 @@
 //! Invitation API handlers
 
-use crate::api::{
+use crate::domain::common::StringUuid;
+use crate::domain::invitation::{CreateInvitationInput, InvitationResponse, InvitationStatus};
+use crate::domain::rbac::AssignRolesInput;
+use crate::domain::user::{AddUserToTenantInput, CreateUserInput};
+use crate::error::{AppError, Result};
+use crate::http_support::{
     deserialize_page, deserialize_per_page, write_audit_log_generic, MessageResponse,
     PaginatedResponse, SuccessResponse,
 };
-use crate::domain::{
-    AddUserToTenantInput, AssignRolesInput, CreateInvitationInput, CreateUserInput,
-    InvitationResponse, InvitationStatus, StringUuid,
-};
-use crate::error::{AppError, Result};
 use crate::keycloak::{CreateKeycloakUserInput, KeycloakCredential};
 use crate::middleware::auth::AuthUser;
 use crate::policy::{self, PolicyAction, PolicyInput, ResourceScope};
@@ -465,7 +465,7 @@ pub async fn accept<S: HasInvitations>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::InvitationStatus;
+    use crate::domain::invitation::InvitationStatus;
 
     #[test]
     fn test_create_invitation_input_deserialization() {

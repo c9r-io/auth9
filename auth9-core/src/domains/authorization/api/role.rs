@@ -1,13 +1,14 @@
 //! Role and permission API handlers
 
-use crate::api::{
+use crate::domain::common::StringUuid;
+use crate::domain::rbac::{
+    AssignRolesInput, CreatePermissionInput, CreateRoleInput, UpdateRoleInput,
+};
+use crate::error::{AppError, Result};
+use crate::http_support::{
     extract_actor_id_generic, require_platform_admin_with_db, write_audit_log_generic,
     MessageResponse, SuccessResponse,
 };
-use crate::domain::{
-    AssignRolesInput, CreatePermissionInput, CreateRoleInput, StringUuid, UpdateRoleInput,
-};
-use crate::error::{AppError, Result};
 use crate::middleware::auth::AuthUser;
 use crate::policy::{enforce, enforce_with_state, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::HasServices;
@@ -573,11 +574,11 @@ pub async fn unassign_role<S: HasServices>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::api::{MessageResponse, SuccessResponse};
-    use crate::domain::{
+    use crate::domain::rbac::{
         AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role,
         RoleWithPermissions, UpdateRoleInput,
     };
+    use crate::http_support::{MessageResponse, SuccessResponse};
 
     #[test]
     fn test_assign_permission_input_deserialization() {

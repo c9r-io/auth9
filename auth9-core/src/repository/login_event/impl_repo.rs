@@ -1,7 +1,8 @@
 //! impl LoginEventRepository for LoginEventRepositoryImpl
 
 use super::{LoginEventRepository, LoginEventRepositoryImpl};
-use crate::domain::{CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginStats, StringUuid};
+use crate::domain::analytics::{CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginStats};
+use crate::domain::common::StringUuid;
 use crate::error::Result;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -169,8 +170,17 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
         Ok(row.0)
     }
 
-    async fn get_stats(&self, tenant_id: Option<StringUuid>, start: DateTime<Utc>, end: DateTime<Utc>) -> Result<LoginStats> {
-        let tenant_filter = if tenant_id.is_some() { " AND tenant_id = ?" } else { "" };
+    async fn get_stats(
+        &self,
+        tenant_id: Option<StringUuid>,
+        start: DateTime<Utc>,
+        end: DateTime<Utc>,
+    ) -> Result<LoginStats> {
+        let tenant_filter = if tenant_id.is_some() {
+            " AND tenant_id = ?"
+        } else {
+            ""
+        };
 
         let counts_sql = format!(
             r#"
@@ -338,7 +348,11 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
         start: DateTime<Utc>,
         end: DateTime<Utc>,
     ) -> Result<Vec<DailyTrendPoint>> {
-        let tenant_filter = if tenant_id.is_some() { " AND tenant_id = ?" } else { "" };
+        let tenant_filter = if tenant_id.is_some() {
+            " AND tenant_id = ?"
+        } else {
+            ""
+        };
         let sql = format!(
             r#"
             SELECT

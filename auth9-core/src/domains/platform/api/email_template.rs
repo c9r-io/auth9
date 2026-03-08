@@ -1,10 +1,13 @@
 //! Email template API handlers
 
-use crate::api::{require_platform_admin_with_db, write_audit_log_generic, SuccessResponse};
-use crate::domain::{
-    EmailAddress, EmailMessage, EmailTemplateContent, EmailTemplateType, EmailTemplateWithContent,
+use crate::domain::email::{EmailAddress, EmailMessage};
+use crate::domain::email_template::{
+    EmailTemplateContent, EmailTemplateType, EmailTemplateWithContent,
 };
 use crate::error::{AppError, Result};
+use crate::http_support::{
+    require_platform_admin_with_db, write_audit_log_generic, SuccessResponse,
+};
 use crate::middleware::auth::AuthUser;
 use crate::state::{HasEmailTemplates, HasServices, HasSystemSettings};
 use axum::{

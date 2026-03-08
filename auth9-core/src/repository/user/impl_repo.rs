@@ -1,9 +1,10 @@
 //! impl UserRepository for UserRepositoryImpl
 
 use super::{UserRepository, UserRepositoryImpl};
-use crate::domain::{
-    AddUserToTenantInput, CreateUserInput, StringUuid, TenantInfo, TenantUser,
-    TenantUserWithTenant, UpdateUserInput, User,
+use crate::domain::common::StringUuid;
+use crate::domain::user::{
+    AddUserToTenantInput, CreateUserInput, TenantInfo, TenantUser, TenantUserWithTenant,
+    UpdateUserInput, User,
 };
 use crate::error::{AppError, Result};
 use async_trait::async_trait;

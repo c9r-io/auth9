@@ -1,6 +1,7 @@
 //! Action-related helper functions for resolving service/tenant context.
 
-use crate::domain::{EnterpriseSsoDiscoveryResult, StringUuid};
+use crate::domain::common::StringUuid;
+use crate::domain::enterprise_sso::EnterpriseSsoDiscoveryResult;
 use crate::error::{AppError, Result};
 use crate::state::HasServices;
 use sqlx::Row;

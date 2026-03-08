@@ -1,6 +1,7 @@
 //! SCIM Token repository
 
-use crate::domain::{ScimToken, StringUuid};
+use crate::domain::common::StringUuid;
+use crate::domain::scim::ScimToken;
 use crate::error::{AppError, Result};
 use async_trait::async_trait;
 use sqlx::MySqlPool;
