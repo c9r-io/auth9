@@ -1,6 +1,6 @@
-use crate::domain::abac::{AbacEffect, AbacPolicyDocument};
 use crate::error::AppError;
 use crate::middleware::auth::AuthUser;
+use crate::models::abac::{AbacEffect, AbacPolicyDocument};
 use crate::policy::{PolicyAction, PolicyInput, ResourceScope};
 use crate::state::HasServices;
 use chrono::{Datelike, Timelike, Utc};
@@ -453,7 +453,7 @@ mod tests {
     fn test_simulate_document_deny_overrides_allow() {
         let policy = AbacPolicyDocument {
             rules: vec![
-                crate::domain::abac::AbacRule {
+                crate::models::abac::AbacRule {
                     id: "allow_admin".to_string(),
                     effect: AbacEffect::Allow,
                     actions: vec!["user_manage".to_string()],
@@ -465,7 +465,7 @@ mod tests {
                         "value": "admin"
                     })),
                 },
-                crate::domain::abac::AbacRule {
+                crate::models::abac::AbacRule {
                     id: "deny_off_hours".to_string(),
                     effect: AbacEffect::Deny,
                     actions: vec!["user_manage".to_string()],
@@ -496,7 +496,7 @@ mod tests {
     #[test]
     fn test_simulate_document_default_deny_when_allow_exists_but_not_matched() {
         let policy = AbacPolicyDocument {
-            rules: vec![crate::domain::abac::AbacRule {
+            rules: vec![crate::models::abac::AbacRule {
                 id: "allow_owner".to_string(),
                 effect: AbacEffect::Allow,
                 actions: vec!["user_manage".to_string()],
@@ -522,7 +522,7 @@ mod tests {
     #[test]
     fn test_simulate_document_allow_when_only_deny_rules_and_none_match() {
         let policy = AbacPolicyDocument {
-            rules: vec![crate::domain::abac::AbacRule {
+            rules: vec![crate::models::abac::AbacRule {
                 id: "deny_external".to_string(),
                 effect: AbacEffect::Deny,
                 actions: vec!["user_manage".to_string()],
@@ -548,7 +548,7 @@ mod tests {
     #[test]
     fn test_simulate_document_ignores_invalid_condition_json() {
         let policy = AbacPolicyDocument {
-            rules: vec![crate::domain::abac::AbacRule {
+            rules: vec![crate::models::abac::AbacRule {
                 id: "bad_rule".to_string(),
                 effect: AbacEffect::Deny,
                 actions: vec!["user_manage".to_string()],

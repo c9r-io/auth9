@@ -6,10 +6,10 @@ use crate::support::create_test_user;
 use crate::support::http::{
     delete_json, get_json, post_json, put_json, MockKeycloakServer, TestAppState,
 };
-use auth9_core::domain::common::StringUuid;
-use auth9_core::domain::identity_provider::{IdentityProvider, IdentityProviderTemplate};
-use auth9_core::domain::linked_identity::{LinkedIdentity, LinkedIdentityInfo};
 use auth9_core::http_support::{MessageResponse, SuccessResponse};
+use auth9_core::models::common::StringUuid;
+use auth9_core::models::identity_provider::{IdentityProvider, IdentityProviderTemplate};
+use auth9_core::models::linked_identity::{LinkedIdentity, LinkedIdentityInfo};
 use auth9_core::repository::LinkedIdentityRepository;
 use axum::http::StatusCode;
 use chrono::Utc;

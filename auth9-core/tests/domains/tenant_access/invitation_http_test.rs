@@ -8,9 +8,9 @@ use crate::support::http::{
 use crate::support::{
     create_test_identity_token, create_test_role, create_test_service, create_test_tenant,
 };
-use auth9_core::domain::common::StringUuid;
-use auth9_core::domain::invitation::{Invitation, InvitationResponse, InvitationStatus};
 use auth9_core::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
+use auth9_core::models::common::StringUuid;
+use auth9_core::models::invitation::{Invitation, InvitationResponse, InvitationStatus};
 use axum::http::StatusCode;
 use chrono::Utc;
 
@@ -834,7 +834,7 @@ async fn test_create_invitation_user_already_member_returns_409() {
     user.email = "existing@example.com".to_string();
     state.user_repo.add_user(user).await;
 
-    let tu = auth9_core::domain::user::TenantUser {
+    let tu = auth9_core::models::user::TenantUser {
         id: StringUuid::new_v4(),
         user_id: StringUuid::from(user_id),
         tenant_id,
@@ -987,7 +987,7 @@ fn create_pending_invitation(
 
 #[tokio::test]
 async fn test_accept_invitation_existing_user_success() {
-    use auth9_core::domain::user::User;
+    use auth9_core::models::user::User;
 
     let mock_kc = MockKeycloakServer::new().await;
     let state = TestAppState::with_mock_keycloak(&mock_kc);
@@ -1166,7 +1166,7 @@ async fn test_accept_invitation_email_mismatch() {
 
 #[tokio::test]
 async fn test_accept_invitation_with_role_assignment() {
-    use auth9_core::domain::user::User;
+    use auth9_core::models::user::User;
 
     let mock_kc = MockKeycloakServer::new().await;
     let state = TestAppState::with_mock_keycloak(&mock_kc);

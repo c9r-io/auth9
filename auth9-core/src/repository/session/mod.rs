@@ -1,8 +1,8 @@
 //! Session repository
 
-use crate::domain::common::StringUuid;
-use crate::domain::session::{CreateSessionInput, Session};
 use crate::error::Result;
+use crate::models::common::StringUuid;
+use crate::models::session::{CreateSessionInput, Session};
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

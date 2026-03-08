@@ -1218,7 +1218,7 @@ pub fn build_full_router<S>(
     prometheus_handle: Arc<Option<PrometheusHandle>>,
 ) -> Router
 where
-    S: domains::DomainRouterState + HasServices + HasCache,
+    S: domains::BoundedContextRouterState + HasServices + HasCache,
 {
     // Capture production flag before state is moved
     let is_production = state.config().is_production();

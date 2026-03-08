@@ -1,11 +1,11 @@
 //! impl ActionRepository for ActionRepositoryImpl
 
 use super::{ActionRepository, ActionRepositoryImpl};
-use crate::domain::action::{
+use crate::error::{AppError, Result};
+use crate::models::action::{
     Action, ActionExecution, CreateActionInput, LogQueryFilter, UpdateActionInput,
 };
-use crate::domain::common::StringUuid;
-use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 
 #[async_trait]

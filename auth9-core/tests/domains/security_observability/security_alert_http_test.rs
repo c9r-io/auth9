@@ -4,10 +4,10 @@
 
 use crate::support::http::{get_json_with_auth, MockKeycloakServer, TestAppState};
 use crate::support::{create_test_jwt_manager, create_test_user};
-use auth9_core::domain::analytics::{AlertSeverity, SecurityAlert, SecurityAlertType};
-use auth9_core::domain::common::StringUuid;
 use auth9_core::domains::security_observability::api::security_alert::UnresolvedCountResponse;
 use auth9_core::http_support::{PaginatedResponse, SuccessResponse};
+use auth9_core::models::analytics::{AlertSeverity, SecurityAlert, SecurityAlertType};
+use auth9_core::models::common::StringUuid;
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use chrono::Utc;

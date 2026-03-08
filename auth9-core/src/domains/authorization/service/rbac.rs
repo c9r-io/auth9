@@ -1,12 +1,12 @@
 //! RBAC business logic
 
 use crate::cache::CacheManager;
-use crate::domain::common::StringUuid;
-use crate::domain::rbac::{
+use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
+use crate::models::rbac::{
     AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role,
     RoleWithPermissions, UpdateRoleInput, UserRolesInTenant,
 };
-use crate::error::{AppError, Result};
 use crate::repository::RbacRepository;
 use std::sync::Arc;
 use validator::Validate;
@@ -407,7 +407,7 @@ impl<R: RbacRepository> RbacService<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::rbac::{Permission, Role};
+    use crate::models::rbac::{Permission, Role};
     use crate::repository::rbac::MockRbacRepository;
     use mockall::predicate::*;
     use uuid::Uuid;

@@ -1,8 +1,8 @@
 //! SCIM Bulk operations handler
 
-use crate::domain::scim::{ScimBulkRequest, ScimError, ScimRequestContext};
 use crate::domains::provisioning::api::ScimJson;
 use crate::domains::provisioning::context::ProvisioningContext;
+use crate::models::scim::{ScimBulkRequest, ScimError, ScimRequestContext};
 use axum::extract::{Extension, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;

@@ -3,9 +3,9 @@
 pub(crate) mod abac;
 
 use crate::config::Config;
-use crate::domain::common::StringUuid;
 use crate::error::AppError;
 use crate::middleware::auth::{AuthUser, TokenType};
+use crate::models::common::StringUuid;
 use crate::state::HasServices;
 
 pub type PolicyResult<T> = std::result::Result<T, AppError>;
@@ -758,7 +758,7 @@ mod tests {
         PasswordResetConfig, RateLimitConfig, RedisConfig, SecurityHeadersConfig, ServerConfig,
         TelemetryConfig, WebAuthnConfig,
     };
-    use crate::domain::action::AsyncActionConfig;
+    use crate::models::action::AsyncActionConfig;
 
     fn create_test_config(platform_admins: Vec<String>) -> Config {
         Config {

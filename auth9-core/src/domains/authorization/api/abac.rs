@@ -1,11 +1,11 @@
 //! ABAC policy management APIs.
 
-use crate::domain::abac::{AbacMode, AbacPolicyDocument, AbacSimulationInput};
-use crate::domain::common::StringUuid;
 use crate::domains::authorization::service::abac::AbacPolicyService;
 use crate::error::Result;
 use crate::http_support::{MessageResponse, SuccessResponse};
 use crate::middleware::auth::AuthUser;
+use crate::models::abac::{AbacMode, AbacPolicyDocument, AbacSimulationInput};
+use crate::models::common::StringUuid;
 use crate::policy::{enforce_with_state, PolicyAction, PolicyInput, ResourceScope};
 use crate::repository::abac::AbacRepositoryImpl;
 use crate::state::{HasDbPool, HasServices};

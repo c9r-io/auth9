@@ -1,7 +1,7 @@
 //! Action domain models for Auth9 Actions system
 
-use crate::domain::common::StringUuid;
 use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;

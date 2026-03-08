@@ -7,9 +7,9 @@ use crate::support::http::{
     TestAppState,
 };
 use crate::support::{create_test_identity_token, create_test_user};
-use auth9_core::domain::common::StringUuid;
-use auth9_core::domain::password::PasswordPolicy;
 use auth9_core::http_support::{MessageResponse, SuccessResponse};
+use auth9_core::models::common::StringUuid;
+use auth9_core::models::password::PasswordPolicy;
 use axum::http::StatusCode;
 
 // ============================================================================

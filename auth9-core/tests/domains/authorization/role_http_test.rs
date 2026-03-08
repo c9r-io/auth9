@@ -10,8 +10,8 @@ use crate::support::mock_keycloak::MockKeycloakServer;
 use crate::support::{
     create_test_permission, create_test_role, create_test_service, create_test_tenant_access_token,
 };
-use auth9_core::domain::rbac::{Permission, Role, UserRolesInTenant};
 use auth9_core::http_support::{MessageResponse, SuccessResponse};
+use auth9_core::models::rbac::{Permission, Role, UserRolesInTenant};
 use auth9_core::repository::RbacRepository;
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
@@ -753,7 +753,7 @@ async fn test_create_role_with_parent() {
     assert_eq!(response.data.name, "child-role");
     assert_eq!(
         response.data.parent_role_id,
-        Some(auth9_core::domain::common::StringUuid::from(parent_role_id))
+        Some(auth9_core::models::common::StringUuid::from(parent_role_id))
     );
 }
 

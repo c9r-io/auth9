@@ -1,7 +1,7 @@
 //! Audit log repository
 
-use crate::domain::common::StringUuid;
 use crate::error::Result;
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};

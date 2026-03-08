@@ -1,9 +1,9 @@
 //! Tenant repository
 
-use crate::domain::common::StringUuid;
-use crate::domain::password::PasswordPolicy;
-use crate::domain::tenant::{CreateTenantInput, Tenant, UpdateTenantInput};
 use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
+use crate::models::password::PasswordPolicy;
+use crate::models::tenant::{CreateTenantInput, Tenant, UpdateTenantInput};
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

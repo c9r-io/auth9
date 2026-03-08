@@ -1,13 +1,13 @@
 //! Tenant-scoped enterprise SSO connector APIs.
 
-use crate::domain::common::StringUuid;
-use crate::domain::enterprise_sso::{
-    CreateEnterpriseSsoConnectorInput, EnterpriseSsoConnector, UpdateEnterpriseSsoConnectorInput,
-};
 use crate::error::{AppError, Result};
 use crate::http_support::{write_audit_log_generic, MessageResponse, SuccessResponse};
 use crate::keycloak::KeycloakIdentityProvider;
 use crate::middleware::auth::AuthUser;
+use crate::models::common::StringUuid;
+use crate::models::enterprise_sso::{
+    CreateEnterpriseSsoConnectorInput, EnterpriseSsoConnector, UpdateEnterpriseSsoConnectorInput,
+};
 use crate::policy::{self, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::{HasDbPool, HasServices};
 use axum::{

@@ -2,9 +2,9 @@
 
 use super::helpers::extract_identity_claims_from_headers;
 use super::types::{TenantTokenExchangeRequest, TokenResponse};
-use crate::domain::common::StringUuid;
 use crate::error::{AppError, Result};
 use crate::http_support::{write_audit_log_generic, SuccessResponse};
+use crate::models::common::StringUuid;
 use crate::state::HasServices;
 use axum::{
     extract::State,
@@ -48,7 +48,7 @@ pub async fn tenant_token<S: HasServices>(
 
     // Verify tenant is active before allowing token exchange
     let tenant = state.tenant_service().get(tenant_id).await?;
-    if tenant.status != crate::domain::tenant::TenantStatus::Active {
+    if tenant.status != crate::models::tenant::TenantStatus::Active {
         return Err(AppError::Forbidden(format!(
             "Tenant is not active (status: '{}')",
             tenant.status

@@ -4,9 +4,9 @@
 //! During migration period, also supports listing/deleting Keycloak credentials.
 
 use crate::cache::CacheOperations;
-use crate::domain::webauthn::{CreatePasskeyInput, WebAuthnCredential};
 use crate::error::{AppError, Result};
 use crate::keycloak::KeycloakClient;
+use crate::models::webauthn::{CreatePasskeyInput, WebAuthnCredential};
 use crate::repository::webauthn::WebAuthnRepository;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -358,7 +358,7 @@ impl WebAuthnService {
 mod tests {
     use super::*;
     use crate::cache::NoOpCacheManager;
-    use crate::domain::webauthn::StoredPasskey;
+    use crate::models::webauthn::StoredPasskey;
     use crate::repository::webauthn::MockWebAuthnRepository;
 
     fn create_test_webauthn() -> Arc<Webauthn> {

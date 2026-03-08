@@ -1,8 +1,8 @@
 //! Tenant-Service association repository
 
-use crate::domain::common::StringUuid;
-use crate::domain::tenant::ServiceWithStatus;
 use crate::error::Result;
+use crate::models::common::StringUuid;
+use crate::models::tenant::ServiceWithStatus;
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

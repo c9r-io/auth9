@@ -4,8 +4,8 @@
 //! This module provides thread-local storage and helper functions
 //! for creating, taking, and returning JsRuntime instances.
 
-use crate::domain::action::AsyncActionConfig;
 use crate::error::{AppError, Result};
+use crate::models::action::AsyncActionConfig;
 use deno_core::{JsRuntime, RuntimeOptions};
 use std::cell::RefCell;
 

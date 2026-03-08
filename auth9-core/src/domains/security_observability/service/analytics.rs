@@ -1,10 +1,10 @@
 //! Analytics service for login statistics and event tracking
 
-use crate::domain::analytics::{
+use crate::error::Result;
+use crate::models::analytics::{
     CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginEventType, LoginStats,
 };
-use crate::domain::common::StringUuid;
-use crate::error::Result;
+use crate::models::common::StringUuid;
 use crate::repository::LoginEventRepository;
 use chrono::{DateTime, Duration, Utc};
 use std::sync::Arc;

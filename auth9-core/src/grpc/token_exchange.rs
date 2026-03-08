@@ -1,12 +1,12 @@
 //! Token Exchange gRPC service implementation
 
-use crate::domain::common::StringUuid;
 use crate::grpc::proto::{
     token_exchange_server::TokenExchange, ExchangeTokenRequest, ExchangeTokenResponse,
     GetUserRolesRequest, GetUserRolesResponse, IntrospectTokenRequest, IntrospectTokenResponse,
     Role as ProtoRole, ValidateTokenRequest, ValidateTokenResponse,
 };
 use crate::jwt::JwtManager;
+use crate::models::common::StringUuid;
 use crate::repository::audit::{AuditRepository, CreateAuditLogInput};
 use crate::repository::{RbacRepository, ServiceRepository, TenantRepository, UserRepository};
 use std::collections::HashMap;
@@ -84,12 +84,12 @@ pub trait TokenExchangeCache: Send + Sync {
         tenant_id: Uuid,
         service_id: Uuid,
     ) -> impl std::future::Future<
-        Output = crate::error::Result<Option<crate::domain::rbac::UserRolesInTenant>>,
+        Output = crate::error::Result<Option<crate::models::rbac::UserRolesInTenant>>,
     > + Send;
 
     fn set_user_roles_for_service(
         &self,
-        roles: &crate::domain::rbac::UserRolesInTenant,
+        roles: &crate::models::rbac::UserRolesInTenant,
         service_id: Uuid,
     ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send;
 
@@ -98,12 +98,12 @@ pub trait TokenExchangeCache: Send + Sync {
         user_id: Uuid,
         tenant_id: Uuid,
     ) -> impl std::future::Future<
-        Output = crate::error::Result<Option<crate::domain::rbac::UserRolesInTenant>>,
+        Output = crate::error::Result<Option<crate::models::rbac::UserRolesInTenant>>,
     > + Send;
 
     fn set_user_roles(
         &self,
-        roles: &crate::domain::rbac::UserRolesInTenant,
+        roles: &crate::models::rbac::UserRolesInTenant,
     ) -> impl std::future::Future<Output = crate::error::Result<()>> + Send;
 }
 
@@ -113,14 +113,14 @@ impl TokenExchangeCache for crate::cache::CacheManager {
         user_id: Uuid,
         tenant_id: Uuid,
         service_id: Uuid,
-    ) -> crate::error::Result<Option<crate::domain::rbac::UserRolesInTenant>> {
+    ) -> crate::error::Result<Option<crate::models::rbac::UserRolesInTenant>> {
         crate::cache::CacheManager::get_user_roles_for_service(self, user_id, tenant_id, service_id)
             .await
     }
 
     async fn set_user_roles_for_service(
         &self,
-        roles: &crate::domain::rbac::UserRolesInTenant,
+        roles: &crate::models::rbac::UserRolesInTenant,
         service_id: Uuid,
     ) -> crate::error::Result<()> {
         crate::cache::CacheManager::set_user_roles_for_service(self, roles, service_id).await
@@ -130,13 +130,13 @@ impl TokenExchangeCache for crate::cache::CacheManager {
         &self,
         user_id: Uuid,
         tenant_id: Uuid,
-    ) -> crate::error::Result<Option<crate::domain::rbac::UserRolesInTenant>> {
+    ) -> crate::error::Result<Option<crate::models::rbac::UserRolesInTenant>> {
         crate::cache::CacheManager::get_user_roles(self, user_id, tenant_id).await
     }
 
     async fn set_user_roles(
         &self,
-        roles: &crate::domain::rbac::UserRolesInTenant,
+        roles: &crate::models::rbac::UserRolesInTenant,
     ) -> crate::error::Result<()> {
         crate::cache::CacheManager::set_user_roles(self, roles).await
     }
@@ -148,13 +148,13 @@ impl TokenExchangeCache for crate::cache::NoOpCacheManager {
         _user_id: Uuid,
         _tenant_id: Uuid,
         _service_id: Uuid,
-    ) -> crate::error::Result<Option<crate::domain::rbac::UserRolesInTenant>> {
+    ) -> crate::error::Result<Option<crate::models::rbac::UserRolesInTenant>> {
         Ok(None)
     }
 
     async fn set_user_roles_for_service(
         &self,
-        _roles: &crate::domain::rbac::UserRolesInTenant,
+        _roles: &crate::models::rbac::UserRolesInTenant,
         _service_id: Uuid,
     ) -> crate::error::Result<()> {
         Ok(())
@@ -164,13 +164,13 @@ impl TokenExchangeCache for crate::cache::NoOpCacheManager {
         &self,
         _user_id: Uuid,
         _tenant_id: Uuid,
-    ) -> crate::error::Result<Option<crate::domain::rbac::UserRolesInTenant>> {
+    ) -> crate::error::Result<Option<crate::models::rbac::UserRolesInTenant>> {
         Ok(None)
     }
 
     async fn set_user_roles(
         &self,
-        _roles: &crate::domain::rbac::UserRolesInTenant,
+        _roles: &crate::models::rbac::UserRolesInTenant,
     ) -> crate::error::Result<()> {
         Ok(())
     }
@@ -375,7 +375,7 @@ where
                 .await
                 .map_err(|e| Status::internal(format!("Failed to lookup tenant: {}", e)))?
                 .ok_or_else(|| Status::not_found("Tenant not found"))?;
-            if tenant.status != crate::domain::tenant::TenantStatus::Active {
+            if tenant.status != crate::models::tenant::TenantStatus::Active {
                 self.write_exchange_audit_log(
                     Some(actor_id),
                     "token_exchange.exchange.failed",

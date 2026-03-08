@@ -1,11 +1,11 @@
 //! RBAC repository
 
-use crate::domain::common::StringUuid;
-use crate::domain::rbac::{
+use crate::error::Result;
+use crate::models::common::StringUuid;
+use crate::models::rbac::{
     AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role, UpdateRoleInput,
     UserRolesInTenant,
 };
-use crate::error::Result;
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

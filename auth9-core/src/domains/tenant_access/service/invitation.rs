@@ -1,11 +1,11 @@
 //! Invitation service for managing user invitations
 
-use crate::domain::common::StringUuid;
-use crate::domain::email::EmailAddress;
-use crate::domain::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
 use crate::domains::platform::service::EmailService;
 use crate::email::{EmailTemplate, TemplateEngine};
 use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
+use crate::models::email::EmailAddress;
+use crate::models::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
 use crate::repository::{InvitationRepository, SystemSettingsRepository, TenantRepository};
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -359,8 +359,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::tenant::Tenant;
     use crate::domains::platform::service::SystemSettingsService;
+    use crate::models::tenant::Tenant;
     use crate::repository::invitation::MockInvitationRepository;
     use crate::repository::system_settings::MockSystemSettingsRepository;
     use crate::repository::tenant::MockTenantRepository;

@@ -1,10 +1,6 @@
 //! Service/Client API handlers
 
 use crate::config::Config;
-use crate::domain::common::StringUuid;
-use crate::domain::service::{
-    CreateClientInput, CreateServiceInput, Service, ServiceStatus, UpdateServiceInput,
-};
 use crate::error::{AppError, Result};
 use crate::http_support::{
     deserialize_page, deserialize_per_page, extract_actor_id_generic, extract_ip,
@@ -12,6 +8,10 @@ use crate::http_support::{
 };
 use crate::keycloak::KeycloakOidcClient;
 use crate::middleware::auth::AuthUser;
+use crate::models::common::StringUuid;
+use crate::models::service::{
+    CreateClientInput, CreateServiceInput, Service, ServiceStatus, UpdateServiceInput,
+};
 use crate::policy::{
     enforce, enforce_with_state, is_platform_admin_with_db, PolicyAction, PolicyInput,
     ResourceScope,
@@ -473,7 +473,7 @@ pub async fn create_client<S: HasServices>(
             service.name,
             input.name.clone().unwrap_or("Client".to_string())
         )),
-        enabled: service.status == crate::domain::service::ServiceStatus::Active,
+        enabled: service.status == crate::models::service::ServiceStatus::Active,
         protocol: "openid-connect".to_string(),
         base_url: service.base_url.clone(),
         root_url: service.base_url.clone(),
@@ -995,7 +995,7 @@ async fn log_access_denied<S: HasServices>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::service::{CreateServiceInput, ServiceStatus, UpdateServiceInput};
+    use crate::models::service::{CreateServiceInput, ServiceStatus, UpdateServiceInput};
 
     #[test]
     fn test_list_services_query_defaults() {
@@ -1198,7 +1198,7 @@ mod tests {
             jwt_tenant_access_allowed_audiences: vec![],
             security_headers: crate::config::SecurityHeadersConfig::default(),
             portal_client_id: None,
-            async_action: crate::domain::action::AsyncActionConfig::default(),
+            async_action: crate::models::action::AsyncActionConfig::default(),
             branding_allowed_domains: vec![],
         }
     }
@@ -1479,7 +1479,7 @@ mod tests {
     #[test]
     fn test_merge_service_update_all_fields() {
         let before = Service {
-            id: crate::domain::common::StringUuid::new_v4(),
+            id: crate::models::common::StringUuid::new_v4(),
             tenant_id: None,
             name: "Old Name".to_string(),
             base_url: Some("https://old.example.com".to_string()),
@@ -1510,7 +1510,7 @@ mod tests {
     #[test]
     fn test_merge_service_update_partial() {
         let before = Service {
-            id: crate::domain::common::StringUuid::new_v4(),
+            id: crate::models::common::StringUuid::new_v4(),
             tenant_id: None,
             name: "Original".to_string(),
             base_url: Some("https://original.com".to_string()),

@@ -3,8 +3,8 @@
 //! Recursive descent parser for SCIM filter expressions.
 //! Compiles parsed AST into SQL WHERE clauses with bind parameters.
 
-use crate::domain::scim::{scim_attr_to_column, CompiledFilter, ScimCompareOp, ScimFilterExpr};
 use crate::error::{AppError, Result};
+use crate::models::scim::{scim_attr_to_column, CompiledFilter, ScimCompareOp, ScimFilterExpr};
 
 /// Parse a SCIM filter string into an expression AST.
 pub fn parse_filter(input: &str) -> Result<ScimFilterExpr> {

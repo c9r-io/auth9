@@ -1,8 +1,8 @@
 //! Webhook service for event notifications
 
-use crate::domain::analytics::{CreateWebhookInput, UpdateWebhookInput, Webhook, WebhookEvent};
-use crate::domain::common::StringUuid;
 use crate::error::{AppError, Result};
+use crate::models::analytics::{CreateWebhookInput, UpdateWebhookInput, Webhook, WebhookEvent};
+use crate::models::common::StringUuid;
 use crate::repository::WebhookRepository;
 use async_trait::async_trait;
 use chrono::Utc;

@@ -1,4 +1,4 @@
-//! Domain models for Auth9 Core
+//! Shared data models and value objects used across bounded contexts.
 
 pub mod abac;
 pub mod action;

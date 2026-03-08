@@ -1,9 +1,9 @@
 //! SCIM Group CRUD API handlers
 
-use crate::domain::common::StringUuid;
-use crate::domain::scim::{ScimError, ScimGroup, ScimPatchOp, ScimRequestContext};
 use crate::domains::provisioning::api::ScimJson;
 use crate::domains::provisioning::context::ProvisioningContext;
+use crate::models::common::StringUuid;
+use crate::models::scim::{ScimError, ScimGroup, ScimPatchOp, ScimRequestContext};
 use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -120,7 +120,7 @@ pub async fn replace_group<S: ProvisioningContext>(
     // Convert PUT to a patch operation on the display name
     let patch = ScimPatchOp {
         schemas: vec![ScimPatchOp::SCHEMA.to_string()],
-        operations: vec![crate::domain::scim::ScimPatchOperation {
+        operations: vec![crate::models::scim::ScimPatchOperation {
             op: "replace".to_string(),
             path: Some("displayName".to_string()),
             value: Some(serde_json::Value::String(group.display_name)),

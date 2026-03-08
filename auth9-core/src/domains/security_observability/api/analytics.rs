@@ -1,12 +1,12 @@
 //! Analytics API handlers
 
-use crate::domain::analytics::{DailyTrendPoint, LoginEvent, LoginStats};
-use crate::domain::common::StringUuid;
 use crate::error::AppError;
 use crate::http_support::{
     default_page, default_per_page, deserialize_page, deserialize_per_page, PaginatedResponse,
     PaginationQuery, SuccessResponse,
 };
+use crate::models::analytics::{DailyTrendPoint, LoginEvent, LoginStats};
+use crate::models::common::StringUuid;
 use crate::state::HasAnalytics;
 use axum::{
     extract::{Path, Query, State},

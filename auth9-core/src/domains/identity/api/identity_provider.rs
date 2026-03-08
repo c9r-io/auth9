@@ -1,13 +1,13 @@
 //! Identity Provider API handlers
 
-use crate::domain::common::StringUuid;
-use crate::domain::identity_provider::{
+use crate::error::AppError;
+use crate::http_support::{MessageResponse, SuccessResponse};
+use crate::models::common::StringUuid;
+use crate::models::identity_provider::{
     CreateIdentityProviderInput, IdentityProvider, IdentityProviderTemplate,
     UpdateIdentityProviderInput,
 };
-use crate::domain::linked_identity::LinkedIdentityInfo;
-use crate::error::AppError;
-use crate::http_support::{MessageResponse, SuccessResponse};
+use crate::models::linked_identity::LinkedIdentityInfo;
 use crate::state::{HasIdentityProviders, HasServices};
 use axum::{
     extract::{Path, State},

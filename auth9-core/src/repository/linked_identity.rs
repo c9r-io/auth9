@@ -1,8 +1,8 @@
 //! Linked identity repository
 
-use crate::domain::common::StringUuid;
-use crate::domain::linked_identity::{CreateLinkedIdentityInput, LinkedIdentity};
 use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
+use crate::models::linked_identity::{CreateLinkedIdentityInput, LinkedIdentity};
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

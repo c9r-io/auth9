@@ -1,11 +1,11 @@
 //! Session management API handlers
 
 use crate::cache::CacheOperations;
-use crate::domain::common::StringUuid;
-use crate::domain::session::SessionInfo;
 use crate::error::AppError;
 use crate::http_support::{MessageResponse, SuccessResponse};
 use crate::middleware::auth::AuthUser;
+use crate::models::common::StringUuid;
+use crate::models::session::SessionInfo;
 use crate::policy::{enforce_with_state, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::{HasCache, HasServices, HasSessionManagement};
 use axum::{

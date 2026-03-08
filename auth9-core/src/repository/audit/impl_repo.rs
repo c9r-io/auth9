@@ -4,8 +4,8 @@ use super::{
     AuditLog, AuditLogQuery, AuditLogWithActor, AuditRepository, AuditRepositoryImpl,
     CreateAuditLogInput,
 };
-use crate::domain::common::StringUuid;
 use crate::error::Result;
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 
 #[async_trait]

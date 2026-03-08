@@ -1,10 +1,10 @@
 //! User repository
 
-use crate::domain::common::StringUuid;
-use crate::domain::user::{
+use crate::error::Result;
+use crate::models::common::StringUuid;
+use crate::models::user::{
     AddUserToTenantInput, CreateUserInput, TenantUser, TenantUserWithTenant, UpdateUserInput, User,
 };
-use crate::error::Result;
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

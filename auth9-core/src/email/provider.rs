@@ -1,6 +1,6 @@
 //! Email provider trait and error types
 
-use crate::domain::email::{EmailMessage, EmailSendResult};
+use crate::models::email::{EmailMessage, EmailSendResult};
 use async_trait::async_trait;
 use thiserror::Error;
 
@@ -43,7 +43,7 @@ pub trait EmailProvider: Send + Sync {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::email::EmailAddress;
+    use crate::models::email::EmailAddress;
 
     #[tokio::test]
     async fn test_mock_email_provider() {

@@ -1,10 +1,10 @@
 //! Security Alert API handlers
 
-use crate::domain::analytics::{AlertSeverity, SecurityAlert, SecurityAlertType};
-use crate::domain::common::StringUuid;
 use crate::error::AppError;
 use crate::http_support::{PaginatedResponse, SuccessResponse};
 use crate::middleware::auth::AuthUser;
+use crate::models::analytics::{AlertSeverity, SecurityAlert, SecurityAlertType};
+use crate::models::common::StringUuid;
 use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::{HasSecurityAlerts, HasServices};
 use axum::{

@@ -12,37 +12,37 @@ pub use mock_keycloak::MockKeycloakServer;
 use async_trait::async_trait;
 pub use auth9_core::cache::NoOpCacheManager;
 pub use auth9_core::config::JwtConfig;
-pub use auth9_core::domain::action::{Action, CreateActionInput, UpdateActionInput};
-pub use auth9_core::domain::analytics::{
-    AlertSeverity, CreateLoginEventInput, CreateSecurityAlertInput, CreateWebhookInput, LoginEvent,
-    LoginEventType, LoginStats, SecurityAlert, SecurityAlertType, UpdateWebhookInput, Webhook,
-};
-pub use auth9_core::domain::common::StringUuid;
-pub use auth9_core::domain::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
-pub use auth9_core::domain::linked_identity::{CreateLinkedIdentityInput, LinkedIdentity};
-pub use auth9_core::domain::password::{CreatePasswordResetTokenInput, PasswordResetToken};
-pub use auth9_core::domain::rbac::{
-    AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role, UpdateRoleInput,
-    UserRolesInTenant,
-};
-pub use auth9_core::domain::service::{
-    Client, CreateServiceInput, Service, ServiceStatus, UpdateServiceInput,
-};
-pub use auth9_core::domain::session::{CreateSessionInput, Session};
-pub use auth9_core::domain::system_settings::{SystemSettingRow, UpsertSystemSettingInput};
-pub use auth9_core::domain::tenant::{
-    CreateTenantInput, Tenant, TenantSettings, TenantStatus, UpdateTenantInput,
-};
-pub use auth9_core::domain::user::{
-    AddUserToTenantInput, CreateUserInput, TenantUser, UpdateUserInput, User,
-};
-pub use auth9_core::domain::webauthn::{CreatePasskeyInput, StoredPasskey};
 pub use auth9_core::domains::authorization::service::{ClientService, RbacService};
 pub use auth9_core::domains::tenant_access::service::{
     TenantRepositoryBundle, TenantService, UserRepositoryBundle, UserService,
 };
 pub use auth9_core::error::{AppError, Result};
 pub use auth9_core::jwt::JwtManager;
+pub use auth9_core::models::action::{Action, CreateActionInput, UpdateActionInput};
+pub use auth9_core::models::analytics::{
+    AlertSeverity, CreateLoginEventInput, CreateSecurityAlertInput, CreateWebhookInput, LoginEvent,
+    LoginEventType, LoginStats, SecurityAlert, SecurityAlertType, UpdateWebhookInput, Webhook,
+};
+pub use auth9_core::models::common::StringUuid;
+pub use auth9_core::models::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
+pub use auth9_core::models::linked_identity::{CreateLinkedIdentityInput, LinkedIdentity};
+pub use auth9_core::models::password::{CreatePasswordResetTokenInput, PasswordResetToken};
+pub use auth9_core::models::rbac::{
+    AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role, UpdateRoleInput,
+    UserRolesInTenant,
+};
+pub use auth9_core::models::service::{
+    Client, CreateServiceInput, Service, ServiceStatus, UpdateServiceInput,
+};
+pub use auth9_core::models::session::{CreateSessionInput, Session};
+pub use auth9_core::models::system_settings::{SystemSettingRow, UpsertSystemSettingInput};
+pub use auth9_core::models::tenant::{
+    CreateTenantInput, Tenant, TenantSettings, TenantStatus, UpdateTenantInput,
+};
+pub use auth9_core::models::user::{
+    AddUserToTenantInput, CreateUserInput, TenantUser, UpdateUserInput, User,
+};
+pub use auth9_core::models::webauthn::{CreatePasskeyInput, StoredPasskey};
 use auth9_core::repository::audit::{
     AuditLog, AuditLogQuery, AuditRepository, CreateAuditLogInput,
 };
@@ -323,7 +323,7 @@ impl TenantRepository for TestTenantRepository {
     async fn update_password_policy(
         &self,
         id: StringUuid,
-        policy: &auth9_core::domain::password::PasswordPolicy,
+        policy: &auth9_core::models::password::PasswordPolicy,
     ) -> Result<Tenant> {
         let mut tenants = self.tenants.write().await;
         let tenant = tenants
@@ -633,19 +633,19 @@ impl UserRepository for TestUserRepository {
     async fn find_user_tenants_with_tenant(
         &self,
         user_id: StringUuid,
-    ) -> Result<Vec<auth9_core::domain::user::TenantUserWithTenant>> {
+    ) -> Result<Vec<auth9_core::models::user::TenantUserWithTenant>> {
         // Create mock TenantUserWithTenant from TenantUser data
         let tenant_users = self.tenant_users.read().await;
         Ok(tenant_users
             .iter()
             .filter(|tu| tu.user_id == user_id)
-            .map(|tu| auth9_core::domain::user::TenantUserWithTenant {
+            .map(|tu| auth9_core::models::user::TenantUserWithTenant {
                 id: tu.id,
                 tenant_id: tu.tenant_id,
                 user_id: tu.user_id,
                 role_in_tenant: tu.role_in_tenant.clone(),
                 joined_at: tu.joined_at,
-                tenant: auth9_core::domain::user::TenantInfo {
+                tenant: auth9_core::models::user::TenantInfo {
                     id: tu.tenant_id,
                     name: format!("Tenant {}", tu.tenant_id),
                     slug: format!("tenant-{}", tu.tenant_id),
@@ -2237,21 +2237,21 @@ impl ActionRepository for TestActionRepository {
     async fn find_execution_by_id(
         &self,
         _id: StringUuid,
-    ) -> Result<Option<auth9_core::domain::action::ActionExecution>> {
+    ) -> Result<Option<auth9_core::models::action::ActionExecution>> {
         Ok(None)
     }
 
     async fn query_logs(
         &self,
-        _filter: &auth9_core::domain::action::LogQueryFilter,
-    ) -> Result<Vec<auth9_core::domain::action::ActionExecution>> {
+        _filter: &auth9_core::models::action::LogQueryFilter,
+    ) -> Result<Vec<auth9_core::models::action::ActionExecution>> {
         // For test repository, return empty logs
         Ok(vec![])
     }
 
     async fn count_logs(
         &self,
-        _filter: &auth9_core::domain::action::LogQueryFilter,
+        _filter: &auth9_core::models::action::LogQueryFilter,
     ) -> Result<i64> {
         Ok(0)
     }
@@ -2751,7 +2751,7 @@ impl LoginEventRepository for TestLoginEventRepository {
         _tenant_id: Option<StringUuid>,
         _start: DateTime<Utc>,
         _end: DateTime<Utc>,
-    ) -> Result<Vec<auth9_core::domain::analytics::DailyTrendPoint>> {
+    ) -> Result<Vec<auth9_core::models::analytics::DailyTrendPoint>> {
         Ok(vec![])
     }
 }
@@ -3041,7 +3041,7 @@ impl WebAuthnRepository for TestWebAuthnRepository {
 // ============================================================================
 
 pub struct TestServiceBrandingRepository {
-    brandings: RwLock<Vec<auth9_core::domain::branding::ServiceBranding>>,
+    brandings: RwLock<Vec<auth9_core::models::branding::ServiceBranding>>,
 }
 
 impl TestServiceBrandingRepository {
@@ -3063,7 +3063,7 @@ impl ServiceBrandingRepository for TestServiceBrandingRepository {
     async fn get_by_service_id(
         &self,
         service_id: StringUuid,
-    ) -> Result<Option<auth9_core::domain::branding::ServiceBranding>> {
+    ) -> Result<Option<auth9_core::models::branding::ServiceBranding>> {
         let brandings = self.brandings.read().await;
         Ok(brandings
             .iter()
@@ -3074,11 +3074,11 @@ impl ServiceBrandingRepository for TestServiceBrandingRepository {
     async fn upsert(
         &self,
         service_id: StringUuid,
-        config: &auth9_core::domain::branding::BrandingConfig,
-    ) -> Result<auth9_core::domain::branding::ServiceBranding> {
+        config: &auth9_core::models::branding::BrandingConfig,
+    ) -> Result<auth9_core::models::branding::ServiceBranding> {
         let mut brandings = self.brandings.write().await;
         brandings.retain(|b| b.service_id != service_id.to_string());
-        let branding = auth9_core::domain::branding::ServiceBranding {
+        let branding = auth9_core::models::branding::ServiceBranding {
             id: StringUuid::new_v4().to_string(),
             service_id: service_id.to_string(),
             config: config.clone(),
@@ -3305,7 +3305,7 @@ impl Default for TestServicesBuilder {
 // Test SCIM Repositories
 // ============================================================================
 
-use auth9_core::domain::scim::{
+use auth9_core::models::scim::{
     CreateScimLogInput, ScimGroupRoleMapping, ScimProvisioningLog, ScimToken,
 };
 use auth9_core::repository::scim_group_mapping::ScimGroupRoleMappingRepository;

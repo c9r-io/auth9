@@ -1,13 +1,13 @@
 //! User business logic
 
-use crate::domain::analytics::WebhookEvent;
-use crate::domain::common::StringUuid;
-use crate::domain::user::{
-    AddUserToTenantInput, CreateUserInput, TenantUser, TenantUserWithTenant, UpdateUserInput, User,
-};
 use crate::domains::integration::service::WebhookEventPublisher;
 use crate::error::{AppError, Result};
 use crate::keycloak::KeycloakClient;
+use crate::models::analytics::WebhookEvent;
+use crate::models::common::StringUuid;
+use crate::models::user::{
+    AddUserToTenantInput, CreateUserInput, TenantUser, TenantUserWithTenant, UpdateUserInput, User,
+};
 use crate::repository::{
     AuditRepository, LinkedIdentityRepository, LoginEventRepository, PasswordResetRepository,
     RbacRepository, SecurityAlertRepository, SessionRepository, UserRepository,

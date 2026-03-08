@@ -4,9 +4,9 @@
 //! This enables real-time security monitoring and analytics for authentication events.
 
 use crate::cache::CacheOperations;
-use crate::domain::analytics::{CreateLoginEventInput, LoginEventType};
-use crate::domain::common::StringUuid;
 use crate::error::AppError;
+use crate::models::analytics::{CreateLoginEventInput, LoginEventType};
+use crate::models::common::StringUuid;
 use crate::state::{HasAnalytics, HasCache, HasSecurityAlerts, HasServices};
 use axum::{
     body::Bytes,

@@ -85,7 +85,7 @@ Auth9 is a self-hosted identity and access management service (Auth0 alternative
 auth9-core/src/
 ├── api/          # REST API handlers (axum) - thin layer
 ├── grpc/         # gRPC handlers (tonic) - thin layer
-├── domain/       # Pure domain models with validation
+├── models/       # Shared models / value objects with validation
 ├── service/      # Business logic (depends on repository traits)
 ├── repository/   # Data access layer (implements traits, mockall support)
 ├── keycloak/     # Keycloak Admin API client

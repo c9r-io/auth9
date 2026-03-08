@@ -2,8 +2,8 @@
 
 use super::{keys, ttl};
 use crate::config::RedisConfig;
-use crate::domain::rbac::UserRolesInTenant;
 use crate::error::{AppError, Result};
+use crate::models::rbac::UserRolesInTenant;
 use redis::{aio::ConnectionManager, AsyncCommands};
 use serde::{de::DeserializeOwned, Serialize};
 use sha2::{Digest, Sha256};

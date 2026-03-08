@@ -1,9 +1,9 @@
 //! impl InvitationRepository for InvitationRepositoryImpl
 
 use super::{InvitationRepository, InvitationRepositoryImpl};
-use crate::domain::common::StringUuid;
-use crate::domain::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
 use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
+use crate::models::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
 use async_trait::async_trait;
 use chrono::{Duration, Utc};
 

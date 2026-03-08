@@ -1,9 +1,9 @@
 //! impl LoginEventRepository for LoginEventRepositoryImpl
 
 use super::{LoginEventRepository, LoginEventRepositoryImpl};
-use crate::domain::analytics::{CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginStats};
-use crate::domain::common::StringUuid;
 use crate::error::Result;
+use crate::models::analytics::{CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginStats};
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;

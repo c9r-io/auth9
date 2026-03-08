@@ -1,12 +1,12 @@
 //! SCIM Admin API handlers (JWT-protected management endpoints)
 
-use crate::domain::common::StringUuid;
-use crate::domain::scim::{
+use crate::domains::provisioning::context::ProvisioningContext;
+use crate::error::AppError;
+use crate::models::common::StringUuid;
+use crate::models::scim::{
     CreateScimTokenInput, CreateScimTokenResponse, ScimGroupRoleMapping, ScimProvisioningLog,
     ScimTokenResponse, UpdateGroupRoleMappingsInput,
 };
-use crate::domains::provisioning::context::ProvisioningContext;
-use crate::error::AppError;
 use crate::repository::scim_group_mapping::ScimGroupRoleMappingRepository;
 use crate::repository::scim_log::ScimProvisioningLogRepository;
 use axum::extract::{Path, Query, State};

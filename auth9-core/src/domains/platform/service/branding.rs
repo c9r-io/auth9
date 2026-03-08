@@ -1,9 +1,9 @@
 //! Branding configuration service
 
-use crate::domain::branding::{BrandingConfig, ServiceBranding};
-use crate::domain::system_settings::{SettingCategory, SystemSettingRow, UpsertSystemSettingInput};
 use crate::domains::platform::service::KeycloakSyncService;
 use crate::error::{AppError, Result};
+use crate::models::branding::{BrandingConfig, ServiceBranding};
+use crate::models::system_settings::{SettingCategory, SystemSettingRow, UpsertSystemSettingInput};
 use crate::repository::{ServiceBrandingRepository, ServiceRepository, SystemSettingsRepository};
 use std::sync::Arc;
 use validator::Validate;
@@ -104,7 +104,7 @@ impl<R: SystemSettingsRepository, SBR: ServiceBrandingRepository> BrandingServic
     /// Returns NotFound if the service has no custom branding.
     pub async fn get_service_branding_only(
         &self,
-        service_id: crate::domain::common::StringUuid,
+        service_id: crate::models::common::StringUuid,
     ) -> Result<BrandingConfig> {
         match self
             .service_branding_repo
@@ -119,7 +119,7 @@ impl<R: SystemSettingsRepository, SBR: ServiceBrandingRepository> BrandingServic
     /// Get branding for a specific service, falling back to system default
     pub async fn get_branding_for_service(
         &self,
-        service_id: crate::domain::common::StringUuid,
+        service_id: crate::models::common::StringUuid,
     ) -> Result<BrandingConfig> {
         if let Some(sb) = self
             .service_branding_repo
@@ -146,7 +146,7 @@ impl<R: SystemSettingsRepository, SBR: ServiceBrandingRepository> BrandingServic
     /// Update branding for a specific service
     pub async fn update_service_branding(
         &self,
-        service_id: crate::domain::common::StringUuid,
+        service_id: crate::models::common::StringUuid,
         config: BrandingConfig,
     ) -> Result<ServiceBranding> {
         self.validate_branding(&config)?;
@@ -156,7 +156,7 @@ impl<R: SystemSettingsRepository, SBR: ServiceBrandingRepository> BrandingServic
     /// Delete service-level branding (revert to system default)
     pub async fn delete_service_branding(
         &self,
-        service_id: crate::domain::common::StringUuid,
+        service_id: crate::models::common::StringUuid,
     ) -> Result<()> {
         self.service_branding_repo
             .delete_by_service_id(service_id)
@@ -339,7 +339,7 @@ mod tests {
             .returning(|_, _| Ok(None));
 
         let service = BrandingService::new(Arc::new(mock_sys), Arc::new(mock_sb));
-        let service_id = crate::domain::common::StringUuid::new_v4();
+        let service_id = crate::models::common::StringUuid::new_v4();
 
         let config = service.get_branding_for_service(service_id).await.unwrap();
         assert!(config.is_default());
@@ -364,7 +364,7 @@ mod tests {
         });
 
         let service = BrandingService::new(Arc::new(mock_sys), Arc::new(mock_sb));
-        let service_id = crate::domain::common::StringUuid::new_v4();
+        let service_id = crate::models::common::StringUuid::new_v4();
 
         let config = service.get_branding_for_service(service_id).await.unwrap();
         assert_eq!(config.primary_color, "#FF0000");

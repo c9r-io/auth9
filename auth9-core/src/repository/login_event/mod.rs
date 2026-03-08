@@ -1,11 +1,11 @@
 //! Login event repository
 
+use crate::error::Result;
 #[allow(unused_imports)]
-use crate::domain::analytics::{
+use crate::models::analytics::{
     CreateLoginEventInput, DailyTrendPoint, LoginEvent, LoginEventType, LoginStats,
 };
-use crate::domain::common::StringUuid;
-use crate::error::Result;
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::MySqlPool;

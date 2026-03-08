@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::env;
 use std::fmt;
 
-use crate::domain::action::AsyncActionConfig;
+use crate::models::action::AsyncActionConfig;
 
 /// Runtime environment name (best-effort; used for security defaults).
 pub const ENV_PRODUCTION: &str = "production";

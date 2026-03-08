@@ -1,8 +1,5 @@
 //! Tenant API handlers
 
-use crate::domain::common::StringUuid;
-use crate::domain::tenant::{CreateTenantInput, UpdateTenantInput};
-use crate::domain::user::AddUserToTenantInput;
 use crate::error::{AppError, Result};
 use crate::http_support::{
     deserialize_page, deserialize_per_page, extract_actor_id_generic, extract_ip,
@@ -10,6 +7,9 @@ use crate::http_support::{
     SuccessResponse,
 };
 use crate::middleware::auth::AuthUser;
+use crate::models::common::StringUuid;
+use crate::models::tenant::{CreateTenantInput, UpdateTenantInput};
+use crate::models::user::AddUserToTenantInput;
 use crate::policy::{self, PolicyAction, PolicyInput, ResourceScope, TenantListMode};
 use crate::repository::audit::CreateAuditLogInput;
 use crate::repository::AuditRepository;
@@ -310,10 +310,10 @@ pub async fn delete<S: HasServices>(
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::tenant::{
+    use crate::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
+    use crate::models::tenant::{
         CreateTenantInput, Tenant, TenantSettings, TenantStatus, UpdateTenantInput,
     };
-    use crate::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
 
     #[test]
     fn test_create_tenant_input_deserialization() {

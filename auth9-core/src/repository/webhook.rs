@@ -1,8 +1,8 @@
 //! Webhook repository
 
-use crate::domain::analytics::{CreateWebhookInput, UpdateWebhookInput, Webhook};
-use crate::domain::common::StringUuid;
 use crate::error::{AppError, Result};
+use crate::models::analytics::{CreateWebhookInput, UpdateWebhookInput, Webhook};
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

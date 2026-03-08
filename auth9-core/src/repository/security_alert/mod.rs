@@ -1,11 +1,11 @@
 //! Security alert repository
 
+use crate::error::Result;
 #[allow(unused_imports)]
-use crate::domain::analytics::{
+use crate::models::analytics::{
     AlertSeverity, CreateSecurityAlertInput, SecurityAlert, SecurityAlertType,
 };
-use crate::domain::common::StringUuid;
-use crate::error::Result;
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

@@ -1,7 +1,7 @@
 //! WebAuthn credentials repository
 
-use crate::domain::webauthn::{CreatePasskeyInput, StoredPasskey};
 use crate::error::{AppError, Result};
+use crate::models::webauthn::{CreatePasskeyInput, StoredPasskey};
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

@@ -14,14 +14,14 @@ use super::types::{
 };
 use super::{ALLOWED_SCOPES, OIDC_STATE_TTL_SECS};
 use crate::cache::CacheOperations;
-use crate::domain::action::{
-    ActionContext, ActionContextRequest, ActionContextTenant, ActionContextUser,
-};
-use crate::domain::common::StringUuid;
-use crate::domain::enterprise_sso::EnterpriseSsoDiscoveryInput;
 use crate::domains::security_observability::service::analytics::LoginEventMetadata;
 use crate::error::{AppError, Result};
 use crate::http_support::SuccessResponse;
+use crate::models::action::{
+    ActionContext, ActionContextRequest, ActionContextTenant, ActionContextUser,
+};
+use crate::models::common::StringUuid;
+use crate::models::enterprise_sso::EnterpriseSsoDiscoveryInput;
 use crate::state::{
     HasAnalytics, HasCache, HasIdentityProviders, HasServices, HasSessionManagement,
 };
@@ -340,7 +340,7 @@ pub async fn token<
                         }
                     }
 
-                    let input = crate::domain::user::CreateUserInput {
+                    let input = crate::models::user::CreateUserInput {
                         email: userinfo.email.clone(),
                         display_name: userinfo.name.clone(),
                         avatar_url: None,
@@ -595,7 +595,7 @@ pub async fn token<
             let user = match state.user_service().get_by_keycloak_id(&userinfo.sub).await {
                 Ok(existing) => existing,
                 Err(AppError::NotFound(_)) => {
-                    let input = crate::domain::user::CreateUserInput {
+                    let input = crate::models::user::CreateUserInput {
                         email: userinfo.email.clone(),
                         display_name: userinfo.name.clone(),
                         avatar_url: None,

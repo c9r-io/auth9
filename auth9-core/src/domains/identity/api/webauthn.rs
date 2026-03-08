@@ -1,8 +1,8 @@
 //! WebAuthn/Passkey API handlers
 
-use crate::domain::webauthn::WebAuthnCredential;
 use crate::error::AppError;
 use crate::http_support::{MessageResponse, SuccessResponse};
+use crate::models::webauthn::WebAuthnCredential;
 use crate::state::{HasServices, HasSessionManagement, HasWebAuthn};
 use axum::{
     extract::{Path, State},
@@ -31,7 +31,7 @@ pub async fn start_registration<S: HasWebAuthn + HasServices>(
 ) -> Result<Json<serde_json::Value>, AppError> {
     let claims = extract_identity_claims(&state, &headers)?;
 
-    let user_id = crate::domain::common::StringUuid::parse_str(&claims.sub)
+    let user_id = crate::models::common::StringUuid::parse_str(&claims.sub)
         .map_err(|_| AppError::BadRequest("Invalid user_id in token".to_string()))?;
 
     let user = state.user_service().get(user_id).await?;
@@ -147,7 +147,7 @@ pub async fn complete_authentication<S: HasWebAuthn + HasServices + HasSessionMa
         .await?;
 
     // Look up the user
-    let user_id = crate::domain::common::StringUuid::parse_str(&auth_result.user_id)
+    let user_id = crate::models::common::StringUuid::parse_str(&auth_result.user_id)
         .map_err(|_| AppError::Internal(anyhow::anyhow!("Invalid user_id in stored credential")))?;
 
     let user = state.user_service().get(user_id).await?;
@@ -280,7 +280,7 @@ async fn get_keycloak_user_id<S: HasServices>(
     state: &S,
     user_id: &str,
 ) -> Result<String, AppError> {
-    let uuid = crate::domain::common::StringUuid::parse_str(user_id)
+    let uuid = crate::models::common::StringUuid::parse_str(user_id)
         .map_err(|_| AppError::BadRequest("Invalid user_id".to_string()))?;
     let user = state.user_service().get(uuid).await?;
     Ok(user.keycloak_id)

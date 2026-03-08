@@ -1,6 +1,6 @@
 //! Request/response types for authentication API.
 
-use crate::domain::common::StringUuid;
+use crate::models::common::StringUuid;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

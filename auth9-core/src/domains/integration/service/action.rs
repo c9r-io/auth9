@@ -2,14 +2,14 @@
 //!
 //! Provides CRUD operations and management functions for Auth9 Actions
 
-use crate::domain::action::{
+use crate::domains::integration::service::ActionEngine;
+use crate::error::{AppError, Result};
+use crate::models::action::{
     Action, ActionContext, ActionExecution, ActionStats, ActionTrigger, BatchError,
     BatchUpsertResponse, CreateActionInput, LogQueryFilter, TestActionResponse, UpdateActionInput,
     UpsertActionInput,
 };
-use crate::domain::common::StringUuid;
-use crate::domains::integration::service::ActionEngine;
-use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
 use crate::repository::ActionRepository;
 use metrics::{counter, histogram};
 use std::sync::Arc;
@@ -446,11 +446,11 @@ impl<R: ActionRepository + 'static> ActionService<R> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::action::{
+    use crate::models::action::{
         Action, ActionContext, ActionContextRequest, ActionContextTenant, ActionContextUser,
         ActionExecution, CreateActionInput, LogQueryFilter, UpdateActionInput, UpsertActionInput,
     };
-    use crate::domain::common::StringUuid;
+    use crate::models::common::StringUuid;
     use crate::repository::action::MockActionRepository;
     use chrono::Utc;
     use mockall::predicate::*;

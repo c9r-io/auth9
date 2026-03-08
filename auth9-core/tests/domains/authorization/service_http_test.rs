@@ -9,8 +9,8 @@ use crate::support::http::{
     put_json_with_auth, TestAppState,
 };
 use crate::support::mock_keycloak::MockKeycloakServer;
-use auth9_core::domain::service::{Client, Service, ServiceStatus};
 use auth9_core::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
+use auth9_core::models::service::{Client, Service, ServiceStatus};
 use axum::http::StatusCode;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -21,8 +21,8 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TestServiceWithClient {
     // Service fields (flattened)
-    pub id: auth9_core::domain::common::StringUuid,
-    pub tenant_id: Option<auth9_core::domain::common::StringUuid>,
+    pub id: auth9_core::models::common::StringUuid,
+    pub tenant_id: Option<auth9_core::models::common::StringUuid>,
     pub name: String,
     pub base_url: Option<String>,
     pub redirect_uris: Vec<String>,
@@ -39,8 +39,8 @@ pub struct TestServiceWithClient {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TestClientWithSecret {
     // Client fields (flattened)
-    pub id: auth9_core::domain::common::StringUuid,
-    pub service_id: auth9_core::domain::common::StringUuid,
+    pub id: auth9_core::models::common::StringUuid,
+    pub service_id: auth9_core::models::common::StringUuid,
     pub client_id: String,
     pub name: Option<String>,
     #[serde(skip_serializing)]
@@ -472,16 +472,16 @@ async fn test_list_clients() {
 
     // Add clients
     let client1 = Client {
-        id: auth9_core::domain::common::StringUuid::new_v4(),
-        service_id: auth9_core::domain::common::StringUuid::from(service_id),
+        id: auth9_core::models::common::StringUuid::new_v4(),
+        service_id: auth9_core::models::common::StringUuid::from(service_id),
         client_id: "client-1".to_string(),
         name: Some("Client 1".to_string()),
         client_secret_hash: "hash1".to_string(),
         created_at: chrono::Utc::now(),
     };
     let client2 = Client {
-        id: auth9_core::domain::common::StringUuid::new_v4(),
-        service_id: auth9_core::domain::common::StringUuid::from(service_id),
+        id: auth9_core::models::common::StringUuid::new_v4(),
+        service_id: auth9_core::models::common::StringUuid::from(service_id),
         client_id: "client-2".to_string(),
         name: Some("Client 2".to_string()),
         client_secret_hash: "hash2".to_string(),
@@ -596,8 +596,8 @@ async fn test_delete_client() {
     state.service_repo.add_service(service).await;
 
     let client = Client {
-        id: auth9_core::domain::common::StringUuid::new_v4(),
-        service_id: auth9_core::domain::common::StringUuid::from(service_id),
+        id: auth9_core::models::common::StringUuid::new_v4(),
+        service_id: auth9_core::models::common::StringUuid::from(service_id),
         client_id: "client-to-delete".to_string(),
         name: Some("Client to Delete".to_string()),
         client_secret_hash: "hash".to_string(),
@@ -639,8 +639,8 @@ async fn test_regenerate_client_secret() {
     state.service_repo.add_service(service).await;
 
     let client = Client {
-        id: auth9_core::domain::common::StringUuid::new_v4(),
-        service_id: auth9_core::domain::common::StringUuid::from(service_id),
+        id: auth9_core::models::common::StringUuid::new_v4(),
+        service_id: auth9_core::models::common::StringUuid::from(service_id),
         client_id: "existing-client".to_string(),
         name: Some("Existing Client".to_string()),
         client_secret_hash: "old-hash".to_string(),
@@ -731,8 +731,8 @@ async fn test_integration_info_success() {
 
     // Add a client
     let client = Client {
-        id: auth9_core::domain::common::StringUuid::new_v4(),
-        service_id: auth9_core::domain::common::StringUuid::from(service_id),
+        id: auth9_core::models::common::StringUuid::new_v4(),
+        service_id: auth9_core::models::common::StringUuid::from(service_id),
         client_id: "test-client".to_string(),
         name: Some("Main Client".to_string()),
         client_secret_hash: "hash".to_string(),

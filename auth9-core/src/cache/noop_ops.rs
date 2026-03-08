@@ -1,8 +1,8 @@
 //! impl CacheOperations for NoOpCacheManager
 
 use super::{noop::NoOpCacheManager, CacheOperations};
-use crate::domain::rbac::UserRolesInTenant;
 use crate::error::Result;
+use crate::models::rbac::UserRolesInTenant;
 use async_trait::async_trait;
 use uuid::Uuid;
 

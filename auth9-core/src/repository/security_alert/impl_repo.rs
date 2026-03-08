@@ -1,11 +1,11 @@
 //! impl SecurityAlertRepository for SecurityAlertRepositoryImpl
 
 use super::{SecurityAlertRepository, SecurityAlertRepositoryImpl};
-use crate::domain::analytics::{
+use crate::error::{AppError, Result};
+use crate::models::analytics::{
     AlertSeverity, CreateSecurityAlertInput, SecurityAlert, SecurityAlertType,
 };
-use crate::domain::common::StringUuid;
-use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 
 #[async_trait]

@@ -1,9 +1,9 @@
 //! SCIM User CRUD API handlers
 
-use crate::domain::common::StringUuid;
-use crate::domain::scim::{ScimError, ScimRequestContext, ScimUser};
 use crate::domains::provisioning::api::ScimJson;
 use crate::domains::provisioning::context::ProvisioningContext;
+use crate::models::common::StringUuid;
+use crate::models::scim::{ScimError, ScimRequestContext, ScimUser};
 use axum::extract::{Extension, Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -146,7 +146,7 @@ pub async fn patch_user<S: ProvisioningContext>(
     State(state): State<S>,
     Extension(ctx): Extension<ScimRequestContext>,
     Path(id): Path<String>,
-    axum::Json(patch): axum::Json<crate::domain::scim::ScimPatchOp>,
+    axum::Json(patch): axum::Json<crate::models::scim::ScimPatchOp>,
 ) -> impl IntoResponse {
     let user_id = match StringUuid::parse_str(&id) {
         Ok(uid) => uid,

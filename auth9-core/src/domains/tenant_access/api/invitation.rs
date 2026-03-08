@@ -1,9 +1,5 @@
 //! Invitation API handlers
 
-use crate::domain::common::StringUuid;
-use crate::domain::invitation::{CreateInvitationInput, InvitationResponse, InvitationStatus};
-use crate::domain::rbac::AssignRolesInput;
-use crate::domain::user::{AddUserToTenantInput, CreateUserInput};
 use crate::error::{AppError, Result};
 use crate::http_support::{
     deserialize_page, deserialize_per_page, write_audit_log_generic, MessageResponse,
@@ -11,6 +7,10 @@ use crate::http_support::{
 };
 use crate::keycloak::{CreateKeycloakUserInput, KeycloakCredential};
 use crate::middleware::auth::AuthUser;
+use crate::models::common::StringUuid;
+use crate::models::invitation::{CreateInvitationInput, InvitationResponse, InvitationStatus};
+use crate::models::rbac::AssignRolesInput;
+use crate::models::user::{AddUserToTenantInput, CreateUserInput};
 use crate::policy::{self, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::HasInvitations;
 use axum::{
@@ -465,7 +465,7 @@ pub async fn accept<S: HasInvitations>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::invitation::InvitationStatus;
+    use crate::models::invitation::InvitationStatus;
 
     #[test]
     fn test_create_invitation_input_deserialization() {

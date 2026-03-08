@@ -7,9 +7,9 @@ use crate::support::http::{
     build_test_router, get_json, get_json_with_auth, get_raw, post_json, MockKeycloakServer,
     TestAppState,
 };
-use auth9_core::domain::common::StringUuid;
-use auth9_core::domain::service::Client;
 use auth9_core::domains::identity::api::auth::{OpenIdConfiguration, TokenResponse};
+use auth9_core::models::common::StringUuid;
+use auth9_core::models::service::Client;
 use axum::http::StatusCode;
 use base64::Engine;
 use chrono::Utc;
@@ -1214,7 +1214,7 @@ async fn test_callback_success_existing_user() {
     let state = TestAppState::with_mock_keycloak(&mock_kc);
 
     // Pre-create the user in the repo
-    let user = auth9_core::domain::user::User {
+    let user = auth9_core::models::user::User {
         id: StringUuid::new_v4(),
         email: "existing@example.com".to_string(),
         display_name: Some("Existing User".to_string()),
@@ -1392,7 +1392,7 @@ async fn test_token_authorization_code_success_existing_user() {
     let state = TestAppState::with_mock_keycloak(&mock_kc);
 
     // Pre-create the user
-    let user = auth9_core::domain::user::User {
+    let user = auth9_core::models::user::User {
         id: StringUuid::new_v4(),
         email: "tokenuser@example.com".to_string(),
         display_name: Some("Token User".to_string()),
@@ -1506,7 +1506,7 @@ async fn test_token_refresh_success() {
         .unwrap();
 
     // Pre-create the user
-    let user = auth9_core::domain::user::User {
+    let user = auth9_core::models::user::User {
         id: StringUuid::new_v4(),
         email: "refresh@example.com".to_string(),
         display_name: Some("Refresh User".to_string()),
@@ -2012,7 +2012,7 @@ async fn test_token_authorization_code_new_user_with_demo_tenant_auto_assign() {
     // Create a "demo" tenant so auto-assign kicks in
     state
         .tenant_repo
-        .add_tenant(auth9_core::domain::tenant::Tenant {
+        .add_tenant(auth9_core::models::tenant::Tenant {
             id: StringUuid::from(Uuid::new_v4()),
             name: "Demo".to_string(),
             slug: "demo".to_string(),
@@ -2068,7 +2068,7 @@ async fn test_token_refresh_no_bound_session() {
     let state = TestAppState::with_mock_keycloak(&mock_kc);
     // Don't bind refresh token to any session - this triggers the error path
 
-    let user = auth9_core::domain::user::User {
+    let user = auth9_core::models::user::User {
         id: StringUuid::new_v4(),
         email: "nosession@example.com".to_string(),
         display_name: None,
@@ -2241,7 +2241,7 @@ async fn test_token_auth_code_with_tenant_triggers_post_login_actions() {
     let tenant_id = Uuid::new_v4();
     state
         .tenant_repo
-        .add_tenant(auth9_core::domain::tenant::Tenant {
+        .add_tenant(auth9_core::models::tenant::Tenant {
             id: StringUuid::from(tenant_id),
             name: "Action Tenant".to_string(),
             slug: "action-tenant".to_string(),
@@ -2267,7 +2267,7 @@ async fn test_token_auth_code_with_tenant_triggers_post_login_actions() {
         .await;
 
     // Pre-create the user
-    let user = auth9_core::domain::user::User {
+    let user = auth9_core::models::user::User {
         id: StringUuid::new_v4(),
         email: "action@example.com".to_string(),
         display_name: Some("Action User".to_string()),

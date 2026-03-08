@@ -3,7 +3,7 @@
 //! Provides email sending via AWS Simple Email Service (SES) v2 API.
 
 use super::provider::{EmailProvider, EmailProviderError};
-use crate::domain::email::{EmailMessage, EmailSendResult, SesConfig};
+use crate::models::email::{EmailMessage, EmailSendResult, SesConfig};
 use async_trait::async_trait;
 use aws_sdk_sesv2::{
     config::Region,

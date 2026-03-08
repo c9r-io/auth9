@@ -1,8 +1,8 @@
 //! SCIM Discovery endpoints (ServiceProviderConfig, Schemas, ResourceTypes)
 
-use crate::domain::scim::*;
 use crate::domains::provisioning::api::ScimJson;
 use crate::domains::provisioning::context::ProvisioningContext;
+use crate::models::scim::*;
 use axum::response::IntoResponse;
 
 /// GET /ServiceProviderConfig

@@ -112,8 +112,8 @@ auth9-core/
 │   ├── main.rs
 │   ├── lib.rs
 │   ├── config/                         # 配置管理
-│   ├── domains/                        # 领域化模块（主入口）
-│   │   ├── mod.rs                      # DomainRouterState 聚合约束
+│   ├── domains/                        # bounded context 模块（主入口）
+│   │   ├── mod.rs                      # BoundedContextRouterState 聚合约束
 │   │   ├── identity/
 │   │   │   ├── api/                    # auth/session/password/webauthn...
 │   │   │   ├── service/                # session/password/webauthn/oidc...
@@ -127,7 +127,7 @@ auth9-core/
 │   │   └── security_observability/
 │   ├── api/                            # 兼容层 + 通用 HTTP 类型/函数
 │   ├── grpc/                           # gRPC services
-│   ├── domain/                         # 核心领域模型（实体/值对象）
+│   ├── models/                         # 共享模型层（实体/值对象）
 │   ├── repository/                     # 数据访问层
 │   ├── service/                        # 兼容层（re-export 到 domains）
 │   ├── server/                         # Router 组装与启动

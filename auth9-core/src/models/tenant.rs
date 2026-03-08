@@ -128,7 +128,7 @@ fn validate_branding_logo_url(url: &str) -> Result<(), validator::ValidationErro
     if url.is_empty() {
         return Ok(());
     }
-    crate::domain::common::validate_url_no_ssrf_strict(url)
+    crate::models::common::validate_url_no_ssrf_strict(url)
 }
 
 /// Tenant entity

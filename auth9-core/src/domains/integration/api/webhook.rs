@@ -1,11 +1,11 @@
 //! Webhook API handlers
 
-use crate::domain::analytics::{CreateWebhookInput, UpdateWebhookInput, Webhook};
-use crate::domain::common::StringUuid;
 use crate::domains::integration::service::WebhookTestResult;
 use crate::error::AppError;
 use crate::http_support::{write_audit_log_generic, MessageResponse, SuccessResponse};
 use crate::middleware::auth::AuthUser;
+use crate::models::analytics::{CreateWebhookInput, UpdateWebhookInput, Webhook};
+use crate::models::common::StringUuid;
 use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::{HasServices, HasWebhooks};
 use axum::{

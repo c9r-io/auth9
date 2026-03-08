@@ -1,7 +1,7 @@
 //! Redis cache layer
 
-use crate::domain::rbac::UserRolesInTenant;
 use crate::error::Result;
+use crate::models::rbac::UserRolesInTenant;
 use async_trait::async_trait;
 use uuid::Uuid;
 

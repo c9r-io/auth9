@@ -8,11 +8,11 @@ use crate::support::http::{
     build_email_template_test_router, delete_json_with_auth, get_json_with_auth,
     post_json_with_auth, put_json_with_auth, TestAppState,
 };
-use auth9_core::domain::email_template::{
+use auth9_core::http_support::SuccessResponse;
+use auth9_core::models::email_template::{
     EmailTemplateContent, EmailTemplateType, EmailTemplateWithContent, RenderedEmailPreview,
 };
-use auth9_core::domain::system_settings::SystemSettingRow;
-use auth9_core::http_support::SuccessResponse;
+use auth9_core::models::system_settings::SystemSettingRow;
 use axum::http::StatusCode;
 use chrono::Utc;
 use serde::Deserialize;

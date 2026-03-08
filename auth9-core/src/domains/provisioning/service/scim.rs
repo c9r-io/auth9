@@ -1,11 +1,11 @@
 //! Core SCIM service - orchestrates user/group CRUD operations
 
-use crate::domain::common::StringUuid;
-use crate::domain::rbac::AssignRolesInput;
-use crate::domain::scim::*;
-use crate::domain::user::{AddUserToTenantInput, CreateUserInput, UpdateUserInput, User};
 use crate::error::{AppError, Result};
 use crate::keycloak::KeycloakClient;
+use crate::models::common::StringUuid;
+use crate::models::rbac::AssignRolesInput;
+use crate::models::scim::*;
+use crate::models::user::{AddUserToTenantInput, CreateUserInput, UpdateUserInput, User};
 use crate::repository::scim_group_mapping::ScimGroupRoleMappingRepository;
 use crate::repository::scim_log::ScimProvisioningLogRepository;
 use crate::repository::{RbacRepository, UserRepository};

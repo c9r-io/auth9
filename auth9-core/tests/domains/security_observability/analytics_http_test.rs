@@ -4,9 +4,9 @@
 
 use crate::support::http::{get_json, MockKeycloakServer, TestAppState};
 use crate::support::{create_test_tenant, create_test_user};
-use auth9_core::domain::analytics::{LoginEvent, LoginEventType, LoginStats};
-use auth9_core::domain::common::StringUuid;
 use auth9_core::http_support::{PaginatedResponse, SuccessResponse};
+use auth9_core::models::analytics::{LoginEvent, LoginEventType, LoginStats};
+use auth9_core::models::common::StringUuid;
 use axum::http::StatusCode;
 use chrono::Utc;
 

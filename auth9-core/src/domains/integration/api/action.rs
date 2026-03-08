@@ -2,14 +2,14 @@
 //!
 //! Provides REST API endpoints for managing Auth9 Actions
 
-use crate::domain::action::{
-    Action, ActionContext, ActionExecution, ActionStats, ActionTrigger, BatchUpsertResponse,
-    CreateActionInput, LogQueryFilter, TestActionResponse, UpdateActionInput, UpsertActionInput,
-};
-use crate::domain::common::StringUuid;
 use crate::error::AppError;
 use crate::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
 use crate::middleware::auth::AuthUser;
+use crate::models::action::{
+    Action, ActionContext, ActionExecution, ActionStats, ActionTrigger, BatchUpsertResponse,
+    CreateActionInput, LogQueryFilter, TestActionResponse, UpdateActionInput, UpsertActionInput,
+};
+use crate::models::common::StringUuid;
 use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::HasServices;
 use axum::{

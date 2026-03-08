@@ -6,7 +6,6 @@
 pub mod cache;
 pub mod config;
 pub mod crypto;
-pub mod domain;
 pub mod domains;
 pub mod email;
 pub mod error;
@@ -16,12 +15,16 @@ pub mod jwt;
 pub mod keycloak;
 pub mod middleware;
 pub mod migration;
+pub mod models;
 pub mod openapi;
 pub mod policy;
 pub mod repository;
 pub mod server;
 pub mod state;
 pub mod telemetry;
+
+// Legacy public alias kept to avoid breaking downstream imports abruptly.
+pub use models as domain;
 
 // Re-export commonly used types
 pub use config::Config;

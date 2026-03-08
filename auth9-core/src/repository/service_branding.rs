@@ -1,8 +1,8 @@
 //! Service branding repository
 
-use crate::domain::branding::{BrandingConfig, ServiceBranding};
-use crate::domain::common::StringUuid;
 use crate::error::{AppError, Result};
+use crate::models::branding::{BrandingConfig, ServiceBranding};
+use crate::models::common::StringUuid;
 use async_trait::async_trait;
 use sqlx::MySqlPool;
 

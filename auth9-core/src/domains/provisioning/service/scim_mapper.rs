@@ -2,7 +2,7 @@
 //!
 //! Maps SCIM User attributes to Auth9 User fields using a hardcoded default mapping.
 
-use crate::domain::scim::{MappedUserFields, ScimUser};
+use crate::models::scim::{MappedUserFields, ScimUser};
 
 /// Extract Auth9 user fields from a SCIM User resource.
 pub fn map_scim_user_to_fields(scim_user: &ScimUser) -> MappedUserFields {
@@ -129,7 +129,7 @@ pub fn map_patch_value_to_fields(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::scim::{ScimEmail, ScimName, ScimPhoto, ScimUser};
+    use crate::models::scim::{ScimEmail, ScimName, ScimPhoto, ScimUser};
 
     fn make_user(user_name: &str, display_name: Option<&str>, active: bool) -> ScimUser {
         ScimUser {

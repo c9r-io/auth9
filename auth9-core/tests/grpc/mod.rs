@@ -10,13 +10,13 @@ pub mod validate_token_test;
 
 use auth9_core::cache::NoOpCacheManager;
 use auth9_core::config::JwtConfig;
-use auth9_core::domain::common::StringUuid;
-use auth9_core::domain::rbac::{Permission, Role, UserRolesInTenant};
-use auth9_core::domain::service::{Client, Service, ServiceStatus};
-use auth9_core::domain::user::User;
 use auth9_core::grpc::token_exchange::TokenExchangeCache;
 use auth9_core::grpc::TokenExchangeService;
 use auth9_core::jwt::JwtManager;
+use auth9_core::models::common::StringUuid;
+use auth9_core::models::rbac::{Permission, Role, UserRolesInTenant};
+use auth9_core::models::service::{Client, Service, ServiceStatus};
+use auth9_core::models::user::User;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;

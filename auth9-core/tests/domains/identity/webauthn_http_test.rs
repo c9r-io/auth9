@@ -7,8 +7,8 @@ use crate::support::http::{
     delete_json, delete_json_with_auth, get_json, get_json_with_auth, MockKeycloakServer,
     TestAppState,
 };
-use auth9_core::domain::webauthn::WebAuthnCredential;
 use auth9_core::http_support::{MessageResponse, SuccessResponse};
+use auth9_core::models::webauthn::WebAuthnCredential;
 use axum::http::StatusCode;
 
 // ============================================================================

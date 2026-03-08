@@ -1,8 +1,8 @@
 #[tokio::test]
 async fn test_nodejs_require_blocked() {
     use crate::service::action_engine::{ActionEngine, MockActionRepository};
-    use crate::domain::action::{Action, ActionContext, ActionTrigger};
-    use crate::domain::common::{StringUuid};
+    use crate::models::action::{Action, ActionContext, ActionTrigger};
+    use crate::models::common::StringUuid;
     use std::sync::Arc;
     use chrono::Utc;
     
@@ -40,19 +40,24 @@ async fn test_nodejs_require_blocked() {
     };
     
     let context = ActionContext {
-        user: crate::domain::ActionUserContext {
+        user: crate::models::action::ActionContextUser {
             id: StringUuid::new(),
             email: "test@example.com".to_string(),
             display_name: Some("Test User".to_string()),
-            is_admin: false,
+            mfa_enabled: false,
         },
-        tenant: crate::domain::ActionTenantContext {
+        tenant: crate::models::action::ActionContextTenant {
             id: StringUuid::new(),
             slug: "test".to_string(),
             name: "Test Tenant".to_string(),
         },
-        claims: std::collections::HashMap::new(),
-        trigger: ActionTrigger::PostLogin,
+        service: None,
+        request: crate::models::action::ActionContextRequest {
+            ip: None,
+            user_agent: None,
+            timestamp: Utc::now(),
+        },
+        claims: Some(std::collections::HashMap::new()),
     };
     
     let result = engine.execute_action(&action, &context).await;

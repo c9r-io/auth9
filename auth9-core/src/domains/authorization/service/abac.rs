@@ -1,9 +1,9 @@
-use crate::domain::abac::{
+use crate::error::{AppError, Result};
+use crate::models::abac::{
     AbacMode, AbacPolicyDocument, AbacPolicySetSummary, AbacPolicyVersionSummary,
     AbacSimulationInput, AbacSimulationResult,
 };
-use crate::domain::common::StringUuid;
-use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
 use crate::policy::abac::simulate_document;
 use crate::repository::abac::{
     AbacDraftCreateResult, AbacPolicySetRecord, AbacPolicyVersionRecord, AbacVersionMutationOutcome,
@@ -226,8 +226,8 @@ fn build_flattened_context(input: &AbacSimulationInput) -> HashMap<String, Value
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::abac::AbacEffect;
-    use crate::domain::abac::AbacRule;
+    use crate::models::abac::AbacEffect;
+    use crate::models::abac::AbacRule;
     use crate::repository::abac::MockAbacRepository;
     use mockall::predicate::eq;
 

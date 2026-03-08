@@ -2,13 +2,13 @@
 //!
 //! Manages customizable email templates stored in system_settings.
 
-use crate::domain::email_template::{
+use crate::email::templates::{EmailTemplate, TemplateEngine};
+use crate::error::{AppError, Result};
+use crate::models::email_template::{
     EmailTemplateContent, EmailTemplateMetadata, EmailTemplateType, EmailTemplateWithContent,
     RenderedEmailPreview,
 };
-use crate::domain::system_settings::{SystemSettingRow, UpsertSystemSettingInput};
-use crate::email::templates::{EmailTemplate, TemplateEngine};
-use crate::error::{AppError, Result};
+use crate::models::system_settings::{SystemSettingRow, UpsertSystemSettingInput};
 use crate::repository::SystemSettingsRepository;
 use std::sync::Arc;
 

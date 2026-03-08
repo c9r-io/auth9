@@ -1,12 +1,12 @@
 //! impl RbacRepository for RbacRepositoryImpl
 
 use super::{RbacRepository, RbacRepositoryImpl};
-use crate::domain::common::StringUuid;
-use crate::domain::rbac::{
+use crate::error::{AppError, Result};
+use crate::models::common::StringUuid;
+use crate::models::rbac::{
     AssignRolesInput, CreatePermissionInput, CreateRoleInput, Permission, Role, UpdateRoleInput,
     UserRolesInTenant,
 };
-use crate::error::{AppError, Result};
 use async_trait::async_trait;
 use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
