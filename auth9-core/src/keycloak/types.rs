@@ -209,15 +209,15 @@ pub struct SmtpServerConfig {
 impl std::fmt::Debug for SmtpServerConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("SmtpServerConfig")
-            .field("host", &self.host)
-            .field("port", &self.port)
-            .field("from", &self.from)
-            .field("from_display_name", &self.from_display_name)
-            .field("auth", &self.auth)
+            .field("host", &self.host.as_ref().map(|_| "<REDACTED>"))
+            .field("port", &self.port.as_ref().map(|_| "<REDACTED>"))
+            .field("from", &self.from.as_ref().map(|_| "<REDACTED>"))
+            .field("from_display_name", &self.from_display_name.as_ref().map(|_| "<REDACTED>"))
+            .field("auth", &self.auth.as_ref().map(|_| "<REDACTED>"))
             .field("user", &self.user.as_ref().map(|_| "<REDACTED>"))
             .field("password", &self.password.as_ref().map(|_| "<REDACTED>"))
-            .field("ssl", &self.ssl)
-            .field("starttls", &self.starttls)
+            .field("ssl", &self.ssl.as_ref().map(|_| "<REDACTED>"))
+            .field("starttls", &self.starttls.as_ref().map(|_| "<REDACTED>"))
             .finish()
     }
 }

@@ -96,7 +96,11 @@ export function ErrorBoundary() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
         <div className="text-center">
-          <h1 className="text-6xl font-bold text-[var(--text-primary)]">{error.status}</h1>
+          <h1 className="text-6xl font-bold text-[var(--text-primary)]">
+            {error.status === 404
+              ? translate(locale, "common.errors.pageNotFound")
+              : error.status}
+          </h1>
           <p className="mt-4 text-xl text-[var(--text-secondary)]">
             {error.status === 404
               ? translate(locale, "common.errors.pageNotFound")

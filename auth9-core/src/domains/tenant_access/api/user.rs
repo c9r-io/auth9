@@ -459,10 +459,24 @@ pub async fn create<S: HasServices + HasBranding>(
         })
         .await?;
 
-    let user = state
-        .user_service()
-        .create(&keycloak_id, input.user)
-        .await?;
+    let user = match state.user_service().create(&keycloak_id, input.user).await {
+        Ok(user) => user,
+        Err(e) => {
+            tracing::warn!(
+                keycloak_id = %keycloak_id,
+                error = %e,
+                "DB user creation failed, compensating by deleting Keycloak user"
+            );
+            if let Err(cleanup_err) = state.keycloak_client().delete_user(&keycloak_id).await {
+                tracing::error!(
+                    keycloak_id = %keycloak_id,
+                    error = %cleanup_err,
+                    "Failed to delete orphaned Keycloak user during compensation"
+                );
+            }
+            return Err(e);
+        }
+    };
 
     // Auto-add user to the tenant if created in a tenant context
     if let Some(tenant_id) = effective_tenant_id {

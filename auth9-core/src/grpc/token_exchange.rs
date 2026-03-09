@@ -680,17 +680,16 @@ where
         };
 
         // Verify user is a member of the target tenant (security check)
+        // Use not_found for non-members to prevent user enumeration
         match self
             .rbac_repo
             .find_tenant_user_id(user_id, tenant_id)
             .await
             .map_err(|e| Status::internal(format!("Failed to check tenant membership: {}", e)))?
         {
-            Some(_) => {} // User is member, proceed
+            Some(_) => {}
             None => {
-                return Err(Status::permission_denied(
-                    "User is not a member of this tenant",
-                ));
+                return Err(Status::not_found("User not found in tenant"));
             }
         }
 
