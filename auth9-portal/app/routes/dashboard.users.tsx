@@ -414,7 +414,7 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+      <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
           <h1 className="mb-2 text-[24px] font-semibold tracking-tight text-[var(--text-primary)]">
             {t("usersPage.title")}

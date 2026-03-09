@@ -93,6 +93,7 @@ curl -i -X PUT "http://localhost:8080/api/v1/tenants/{tenant_id}" \
 |------|------|------|
 | `GET /api/v1/tenants` 返回 200 | 该接口是白名单接口，Identity Token 允许访问 | **非漏洞** — 设计行为，用于租户选择 |
 | 平台管理员 `GET /api/v1/tenants` 返回全部租户 | 平台管理员拥有全局绕过 | 使用非平台管理员用户验证过滤效果 |
+| Identity Token 返回数量 = 用户所属租户数 | 这是预期行为：Identity Token 返回用户的 **所有** 租户成员关系，而非仅 1 个。验证方法：`SELECT COUNT(*) FROM tenant_users WHERE user_id = '{user_id}'` 应与返回数量一致 | **非漏洞** — 设计行为 |
 
 ---
 

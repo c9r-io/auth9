@@ -167,6 +167,18 @@ WHERE tu.user_id = '{user_id}'
 ### 目的
 验证 Webhook 系统在高并发下的可靠性
 
+### 步骤 0：验证测试数据完整性
+
+> **⚠️ 重要**: Webhook 配置必须通过 API 创建（ID 自动生成 UUID），或手动 INSERT 时 **必须使用 UUID 格式** 的 ID。
+> 使用非 UUID 字符串（如 `test-webhook-001`）会导致后续查询 `ColumnDecode` 错误。
+
+正确的手动 INSERT 示例：
+```sql
+INSERT INTO webhooks (id, tenant_id, name, url, secret, events, enabled) 
+VALUES ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', '{tenant_id}', 'Test Webhook', 
+        'https://webhook.example.com/auth9', 'test-secret', '["user.created"]', 1);
+```
+
 ### 测试操作流程
 1. 使用脚本快速创建 100 个用户
 2. 每个用户创建触发 `user.created` Webhook 事件

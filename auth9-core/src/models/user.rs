@@ -73,7 +73,11 @@ pub struct CreateUserInput {
     pub email: String,
     #[validate(length(max = 255), custom(function = "validate_no_html"))]
     pub display_name: Option<String>,
-    #[validate(length(max = 2048), custom(function = "validate_avatar_url"))]
+    #[validate(
+        length(max = 2048),
+        custom(function = "validate_no_html"),
+        custom(function = "validate_avatar_url")
+    )]
     pub avatar_url: Option<String>,
 }
 
@@ -102,7 +106,11 @@ fn validate_avatar_url(url: &str) -> Result<(), validator::ValidationError> {
 pub struct UpdateUserInput {
     #[validate(length(max = 255), custom(function = "validate_no_html"))]
     pub display_name: Option<String>,
-    #[validate(length(max = 2048), custom(function = "validate_avatar_url"))]
+    #[validate(
+        length(max = 2048),
+        custom(function = "validate_no_html"),
+        custom(function = "validate_avatar_url")
+    )]
     pub avatar_url: Option<String>,
 }
 
@@ -266,6 +274,23 @@ mod tests {
             avatar_url: Some("https://example.com/avatar\0.png".to_string()),
         };
         assert!(input.validate().is_err());
+    }
+
+    #[test]
+    fn test_avatar_url_rejects_html_xss() {
+        let input = UpdateUserInput {
+            display_name: None,
+            avatar_url: Some("<img src=x onerror=alert('XSS')>.png".to_string()),
+        };
+        assert!(input.validate().is_err());
+
+        let input2 = UpdateUserInput {
+            display_name: None,
+            avatar_url: Some(
+                "https://evil.com/x?q=<img src=x onerror=alert('XSS')>".to_string(),
+            ),
+        };
+        assert!(input2.validate().is_err());
     }
 
     #[test]

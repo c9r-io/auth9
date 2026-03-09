@@ -340,6 +340,10 @@
     .sidebar {
       width: 100vw;
       top: 64px;
+      translate: -100% 0;
+    }
+    .sidebar.open {
+      translate: 0 0;
     }
   }
 

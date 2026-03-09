@@ -88,13 +88,20 @@ WHERE tu.user_id = '{user_id}' AND tu.tenant_id = '{tenant_id}';
 ### 目的
 验证 Token 验证和内省 API
 
+### 步骤 0：验证环境状态
+
+> **⚠️ 重要**: 在 Production 环境下，`validateToken` **必须传入 `audience` 参数**，
+> 否则会返回 `FAILED_PRECONDITION: audience is required in production`。
+> `audience` 值应等于 Token Exchange 时使用的 `service_id`（即 client_id，如 `auth9-demo`）。
+
 ### 测试操作流程
-1. 验证 Token：
+1. 验证 Token（**必须传入 audience**）：
    ```typescript
    const grpc = auth9.grpc({ address: "localhost:50051" });
 
    const validateResult = await grpc.validateToken({
      accessToken: "{tenant_access_token}",
+     audience: "{service_client_id}",  // e.g. "auth9-demo"
    });
    console.log(validateResult.valid);     // true
    console.log(validateResult.userId);    // UUID

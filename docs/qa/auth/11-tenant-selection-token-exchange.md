@@ -165,6 +165,13 @@ curl -i http://localhost:3002/api/resources \
 - 第 3 步返回 `200 OK`
 - 第 4 步返回 `401/403`（不允许使用 identity token 直接访问 tenant 业务）
 
+### 常见问题排查
+
+| 症状 | 原因 | 解决 |
+|------|------|------|
+| `Invalid or expired token` (所有 token) | Docker 环境中 `AUTH9_DOMAIN` 使用内部域名 `http://auth9-core:8080`，与 token 的 `iss: http://localhost:8080` 不匹配 | 确保 Demo 服务的 `AUTH9_DOMAIN` 与 `JWT_ISSUER` 一致，或在 SDK 中配置独立的 `issuer` 参数 |
+| Token Exchange 成功但 API 验证失败 | Demo 服务的 JWT 验证 issuer 与 auth9-core 签发的 issuer 不一致 | 检查 auth9-demo 的环境变量配置 |
+
 ---
 
 ## 检查清单

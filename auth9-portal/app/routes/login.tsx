@@ -318,7 +318,7 @@ export default function Login() {
           <CardContent>
             <div className="space-y-4">
               {/* SSO Login Button */}
-              <Form method="post">
+              <Form method="post" action="/login">
                 <input type="hidden" name="intent" value="sso-login" />
                 <Input
                   type="email"
@@ -347,7 +347,7 @@ export default function Login() {
               </div>
 
               {/* Password Login Button */}
-              <Form method="post">
+              <Form method="post" action="/login">
                 <input type="hidden" name="intent" value="password-login" />
                 <Button type="submit" variant="outline" className="w-full" disabled={isSubmitting || authenticating}>
                   {isSubmitting ? t("auth.login.redirecting") : t("auth.login.passwordButton")}

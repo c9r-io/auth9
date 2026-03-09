@@ -79,8 +79,8 @@
 - `data.clients[0].client_id` 非空
 - `data.clients[0].public_client` 为 `false`
 - `data.clients[0].client_secret` 非空（真实 secret，非哈希）
-- `data.endpoints.authorize` 包含 `/realms/{tenant}/protocol/openid-connect/auth`
-- `data.endpoints.token` 包含 `/realms/{tenant}/protocol/openid-connect/token`
+- `data.endpoints.authorize` 包含 `/api/v1/auth/authorize`（auth9-core OIDC 代理端点，非直接 Keycloak realm URL）
+- `data.endpoints.token` 包含 `/api/v1/auth/token`（auth9-core OIDC 代理端点）
 - `data.endpoints.openid_configuration` 以 `/.well-known/openid-configuration` 结尾
 - `data.grpc.address` 格式为 `host:port`
 - `data.environment_variables` 包含 `AUTH9_DOMAIN`、`AUTH9_CLIENT_ID`、`AUTH9_CLIENT_SECRET` 等

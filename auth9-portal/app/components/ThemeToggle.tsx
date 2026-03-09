@@ -10,6 +10,7 @@ export function ThemeToggle() {
     <div className="theme-toggle" role="group" aria-label={t("common.theme.label")} data-testid="theme-toggle">
       {theme === "light" ? (
         <button
+          role="button"
           className={cn("theme-btn", "active")}
           onClick={() => setTheme("dark")}
           title={t("common.theme.switchToDark")}
@@ -21,6 +22,7 @@ export function ThemeToggle() {
         </button>
       ) : (
         <button
+          role="button"
           className={cn("theme-btn", "active")}
           onClick={() => setTheme("light")}
           title={t("common.theme.switchToLight")}
