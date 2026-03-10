@@ -198,8 +198,8 @@
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | production 下 GRPC_AUTH_MODE=none 启动失败 | ☐ | | | |
-| 2 | production 下 api_key 无 keys 启动失败 | ☐ | | | |
-| 3 | production 下 audience allowlist 缺失启动失败 | ☐ | | | |
-| 4 | REST Tenant Token aud 严格校验 | ☐ | | | |
-| 5 | HSTS 条件下发 + gRPC validate_token audience 必填 | ☐ | | | |
+| 1 | production 下 GRPC_AUTH_MODE=none 启动失败 | ✅ PASS | 2026-03-10 | opencode | 启动失败并显示错误信息: "gRPC authentication is disabled (GRPC_AUTH_MODE=none) in production" |
+| 2 | production 下 api_key 无 keys 启动失败 | ✅ PASS | 2026-03-10 | opencode | 启动失败并显示错误信息: "gRPC auth_mode is api_key but no keys configured (GRPC_API_KEYS) in production" |
+| 3 | production 下 audience allowlist 缺失启动失败 | ✅ PASS | 2026-03-10 | opencode | 启动失败并显示错误信息: "Tenant access token audience allowlist is empty in production" |
+| 4 | REST Tenant Token aud 严格校验 | ✅ PASS | 2026-03-10 | opencode | aud=auth9-portal (在allowlist中) 返回200; aud=auth9-demo (不在allowlist中) 返回401 |
+| 5 | HSTS 条件下发 + gRPC validate_token audience 必填 | ✅ PASS | 2026-03-10 | opencode | 带x-forwarded-proto:https有HSTS头; 不带无HSTS头; gRPC空audience返回FailedPrecondition |

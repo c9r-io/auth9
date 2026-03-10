@@ -64,7 +64,6 @@ async function runTests() {
   const app1 = express();
   app1.use(auth9Middleware({
     domain: "http://localhost:8080",
-    audience: "auth9",
   }));
   
   app1.get("/test", (req, res) => {
