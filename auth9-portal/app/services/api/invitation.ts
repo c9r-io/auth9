@@ -126,6 +126,13 @@ export const invitationApi = {
     }
   },
 
+  validate: async (token: string): Promise<{ data: { status: InvitationStatus; email: string } }> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/invitations/validate?token=${encodeURIComponent(token)}`,
+    );
+    return handleResponse(response);
+  },
+
   accept: async (input: {
     token: string;
     email?: string;

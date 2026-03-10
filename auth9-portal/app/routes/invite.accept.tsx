@@ -15,14 +15,31 @@ export const meta: MetaFunction = ({ matches }) => {
   return buildMeta(resolveMetaLocale(matches), "invite.metaTitle");
 };
 
+type InvitationState = "pending" | "accepted" | "expired" | "revoked" | "invalid" | null;
+
 interface LoaderData {
   token: string | null;
+  invitationStatus: InvitationState;
+  invitationEmail?: string;
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const token = url.searchParams.get("token");
-  return { token } satisfies LoaderData;
+  if (!token) {
+    return { token: null, invitationStatus: null } satisfies LoaderData;
+  }
+
+  try {
+    const result = await invitationApi.validate(token);
+    return {
+      token,
+      invitationStatus: result.data.status as InvitationState,
+      invitationEmail: result.data.email,
+    } satisfies LoaderData;
+  } catch {
+    return { token, invitationStatus: "invalid" as InvitationState } satisfies LoaderData;
+  }
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -53,30 +70,47 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 }
 
+function InvitationStatusCard({ titleKey, descriptionKey }: { titleKey: string; descriptionKey: string }) {
+  const { t } = useI18n();
+  return (
+    <div className="min-h-screen flex items-center justify-center px-6 relative">
+      <div className="page-backdrop" />
+      <Card className="w-full max-w-md relative z-10">
+        <CardHeader className="text-center">
+          <CardTitle>{t(titleKey)}</CardTitle>
+          <CardDescription>{t(descriptionKey)}</CardDescription>
+        </CardHeader>
+        <CardContent className="text-center">
+          <Link to="/login" className="text-[var(--accent-blue)] hover:underline text-sm">
+            {t("invite.goToLogin")}
+          </Link>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function InviteAcceptPage() {
   const { t } = useI18n();
-  const { token } = useLoaderData<typeof loader>();
+  const { token, invitationStatus } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
 
-  if (!token) {
-    return (
-      <div className="min-h-screen flex items-center justify-center px-6 relative">
-        <div className="page-backdrop" />
-        <Card className="w-full max-w-md relative z-10">
-          <CardHeader className="text-center">
-            <CardTitle>{t("invite.invalidTitle")}</CardTitle>
-            <CardDescription>{t("invite.invalidDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Link to="/login" className="text-[var(--accent-blue)] hover:underline text-sm">
-              {t("invite.goToLogin")}
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  if (!token || invitationStatus === "invalid") {
+    return <InvitationStatusCard titleKey="invite.invalidTitle" descriptionKey="invite.invalidDescription" />;
+  }
+
+  if (invitationStatus === "expired") {
+    return <InvitationStatusCard titleKey="invite.expiredTitle" descriptionKey="invite.expiredDescription" />;
+  }
+
+  if (invitationStatus === "accepted") {
+    return <InvitationStatusCard titleKey="invite.acceptedTitle" descriptionKey="invite.acceptedDescription" />;
+  }
+
+  if (invitationStatus === "revoked") {
+    return <InvitationStatusCard titleKey="invite.revokedTitle" descriptionKey="invite.revokedDescription" />;
   }
 
   return (

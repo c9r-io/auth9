@@ -652,6 +652,13 @@ pub async fn delete<S: HasServices>(
 
     let id = StringUuid::from(id);
     let before = state.user_service().get(id).await?;
+
+    if state.config().is_platform_admin_email(&before.email) {
+        return Err(AppError::BadRequest(
+            "Cannot delete platform admin user".to_string(),
+        ));
+    }
+
     if let Err(err) = state
         .keycloak_client()
         .delete_user(&before.keycloak_id)

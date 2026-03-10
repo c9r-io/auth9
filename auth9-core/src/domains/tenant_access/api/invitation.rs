@@ -325,6 +325,51 @@ pub async fn resend<S: HasInvitations>(
     Ok(Json(SuccessResponse::new(response)))
 }
 
+/// Validate an invitation token (public endpoint)
+///
+/// Returns invitation status without accepting it.
+/// Used by the frontend to pre-check invitation validity before showing the form.
+#[utoipa::path(
+    get,
+    path = "/api/v1/invitations/validate",
+    tag = "Tenant Access",
+    params(
+        ("token" = String, Query, description = "Invitation token")
+    ),
+    responses(
+        (status = 200, description = "Invitation status")
+    )
+)]
+pub async fn validate_token<S: HasInvitations>(
+    State(state): State<S>,
+    Query(params): Query<ValidateTokenQuery>,
+) -> Result<impl IntoResponse> {
+    if params.token.is_empty() {
+        return Err(AppError::Validation("Token is required".to_string()));
+    }
+
+    let invitation = state
+        .invitation_service()
+        .get_by_token(&params.token)
+        .await?;
+
+    let effective_status = if invitation.is_expired() && invitation.status == InvitationStatus::Pending {
+        "expired".to_string()
+    } else {
+        invitation.status.to_string()
+    };
+
+    Ok(Json(SuccessResponse::new(serde_json::json!({
+        "status": effective_status,
+        "email": invitation.email,
+    }))))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ValidateTokenQuery {
+    pub token: String,
+}
+
 /// Accept an invitation (public endpoint)
 #[utoipa::path(
     post,

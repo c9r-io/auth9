@@ -145,14 +145,16 @@ export async function action({ request }: ActionFunctionArgs) {
       const roleId = formData.get("role_id") as string;
       const permissionId = formData.get("permission_id") as string;
       await rbacApi.assignPermissionToRole(roleId, permissionId, accessToken || undefined);
-      return { success: true };
+      const result = await rbacApi.getRole(roleId, accessToken || undefined);
+      return { success: true, role: result.data };
     }
 
     if (intent === "remove_permission") {
       const roleId = formData.get("role_id") as string;
       const permissionId = formData.get("permission_id") as string;
       await rbacApi.removePermissionFromRole(roleId, permissionId, accessToken || undefined);
-      return { success: true };
+      const result = await rbacApi.getRole(roleId, accessToken || undefined);
+      return { success: true, role: result.data };
     }
 
     // Get role with permissions

@@ -11,6 +11,10 @@ where
 {
     Router::new()
         .route(
+            "/api/v1/invitations/validate",
+            get(tenant_access_api::invitation::validate_token::<S>),
+        )
+        .route(
             "/api/v1/invitations/accept",
             post(tenant_access_api::invitation::accept::<S>),
         )
