@@ -2,7 +2,7 @@
 
 **模块**: 高级攻击
 **测试范围**: 依赖漏洞、供应链攻击、构建安全
-**场景数**: 5
+**场景数**: 6
 **风险等级**: 🔴 极高
 **ASVS 5.0 矩阵ID**: M-ADV-01
 **OWASP ASVS 5.0**: V13.1,V13.2,V15.1,V15.2
@@ -348,6 +348,77 @@ kube-bench run --targets master,node
 
 ---
 
+## 场景 6：GitHub Dependabot 警报审查
+
+### 前置条件
+- GitHub 仓库已启用 Dependabot alerts
+- 安装 GitHub CLI (`gh`)
+- 拥有仓库读取权限
+
+### 攻击目标
+验证 GitHub Dependabot 发现的已知漏洞已被及时治理，无遗留的 open 警报
+
+### 攻击步骤
+1. 拉取所有 Dependabot 警报：
+   ```bash
+   gh api repos/:owner/:repo/dependabot/alerts \
+     --jq '.[] | {number, state, severity: .security_advisory.severity, package: .security_vulnerability.package.name, ecosystem: .security_vulnerability.package.ecosystem, summary: .security_advisory.summary, patched: .security_vulnerability.first_patched_version.identifier}'
+   ```
+
+2. 筛选 open 状态的警报：
+   ```bash
+   gh api repos/:owner/:repo/dependabot/alerts \
+     --jq '[.[] | select(.state == "open")] | length'
+   ```
+
+3. 对每个 open 警报执行影响分析：
+   ```bash
+   # Rust: 检查当前锁定版本与修复版本
+   grep -A2 '^name = "<package>"' auth9-core/Cargo.lock
+   cargo tree -i <package> --depth 2
+
+   # npm: 检查当前锁定版本
+   npm ls <package>
+   grep -A1 '"node_modules/<package>"' auth9-portal/package-lock.json
+   ```
+
+4. 评估每个警报的实际影响：
+   - 是否为直接依赖还是传递依赖
+   - 漏洞触发条件是否在 auth9 使用场景中存在
+   - 修复版本是否与当前依赖树兼容
+
+### 预期安全行为
+- 无 HIGH/CRITICAL 级别的 open 警报
+- MEDIUM 级别警报应在 30 天内评估并处理
+- 已修复（fixed/dismissed）的警报有对应的升级记录
+- 所有 open 警报均已评估影响并记录处理计划
+
+### 验证方法
+```bash
+# 获取所有 open 警报并按严重性分组
+gh api repos/:owner/:repo/dependabot/alerts \
+  --jq '[.[] | select(.state == "open")] | group_by(.security_advisory.severity) | map({severity: .[0].security_advisory.severity, count: length})'
+
+# 检查 HIGH/CRITICAL 是否为 0
+gh api repos/:owner/:repo/dependabot/alerts \
+  --jq '[.[] | select(.state == "open" and (.security_advisory.severity == "high" or .security_advisory.severity == "critical"))] | length'
+# 预期: 0
+
+# 验证已修复警报数量
+gh api repos/:owner/:repo/dependabot/alerts \
+  --jq '[.[] | select(.state == "fixed")] | length'
+```
+
+### 修复建议
+- 启用 Dependabot security updates（自动创建 PR）
+- 对 Rust 依赖使用 `cargo update -p <package>` 升级特定包
+- 对 npm 依赖使用 `npm audit fix` 或手动升级
+- 对 pnpm workspace 使用 `pnpm.overrides` 强制升级传递依赖
+- 设置 CI 门禁：当存在 HIGH/CRITICAL 警报时阻止合并
+- 定期（每周）审查 Dependabot 警报状态
+
+---
+
 ## 自动化检测脚本
 
 ```bash
@@ -358,27 +429,38 @@ set -e
 
 echo "=== Auth9 Supply Chain Security Check ==="
 
-# 1. Rust Dependencies
-echo "\n[1/5] Checking Rust dependencies..."
+# 1. GitHub Dependabot Alerts
+echo "\n[1/6] Checking GitHub Dependabot alerts..."
+OPEN_CRITICAL=$(gh api repos/:owner/:repo/dependabot/alerts \
+  --jq '[.[] | select(.state == "open" and (.security_advisory.severity == "high" or .security_advisory.severity == "critical"))] | length')
+echo "Open HIGH/CRITICAL alerts: $OPEN_CRITICAL"
+if [ "$OPEN_CRITICAL" -gt 0 ]; then
+  echo "⚠️  Dependabot HIGH/CRITICAL alerts found:"
+  gh api repos/:owner/:repo/dependabot/alerts \
+    --jq '.[] | select(.state == "open" and (.security_advisory.severity == "high" or .security_advisory.severity == "critical")) | "#\(.number) [\(.security_advisory.severity)] \(.security_vulnerability.package.name): \(.security_advisory.summary)"'
+fi
+
+# 2. Rust Dependencies
+echo "\n[2/6] Checking Rust dependencies..."
 cd auth9-core
 cargo audit --deny warnings || echo "⚠️  Rust vulnerabilities found"
 
-# 2. Node.js Dependencies
-echo "\n[2/5] Checking Node.js dependencies..."
+# 3. Node.js Dependencies
+echo "\n[3/6] Checking Node.js dependencies..."
 cd ../auth9-portal
 npm audit --audit-level=high || echo "⚠️  npm vulnerabilities found"
 
-# 3. Container Security
-echo "\n[3/5] Scanning Docker images..."
+# 4. Container Security
+echo "\n[4/6] Scanning Docker images..."
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
   aquasec/trivy image auth9-core:latest --severity HIGH,CRITICAL
 
-# 4. Dockerfile Security
-echo "\n[4/5] Checking Dockerfile best practices..."
+# 5. Dockerfile Security
+echo "\n[5/6] Checking Dockerfile best practices..."
 docker run --rm -i hadolint/hadolint < auth9-core/Dockerfile
 
-# 5. SBOM Generation (Software Bill of Materials)
-echo "\n[5/5] Generating SBOM..."
+# 6. SBOM Generation (Software Bill of Materials)
+echo "\n[6/6] Generating SBOM..."
 cd ../auth9-core
 cargo install cargo-sbom
 cargo sbom --output-format json > sbom-rust.json
@@ -408,7 +490,7 @@ echo "\n=== Security Check Complete ==="
 **适用控制**: V13.1,V13.2,V15.1,V15.2  
 **关联任务**: Backlog #14, #20  
 **建议回归频率**: 每次发布前 + 缺陷修复后必跑  
-**场景总数**: 5
+**场景总数**: 6
 
 ### 执行清单
 - [ ] M-ADV-01-C01 | 控制: V13.1 | 任务: #14, #20 | 动作: 执行文档内相关攻击步骤并记录证据

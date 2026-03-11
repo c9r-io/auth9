@@ -2065,14 +2065,14 @@ impl Default for TestActionRepository {
 impl ActionRepository for TestActionRepository {
     async fn create(
         &self,
-        tenant_id: StringUuid,
+        tenant_id: Option<StringUuid>,
         service_id: StringUuid,
         input: &CreateActionInput,
     ) -> Result<Action> {
         let now = Utc::now();
         let action = Action {
             id: StringUuid::new_v4(),
-            tenant_id: Some(tenant_id),
+            tenant_id,
             service_id,
             name: input.name.clone(),
             description: input.description.clone(),
