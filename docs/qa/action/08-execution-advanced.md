@@ -71,12 +71,22 @@ ORDER BY executed_at DESC LIMIT 1;
 
 ### 预期数据状态
 ```sql
--- 验证最近无新的执行记录
+-- 验证最近（触发登录后 1 分钟内）无新的执行记录
 SELECT executed_at FROM action_executions
 WHERE action_id = '{disabled_action_id}'
   AND executed_at > NOW() - INTERVAL 1 MINUTE;
 -- 预期: 无记录
 ```
+
+> **重要前提**: 先通过 API 确认 Action 已禁用，**再**触发登录，**再**查询 DB。
+> 不要用禁用前已存在的历史记录来判断是否被执行。
+
+> **故障排除**
+>
+> | 症状 | 原因 | 解决方案 |
+> |------|------|---------|
+> | DB 中存在旧执行记录但时间在测试前 | 数据是禁用前产生的 | 严格用 `executed_at > NOW() - INTERVAL 1 MINUTE` 过滤 |
+> | 禁用后仍有新记录 | 真实 Bug | 检查 action_engine 的 enabled 过滤逻辑 |
 
 ---
 

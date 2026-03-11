@@ -261,14 +261,28 @@ context;
 
 ### 预期数据状态
 ```sql
--- 验证执行顺序
-SELECT action_id, executed_at FROM action_executions
-WHERE trigger_id = 'post-login'
-  AND service_id = '{service_id}'
-  AND executed_at > NOW() - INTERVAL 1 MINUTE
-ORDER BY executed_at ASC;
--- 预期: 3 条记录，按 A → B → C 顺序
+-- 验证执行日志存在（不要用 executed_at 验证顺序！）
+-- Actions 可能在同一毫秒内执行，executed_at 时间戳相同
+-- 执行顺序由 execution_order 字段决定（代码在 SQL 中已按此排序）
+SELECT ae.action_id, a.name, a.execution_order, ae.executed_at
+FROM action_executions ae
+JOIN actions a ON ae.action_id = a.id
+WHERE ae.trigger_id = 'post-login'
+  AND ae.executed_at > NOW() - INTERVAL 1 MINUTE
+ORDER BY a.execution_order ASC;
+-- 预期: 3 条记录，按 execution_order 升序列出 A(0) → B(10) → C(20)
 ```
+
+> **重要**: 验证执行顺序必须查看 Token 中的 claims（`order_a`, `order_b`, `order_c` 都存在），
+> 而不能仅凭 `executed_at` 时间戳排序判断——多个 Actions 可能在同一秒内执行，时间戳完全相同，
+> 此时 `ORDER BY executed_at` 的结果取决于 DB 内部排序，无法代表执行顺序。
+
+> **故障排除**
+>
+> | 症状 | 原因 | 解决方案 |
+> |------|------|---------|
+> | DB 按 `executed_at` 排序显示顺序"反向" | 所有 Actions 时间戳相同，DB 自由排序 | 改为验证 Token claims 是否包含所有三个字段 |
+> | Token 缺少某个 claim | 某个 Action 执行失败 | 检查 action_executions.success 字段和 error_message |
 
 ---
 

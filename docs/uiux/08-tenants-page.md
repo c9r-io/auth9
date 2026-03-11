@@ -17,10 +17,21 @@
 3. 调整窗口宽度至 640px 以下。
 
 ### 预期视觉效果
-- **高度相等**: 输入框与按钮的高度必须严格一致（例如均为 40px 或 44px），不得出现 1px 的误差。
+- **高度相等**: 输入框与按钮的高度必须严格一致（**均为 40px**，对应 `h-10` Tailwind class），不得出现 1px 的误差。
 - **Desktop**: 按钮位于输入框右侧，无视觉断层。
 - **Mobile**: 按钮应另起一行（`w-full`），高度保持一致。
 - **间距**: 输入框与按钮之间的 `gap` 应从 `space-x-2` 变为 `space-y-2`。
+
+> **已验证实现**: `Input` 组件 default size 使用 `h-10`（40px），`Button` 组件 default size
+> 也使用 `h-10`（40px）。两者设计上高度一致。
+>
+> **故障排除**：
+>
+> | 症状 | 原因 | 解决方案 |
+> |------|------|---------|
+> | 按钮高度看起来是 44px | 可能使用了 `size="sm"` 的 Button（`size="sm"` 添加了 `min-h-[44px]`）| 确认使用 `size="default"` 的 Button |
+> | 肉眼看起来高度不一致 | 可能是外层 flex 对齐问题，而非高度差异 | 用 DevTools 精确测量 `offsetHeight` |
+> | 报告 40px vs 44px 差异 | `size="sm"` 的 Button 默认有 `min-h-[44px]`，而 Input 是 40px | 检查 Button 使用的 `size` prop |
 
 ---
 

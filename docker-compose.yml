@@ -156,6 +156,7 @@ services:
       AUTH9_CORE_URL: http://auth9-core:8080
       AUTH9_CORE_PUBLIC_URL: http://localhost:8080
       SESSION_SECRET: dev-session-secret-change-in-production
+      SECURE_COOKIES: "false"  # Local Docker runs on HTTP; NODE_ENV=production is for build optimizations only
     depends_on:
       - auth9-core
     networks:

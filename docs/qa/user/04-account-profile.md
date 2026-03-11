@@ -125,28 +125,44 @@ ORDER BY created_at DESC LIMIT 1;
 
 ---
 
-## 场景 4：自更新不需要管理员权限
+## 场景 4：自更新不需要管理员权限；他人资料不可更新
 
 ### 初始状态
-- 普通用户已登录（非管理员角色）
-- 用户持有有效 Access Token
+- 普通用户（**member 角色**，非 admin/owner）已登录
+- 用户持有有效 Tenant Access Token
+
+### 步骤 0：验证 Token 角色为 member
+
+**测试前必须确认 Token 携带的角色不包含 admin/owner：**
+
+```bash
+# 解码 tenant access token 的 payload（注意 token 是 JWT，取第二段 base64）
+echo "{token}" | cut -d. -f2 | base64 -d 2>/dev/null | jq '.roles, .permissions'
+# 预期: roles 中不含 "admin" 或 "owner"
+# 若 roles 包含 "admin" 或 "owner"，则该用户有权限更新他人，测试结果为预期行为而非 Bug
+```
+
+> **重要**: `PUT /api/v1/users/{id}` 对 member 角色（无 `user:write` 等权限）
+> 更新他人资料会返回 403。Admin/Owner 角色有权限更新同租户内其他用户。
+> 若测试时发现 200 成功，首先检查 Token 角色是否为 admin/owner。
 
 ### 目的
-验证普通用户可以通过 `PUT /api/v1/users/me` 更新自己的资料，无需 admin 权限
+1. 验证普通用户可以通过 `PUT /api/v1/users/me` 更新自己的资料，无需 admin 权限
+2. 验证普通用户（member）无法通过 `PUT /api/v1/users/{other_id}` 更新他人资料
 
 ### 测试操作流程
-1. 使用普通用户的 Access Token 调用自更新 API：
+1. 使用普通用户（member 角色）的 Tenant Access Token 调用自更新 API：
    ```bash
    curl -s -X PUT http://localhost:8080/api/v1/users/me \
-     -H "Authorization: Bearer {normal_user_token}" \
+     -H "Authorization: Bearer {member_user_token}" \
      -H "Content-Type: application/json" \
      -d '{"display_name": "Self Updated Name"}' | jq
    ```
-2. 确认更新成功
-3. 尝试用同一 token 更新其他用户：
+2. 确认更新成功（HTTP 200）
+3. 用同一 member token 尝试更新其他用户的资料：
    ```bash
    curl -s -X PUT http://localhost:8080/api/v1/users/{other_user_id} \
-     -H "Authorization: Bearer {normal_user_token}" \
+     -H "Authorization: Bearer {member_user_token}" \
      -H "Content-Type: application/json" \
      -d '{"display_name": "Hacked Name"}' | jq
    ```
@@ -154,6 +170,13 @@ ORDER BY created_at DESC LIMIT 1;
 ### 预期结果
 - 自更新：HTTP 200，display_name 被成功更新
 - 更新他人：HTTP 403 Forbidden，操作被拒绝
+
+> **故障排除**
+>
+> | 症状 | 原因 | 解决方案 |
+> |------|------|---------|
+> | 更新他人返回 200（而非 403）| Token 实际是 admin/owner 角色 | 执行步骤 0 验证 Token 角色 |
+> | 更新他人返回 404（而非 403）| 目标用户不在当前租户 | 使用同一租户内的目标用户 ID |
 
 ### 预期数据状态
 ```sql

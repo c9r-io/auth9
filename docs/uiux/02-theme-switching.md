@@ -319,6 +319,28 @@ if (focused?.classList.contains('theme-btn')) {
 
 ## 常见问题排查
 
+### 问题 0：主题切换按钮显示的图标/标签是"目标主题"而非"当前主题"
+
+> **这是预期行为，不是 Bug。**
+>
+> Auth9 主题切换控件遵循标准 UX 规范：**按钮显示的是"点击后切换到的主题"**，而非当前激活主题。
+>
+> - 当前在 **Light 模式**：按钮显示 🌙（月亮图标），含义是"切换到 Dark 模式"
+> - 当前在 **Dark 模式**：按钮显示 ☀️（太阳图标），含义是"切换到 Light 模式"
+>
+> **如何验证按钮状态正确**：
+> 1. 检查 `document.documentElement.getAttribute('data-theme')` — 这是实际当前主题
+> 2. 查看按钮的 `aria-label`（如 "Switch to dark mode"）反映目标主题
+> 3. **不要**以"按钮图标与当前主题不一致"来判断为 Bug
+>
+> ```javascript
+> // 正确验证: 当前主题 vs 按钮指向的目标主题应相反
+> const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+> console.log('Current theme:', currentTheme);
+> // 若 currentTheme === 'light'，按钮应显示 dark 模式图标（月亮）
+> // 若 currentTheme === 'dark'，按钮应显示 light 模式图标（太阳）
+> ```
+
 ### 问题 1：切换后部分元素颜色未更新
 **可能原因**：
 - 使用了硬编码颜色而非 CSS 变量

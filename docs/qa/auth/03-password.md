@@ -103,20 +103,48 @@ SELECT used_at FROM password_reset_tokens WHERE id = '{token_id}';
 ## 场景 3：使用过期重置令牌
 
 ### 初始状态
-- 重置令牌已过期
+- 重置令牌已过期（`expires_at` 早于 `NOW()`）
 
 ### 目的
 验证过期令牌处理
 
-### 测试操作流程
-1. 从场景 2 获取重置链接，但**不立即使用**
-2. 等待令牌过期（或通过受控测试配置缩短过期时间）
-3. 使用过期的重置链接
+### 步骤 0：验证令牌已真正过期
 
-> **提示**：可通过修改链接中的 URL 参数或等待足够时间来测试过期场景。
+**必须在测试前确认令牌已过期，否则测试无效：**
+
+```sql
+-- 确认令牌已过期（expires_at 在过去）
+SELECT id, expires_at, used_at,
+       CASE WHEN expires_at < NOW() THEN 'EXPIRED' ELSE 'VALID' END AS status
+FROM password_reset_tokens
+WHERE user_id = (SELECT id FROM users WHERE email = 'admin@auth9.local')
+ORDER BY created_at DESC LIMIT 1;
+-- 必须: status = 'EXPIRED'
+-- 若 used_at IS NOT NULL，令牌已使用（测试会因无法找到未使用令牌而失败）
+```
+
+> **系统默认令牌有效期：1 小时**。建议通过直接修改数据库使令牌过期，而非等待：
+> ```sql
+> UPDATE password_reset_tokens
+> SET expires_at = '2020-01-01 00:00:00'
+> WHERE user_id = (SELECT id FROM users WHERE email = 'admin@auth9.local')
+>   AND used_at IS NULL;
+> ```
+
+### 测试操作流程
+1. 首先通过场景 2 步骤获取重置链接（`/reset-password?token=xxx`）
+2. **执行步骤 0 验证令牌已过期**（通过等待或直接修改 DB）
+3. 访问已过期的重置链接并提交新密码
 
 ### 预期结果
 - 显示错误：「链接已过期，请重新申请」
+
+> **故障排除**
+>
+> | 症状 | 原因 | 解决方案 |
+> |------|------|---------|
+> | 密码重置成功（而非报错） | 令牌实际未过期 | 执行步骤 0 确认 status=EXPIRED |
+> | 页面直接报"无效令牌" | 令牌已被使用（used_at 非空） | 申请新令牌并确保未使用前手动使其过期 |
 
 ---
 

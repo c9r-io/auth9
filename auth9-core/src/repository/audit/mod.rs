@@ -142,7 +142,11 @@ pub struct AuditLogQuery {
     pub from_date: Option<DateTime<Utc>>,
     pub to_date: Option<DateTime<Utc>>,
     pub offset: Option<i64>,
+    #[serde(alias = "per_page")]
     pub limit: Option<i64>,
+    /// Page number (1-based). Converted to offset internally.
+    /// When provided, takes precedence over the raw `offset` field.
+    pub page: Option<i64>,
 }
 
 #[cfg_attr(test, mockall::automock)]

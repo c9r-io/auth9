@@ -3,8 +3,15 @@ import { authApi } from "~/services/api";
 import { ApiResponseError } from "~/services/api/client";
 
 const isProduction = process.env.NODE_ENV === "production";
+
+// Use SECURE_COOKIES env var when explicitly set to allow HTTP-based Docker dev deployments
+// (NODE_ENV=production is used for Remix build optimizations even in HTTP-only dev environments)
+const isSecureCookies =
+  process.env.SECURE_COOKIES !== undefined
+    ? process.env.SECURE_COOKIES === "true"
+    : isProduction;
 const SESSION_MAX_AGE = 8 * 60 * 60;
-const DEFAULT_SESSION_SECRET = "default-secret-change-me";
+const DEFAULT_SESSION_SECRET = "default-secret-change-me"; // pragma: allowlist secret
 
 function resolveSessionSecret(): string {
   const sessionSecret = process.env.SESSION_SECRET;
@@ -29,7 +36,7 @@ export const sessionCookie = createCookie("auth9_session", {
   path: "/",
   sameSite: "lax",
   httpOnly: true,
-  secure: isProduction,
+  secure: isSecureCookies,
   maxAge: SESSION_MAX_AGE,
 });
 
@@ -50,7 +57,7 @@ export const oauthStateCookie = createCookie("oauth_state", {
   path: "/",
   sameSite: "lax",
   httpOnly: true,
-  secure: isProduction,
+  secure: isSecureCookies,
   maxAge: 5 * 60,
 });
 

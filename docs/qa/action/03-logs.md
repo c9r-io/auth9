@@ -8,6 +8,24 @@
 
 ## 前置条件
 
+### 步骤 0：验证测试数据完整性
+
+**在开始测试之前，务必确认 service_id 属于某个 Tenant（非平台级服务）：**
+
+```sql
+SELECT id, name, tenant_id FROM services WHERE id = '{service_id}';
+-- 必须: tenant_id IS NOT NULL
+-- 若 tenant_id = NULL，则该 service 是 platform-level service，
+--   logs API 会要求 platform admin token，普通 tenant token 会收到 403
+```
+
+> **故障排除**
+>
+> | 症状 | 原因 | 解决方案 |
+> |------|------|---------|
+> | 403 "Platform admin required" | service 的 `tenant_id = NULL` | 使用有 `tenant_id` 的 service_id |
+> | 403 "Forbidden" | Token 不是该租户的 admin/owner | 使用该租户的 admin 角色 tenant access token |
+
 ### Token 要求
 
 **重要**：Action 日志查询 API（`/api/v1/services/{service_id}/actions/*/logs`）需要 **tenant access token**，不接受 identity token。
