@@ -133,6 +133,10 @@ WHERE category = 'email' AND setting_key = 'provider';
 -- 预期: value.type != "none"
 ```
 
+> **本地 Docker 默认说明**：
+> - 如果当前 provider 是占位符 SES 凭据（例如 `AKIAXXXXXXXXXX`）或其他不可用测试凭据，发送失败属于**环境问题**，不是模板功能缺陷。
+> - 只有在 provider 已配置为可实际投递的 SMTP / Mailpit / 有效 SES 凭据时，才可判定场景 4 通过或失败。
+
 ### 目的
 验证使用当前编辑内容发送测试邮件
 
@@ -158,6 +162,7 @@ WHERE category = 'email' AND setting_key = 'provider';
 | 症状 | 原因 | 解决 |
 |------|------|------|
 | `Bad request: Email provider not configured` | 邮件提供商未配置（`value.type = "none"`） | 先到「设置」→「Email Provider」配置 SMTP/邮件服务商，再执行场景 4 |
+| `Email send failed: Send failed: service error` | 邮件服务商已选择，但底层凭据无效（本地常见为占位符 SES 凭据） | 改用有效 SMTP/Mailpit，或配置真实可用 SES 凭据后重试 |
 | 发送成功但未收到邮件 | 使用了无效收件地址或本地 SMTP 未启动 | 检查收件地址、SMTP 配置与邮件服务日志 |
 
 ---

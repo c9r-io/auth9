@@ -353,11 +353,12 @@ pub async fn validate_token<S: HasInvitations>(
         .get_by_token(&params.token)
         .await?;
 
-    let effective_status = if invitation.is_expired() && invitation.status == InvitationStatus::Pending {
-        "expired".to_string()
-    } else {
-        invitation.status.to_string()
-    };
+    let effective_status =
+        if invitation.is_expired() && invitation.status == InvitationStatus::Pending {
+            "expired".to_string()
+        } else {
+            invitation.status.to_string()
+        };
 
     Ok(Json(SuccessResponse::new(serde_json::json!({
         "status": effective_status,

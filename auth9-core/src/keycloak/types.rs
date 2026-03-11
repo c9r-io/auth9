@@ -212,7 +212,10 @@ impl std::fmt::Debug for SmtpServerConfig {
             .field("host", &self.host.as_ref().map(|_| "<REDACTED>"))
             .field("port", &self.port.as_ref().map(|_| "<REDACTED>"))
             .field("from", &self.from.as_ref().map(|_| "<REDACTED>"))
-            .field("from_display_name", &self.from_display_name.as_ref().map(|_| "<REDACTED>"))
+            .field(
+                "from_display_name",
+                &self.from_display_name.as_ref().map(|_| "<REDACTED>"),
+            )
             .field("auth", &self.auth.as_ref().map(|_| "<REDACTED>"))
             .field("user", &self.user.as_ref().map(|_| "<REDACTED>"))
             .field("password", &self.password.as_ref().map(|_| "<REDACTED>"))

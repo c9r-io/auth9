@@ -168,6 +168,7 @@ export default {
     resetPassword: {
       metaTitle: "重置密码 - Auth9",
       invalidToken: "无效或缺失的重置令牌",
+      expiredToken: "该重置链接已过期，请重新申请。",
       invalidTitle: "链接无效",
       successTitle: "密码重置成功",
       successDescription: "你的密码已更新，现在可以使用新密码登录。",

@@ -1267,7 +1267,9 @@ mod tests {
             },
         ];
 
-        let result = service.batch_upsert(Some(tenant_id), service_id, inputs).await;
+        let result = service
+            .batch_upsert(Some(tenant_id), service_id, inputs)
+            .await;
 
         assert!(result.is_ok());
         let response = result.unwrap();
@@ -1313,7 +1315,9 @@ mod tests {
             },
         ];
 
-        let result = service.batch_upsert(Some(tenant_id), service_id, inputs).await;
+        let result = service
+            .batch_upsert(Some(tenant_id), service_id, inputs)
+            .await;
 
         assert!(result.is_ok());
         let response = result.unwrap();

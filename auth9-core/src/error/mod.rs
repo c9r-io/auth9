@@ -187,9 +187,9 @@ fn collect_validation_errors(
 fn format_field_name(field: &str) -> String {
     let leaf = field.rsplit('.').next().unwrap_or(field);
     match leaf {
-        "current_password" => "Current password".to_string(),
-        "new_password" => "New password".to_string(),
-        "confirm_password" => "Confirm password".to_string(),
+        "current_password" => "Current password".to_string(), // pragma: allowlist secret
+        "new_password" => "New password".to_string(), // pragma: allowlist secret
+        "confirm_password" => "Confirm password".to_string(), // pragma: allowlist secret
         "email" => "Email".to_string(),
         "name" => "Name".to_string(),
         "display_name" => "Display name".to_string(),
@@ -391,8 +391,8 @@ mod tests {
 
     #[test]
     fn test_nested_validation_errors_propagate() {
-        use validator::{ValidationError, ValidationErrors, ValidationErrorsKind};
         use std::borrow::Cow;
+        use validator::{ValidationError, ValidationErrors, ValidationErrorsKind};
 
         let mut inner_errors = ValidationErrors::new();
         let mut field_err = ValidationError::new("path_traversal");
@@ -400,20 +400,30 @@ mod tests {
         inner_errors.add("logo_url", field_err);
 
         let mut mid_errors = ValidationErrors::new();
-        mid_errors
-            .0
-            .insert(Cow::Borrowed("branding"), ValidationErrorsKind::Struct(Box::new(inner_errors)));
+        mid_errors.0.insert(
+            Cow::Borrowed("branding"),
+            ValidationErrorsKind::Struct(Box::new(inner_errors)),
+        );
 
         let mut outer_errors = ValidationErrors::new();
-        outer_errors
-            .0
-            .insert(Cow::Borrowed("settings"), ValidationErrorsKind::Struct(Box::new(mid_errors)));
+        outer_errors.0.insert(
+            Cow::Borrowed("settings"),
+            ValidationErrorsKind::Struct(Box::new(mid_errors)),
+        );
 
         let app_err: AppError = outer_errors.into();
         match &app_err {
             AppError::Validation(msg) => {
-                assert!(msg.contains("Logo Url") || msg.contains("Logo url"), "Expected 'Logo Url' in: {}", msg);
-                assert!(msg.contains("path_traversal"), "Expected 'path_traversal' in: {}", msg);
+                assert!(
+                    msg.contains("Logo Url") || msg.contains("Logo url"),
+                    "Expected 'Logo Url' in: {}",
+                    msg
+                );
+                assert!(
+                    msg.contains("path_traversal"),
+                    "Expected 'path_traversal' in: {}",
+                    msg
+                );
             }
             _ => panic!("Expected Validation error, got {:?}", app_err),
         }

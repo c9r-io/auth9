@@ -286,9 +286,7 @@ mod tests {
 
         let input2 = UpdateUserInput {
             display_name: None,
-            avatar_url: Some(
-                "https://evil.com/x?q=<img src=x onerror=alert('XSS')>".to_string(),
-            ),
+            avatar_url: Some("https://evil.com/x?q=<img src=x onerror=alert('XSS')>".to_string()),
         };
         assert!(input2.validate().is_err());
     }

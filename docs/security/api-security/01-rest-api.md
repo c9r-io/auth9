@@ -93,7 +93,8 @@ curl http://localhost:8080/.well-known/openid-configuration
 2. 尝试 Token 位置变体：
    - Query 参数: `?token=xxx`
    - Cookie: `Authorization=Bearer xxx`
-   - 小写 header: `authorization: Bearer xxx`
+
+> **重要**: HTTP header 名按规范大小写不敏感。`Authorization` 与 `authorization` 是等价的，不能把“小写 header 被接受”当作认证绕过漏洞。应验证的是 **header 名之外的位置**（Query/Cookie/Basic Auth）和 **Bearer scheme / token 内容** 是否被错误接受。
 
 ### 预期安全行为
 - 所有无效 Token 返回 401
@@ -120,6 +121,11 @@ curl -H "Authorization: Bearer $EXPIRED_TOKEN" \
 # Query 参数 Token (不应支持)
 curl "http://localhost:8080/api/v1/users?access_token=$TOKEN"
 # 预期: 401 (Token 从 Query 不被接受)
+
+# 小写 header 名（应与标准写法等价，不作为漏洞）
+curl -H "authorization: Bearer $TOKEN" \
+  http://localhost:8080/api/v1/users
+# 预期: 与 "Authorization" 完全相同的行为
 
 # Basic Auth 尝试
 curl -u "admin:password" \

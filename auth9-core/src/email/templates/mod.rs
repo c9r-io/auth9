@@ -6,6 +6,15 @@
 use crate::models::email_template::{EmailTemplateContent, EmailTemplateType};
 use std::collections::HashMap;
 
+fn html_escape(input: &str) -> String {
+    input
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
+}
+
 /// Available email templates
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EmailTemplate {
@@ -30,11 +39,11 @@ impl EmailTemplate {
     pub fn subject(&self) -> &'static str {
         match self {
             Self::Invitation => "You've been invited to join {{tenant_name}}",
-            Self::PasswordReset => "Reset your password",
+            Self::PasswordReset => "Reset your password", // pragma: allowlist secret
             Self::EmailMfa => "Your verification code: {{verification_code}}",
             Self::Welcome => "Welcome to {{tenant_name}}!",
             Self::EmailVerification => "Verify your email address",
-            Self::PasswordChanged => "Your password has been changed",
+            Self::PasswordChanged => "Your password has been changed", // pragma: allowlist secret
             Self::SecurityAlert => "Security Alert: {{event_type}}",
         }
     }
@@ -132,11 +141,23 @@ impl TemplateEngine {
         result
     }
 
+    /// Render an HTML template string, HTML-escaping variable values first.
+    pub fn render_html(&self, template: &str) -> String {
+        let mut result = template.to_string();
+
+        for (key, value) in &self.variables {
+            let placeholder = format!("{{{{{}}}}}", key);
+            result = result.replace(&placeholder, &html_escape(value));
+        }
+
+        result
+    }
+
     /// Render a complete email template
     pub fn render_template(&self, template: EmailTemplate) -> RenderedEmail {
         RenderedEmail {
             subject: self.render(template.subject()),
-            html_body: self.render(template.html_body()),
+            html_body: self.render_html(template.html_body()),
             text_body: self.render(template.text_body()),
         }
     }
@@ -673,6 +694,19 @@ mod tests {
     }
 
     #[test]
+    fn test_template_engine_render_html_escapes_user_input() {
+        let mut engine = TemplateEngine::new();
+        engine.set("name", "<script>alert('xss')</script>");
+
+        let result = engine.render_html("<p>{{name}}</p>");
+
+        assert_eq!(
+            result,
+            "<p>&lt;script&gt;alert(&#x27;xss&#x27;)&lt;/script&gt;</p>"
+        );
+    }
+
+    #[test]
     fn test_invitation_template() {
         let mut engine = TemplateEngine::new();
         engine
@@ -807,6 +841,24 @@ mod tests {
         assert!(rendered.subject.contains("changed"));
         assert!(rendered.html_body.contains("Jane Doe"));
         assert!(rendered.html_body.contains("192.168.1.100"));
+    }
+
+    #[test]
+    fn test_render_template_escapes_html_body_variables_only() {
+        let mut engine = TemplateEngine::new();
+        engine
+            .set("inviter_name", "<b>Alice</b>")
+            .set("tenant_name", "Acme Corp")
+            .set("invite_link", "https://example.com/invite/abc123")
+            .set("expires_in_hours", "72")
+            .set("year", "2026")
+            .set("app_name", "Auth9");
+
+        let rendered = engine.render_template(EmailTemplate::Invitation);
+
+        assert!(rendered.subject.contains("Acme Corp"));
+        assert!(rendered.html_body.contains("&lt;b&gt;Alice&lt;/b&gt;"));
+        assert!(rendered.text_body.contains("<b>Alice</b>"));
     }
 
     #[test]

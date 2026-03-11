@@ -168,6 +168,7 @@ export default {
     resetPassword: {
       metaTitle: "パスワードをリセット - Auth9",
       invalidToken: "無効またはリセットトークンがありません",
+      expiredToken: "このリセットリンクは有効期限切れです。新しいリンクを再申請してください。",
       invalidTitle: "無効なリンク",
       successTitle: "パスワードのリセットが完了しました",
       successDescription: "パスワードが更新されました。新しいパスワードでサインインできます。",

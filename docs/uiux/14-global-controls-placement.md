@@ -216,6 +216,11 @@ if (sidebar) {
 4. 切换到 Dashboard，在相同断点观察控件位置
 5. 在 768px（平板/移动端）下，确认控件有可访问的折叠方案（如汉堡菜单内、悬浮按钮等）
 
+> **768px 验证规则**：
+> - 如果 Dashboard 采用“侧边栏默认收起 + 汉堡菜单展开”的移动/平板布局，**控件在收起状态下位于离屏 sidebar 内是允许的**。
+> - 此时应验证“是否存在明确入口可打开侧边栏并访问控件”，而不是仅依据离屏元素的 `getBoundingClientRect().left < 0` 判定失败。
+> - 只有在“没有可发现入口”或“打开菜单后控件仍不可见/不可操作”时，才算缺陷。
+
 ### 预期视觉效果
 - **1920px ~ 1280px**：控件与相邻元素有明确间距，无重叠
 - **1024px**：控件仍可见，可能尺寸略小，但不消失也不重叠
@@ -239,6 +244,12 @@ function auditControlsAtBreakpoint() {
   });
 }
 auditControlsAtBreakpoint();
+```
+
+```javascript
+// 768px 下优先验证 discoverability，而不是离屏坐标本身
+const menuButton = document.querySelector('[aria-label*="Open sidebar"], [aria-label*="Close sidebar"], button');
+console.log('Has discoverable menu entry:', !!menuButton);
 ```
 
 ---

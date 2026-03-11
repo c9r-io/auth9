@@ -42,9 +42,7 @@ pub async fn create_action<S: HasServices>(
     ensure_service_scope(&state, &auth, service_id).await?;
 
     let action_service = state.action_service();
-    let action = action_service
-        .create(tenant_id, service_id, input)
-        .await?;
+    let action = action_service.create(tenant_id, service_id, input).await?;
 
     Ok(Json(SuccessResponse::new(action)))
 }

@@ -71,7 +71,9 @@ pub async fn list<S: HasServices>(
         calculate_page(Some(offset), Some(per_page))
     };
 
-    Ok(Json(PaginatedResponse::new(logs, final_page, per_page, total)))
+    Ok(Json(PaginatedResponse::new(
+        logs, final_page, per_page, total,
+    )))
 }
 
 /// Calculate pagination page from offset and limit

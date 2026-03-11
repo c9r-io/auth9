@@ -15,6 +15,7 @@
 1. 访问 `/dashboard/tenants`。
 2. 使用 DevTools 检查输入框（Input）与右侧按钮（Button）的实际高度（像素值）。
 3. 调整窗口宽度至 640px 以下。
+4. **务必检查搜索表单的直接 flex 容器**，不要检查内部按钮组或标题容器。
 
 ### 预期视觉效果
 - **高度相等**: 输入框与按钮的高度必须严格一致（**均为 40px**，对应 `h-10` Tailwind class），不得出现 1px 的误差。
@@ -32,6 +33,7 @@
 > | 按钮高度看起来是 44px | 可能使用了 `size="sm"` 的 Button（`size="sm"` 添加了 `min-h-[44px]`）| 确认使用 `size="default"` 的 Button |
 > | 肉眼看起来高度不一致 | 可能是外层 flex 对齐问题，而非高度差异 | 用 DevTools 精确测量 `offsetHeight` |
 > | 报告 40px vs 44px 差异 | `size="sm"` 的 Button 默认有 `min-h-[44px]`，而 Input 是 40px | 检查 Button 使用的 `size` prop |
+> | 报告 `flex-direction: row` 但页面实际已堆叠 | 选错了 DOM 节点（例如选到了内部按钮组 `.flex.gap-2`） | 只检查包含输入框和按钮组的外层 `<form>` 容器 |
 
 ---
 

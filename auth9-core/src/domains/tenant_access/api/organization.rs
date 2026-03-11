@@ -46,10 +46,7 @@ pub async fn create_organization<S: HasServices>(
     };
     state.user_service().add_to_tenant(add_input).await?;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(SuccessResponse::new(tenant)),
-    ))
+    Ok((StatusCode::CREATED, Json(SuccessResponse::new(tenant))))
 }
 
 #[derive(Debug, Deserialize)]

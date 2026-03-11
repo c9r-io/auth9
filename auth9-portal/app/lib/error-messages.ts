@@ -35,6 +35,10 @@ export function mapApiError(
   locale: AppLocale = "en-US"
 ): string {
   if (error instanceof ApiResponseError) {
+    const specializedMessage = mapSpecialApiError(error, locale);
+    if (specializedMessage) {
+      return specializedMessage;
+    }
     if (error.code === "validation") {
       return formatErrorMessage(error.message, locale);
     }
@@ -47,6 +51,23 @@ export function mapApiError(
     return formatErrorMessage(error.message, locale);
   }
   return translate(locale, "apiErrors.unknown");
+}
+
+function mapSpecialApiError(
+  error: ApiResponseError,
+  locale: AppLocale
+): string | null {
+  const message = error.message.toLowerCase();
+
+  if (
+    error.code === "bad_request" &&
+    (message.includes("expired reset token") ||
+      message.includes("invalid or expired reset token"))
+  ) {
+    return translate(locale, "auth.resetPassword.expiredToken");
+  }
+
+  return null;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {

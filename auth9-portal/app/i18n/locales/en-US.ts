@@ -168,6 +168,7 @@ export default {
     resetPassword: {
       metaTitle: "Reset Password - Auth9",
       invalidToken: "Invalid or missing reset token",
+      expiredToken: "This reset link has expired. Please request a new one.",
       invalidTitle: "Invalid link",
       successTitle: "Password reset successful",
       successDescription: "Your password has been updated. You can now sign in with your new password.",

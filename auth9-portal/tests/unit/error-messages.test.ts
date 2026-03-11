@@ -181,6 +181,13 @@ describe("mapApiError", () => {
     expect(mapApiError(err)).toBe("The request is invalid. Please check your input.");
   });
 
+  it("maps expired password reset token to a specific localized message", () => {
+    const err = makeApiError("bad_request", "Invalid or expired reset token", 400);
+    expect(mapApiError(err)).toBe(
+      "This reset link has expired. Please request a new one."
+    );
+  });
+
   it("maps unauthorized to localized message", () => {
     const err = makeApiError("unauthorized", "Token expired", 401);
     expect(mapApiError(err)).toBe("Your session has expired. Please sign in again.");

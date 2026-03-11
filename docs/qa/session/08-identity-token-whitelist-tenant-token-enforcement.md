@@ -173,6 +173,21 @@ curl -i -X POST "http://localhost:8080/api/v1/auth/tenant-token" \
 - 用户属于 `{tenant_a}` 与 `{tenant_b}`
 - 已在 Portal 中选中 `{tenant_a}` 并拿到 `{token_a}`
 
+### 步骤 0：验证测试账号不是平台管理员（必需）
+
+在执行场景前，先确认当前登录账号 **不在** `PLATFORM_ADMIN_EMAILS` 列表中；否则跨租户访问会被设计性放行，测试结论无效。
+
+建议至少满足以下任一条件：
+
+```bash
+# 检查当前用户 email
+curl -s "http://localhost:8080/api/v1/auth/userinfo" \
+  -H "Authorization: Bearer {identity_token}"
+```
+
+- 返回的 `email` 不属于平台管理员白名单
+- 或直接使用已知普通租户用户账号执行本场景
+
 ### 目的
 验证切租户后必须使用新交换 token，旧 token 不可跨租户访问
 

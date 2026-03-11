@@ -121,7 +121,7 @@ impl<R: SystemSettingsRepository> EmailTemplateService<R> {
 
         Ok(RenderedEmailPreview {
             subject: engine.render(&content.subject),
-            html_body: engine.render(&content.html_body),
+            html_body: engine.render_html(&content.html_body),
             text_body: engine.render(&content.text_body),
         })
     }
@@ -150,7 +150,7 @@ impl<R: SystemSettingsRepository> EmailTemplateService<R> {
 
         RenderedEmailPreview {
             subject: engine.render(&content.subject),
-            html_body: engine.render(&content.html_body),
+            html_body: engine.render_html(&content.html_body),
             text_body: engine.render(&content.text_body),
         }
     }
