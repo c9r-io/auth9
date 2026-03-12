@@ -1542,4 +1542,97 @@ export default {
       logo_url: "Logo URL",
     },
   },
+  legal: {
+    privacy: {
+      metaTitle: "Privacy Policy - Auth9",
+      metaDescription: "Auth9 privacy policy",
+      title: "Privacy Policy",
+      lastUpdated: "Last updated: March 2026",
+      sections: {
+        dataCollection: {
+          title: "Data Collection",
+          body: "We collect information you provide when registering for and using Auth9 services, including email addresses, display names, and authentication credentials. We also automatically collect usage data such as IP addresses, device information, and login activity.",
+        },
+        dataUsage: {
+          title: "Data Usage",
+          body: "Your data is used to provide and improve Auth9 services, verify your identity, send service notifications, and ensure platform security. We do not use your personal data for advertising purposes.",
+        },
+        dataSharing: {
+          title: "Data Sharing",
+          body: "We do not sell your personal information to third parties. Data is shared only as configured by your tenant administrators, to comply with legal obligations, or with your explicit consent.",
+        },
+        cookies: {
+          title: "Cookies",
+          body: "Auth9 uses essential cookies to maintain session state and user preferences such as language and theme settings. These cookies are necessary for the service to function and are not used for tracking or advertising.",
+        },
+        security: {
+          title: "Security Measures",
+          body: "We employ industry-standard security measures to protect your data, including encryption in transit and at rest, regular security audits, and access controls. Authentication tokens are cryptographically signed and securely stored.",
+        },
+        contact: {
+          title: "Contact",
+          body: "If you have any questions about this privacy policy, please contact us through the Issues page of our GitHub repository.",
+        },
+      },
+    },
+    terms: {
+      metaTitle: "Terms of Service - Auth9",
+      metaDescription: "Auth9 terms of service",
+      title: "Terms of Service",
+      lastUpdated: "Last updated: March 2026",
+      sections: {
+        acceptance: {
+          title: "Acceptance of Terms",
+          body: "By using Auth9, you agree to be bound by these terms. If you do not agree to any part of these terms, please do not use our services.",
+        },
+        accountResponsibility: {
+          title: "Account Responsibility",
+          body: "You are responsible for maintaining the security of your account credentials and for all activities that occur under your account. Report any unauthorized access immediately.",
+        },
+        usageRules: {
+          title: "Acceptable Use",
+          body: "You agree not to use Auth9 for any unlawful purpose, attempt to gain unauthorized access to other user accounts, or interfere with or disrupt the normal operation of the service.",
+        },
+        intellectualProperty: {
+          title: "Intellectual Property",
+          body: "Auth9 code is provided under the license specified in its repository. Content you upload or create through the service remains yours.",
+        },
+        limitationOfLiability: {
+          title: "Limitation of Liability",
+          body: "Auth9 is provided \"as is\" without warranties of any kind, express or implied. To the maximum extent permitted by law, we shall not be liable for any indirect, incidental, or consequential damages arising from the use of the service.",
+        },
+        termination: {
+          title: "Termination",
+          body: "We reserve the right to suspend or terminate accounts in case of violation of these terms. You may terminate your use of the service at any time by deleting your account.",
+        },
+        governingLaw: {
+          title: "Governing Law",
+          body: "These terms shall be governed by and construed in accordance with applicable law. Any disputes shall be resolved through good-faith negotiation, or by a court of competent jurisdiction.",
+        },
+        contact: {
+          title: "Contact",
+          body: "If you have any questions about these terms of service, please contact us through the Issues page of our GitHub repository.",
+        },
+      },
+    },
+  },
+  docs: {
+    metaTitle: "Documentation - Auth9",
+    metaDescription: "Auth9 documentation and resources",
+    title: "Documentation",
+    description: "Explore guides, API references, and resources for Auth9.",
+    comingSoon: "Coming soon",
+    gettingStarted: {
+      title: "Getting Started",
+      description: "Learn how to set up and configure Auth9 for identity management.",
+    },
+    apiReference: {
+      title: "API Reference",
+      description: "Complete REST and gRPC API reference documentation.",
+    },
+    github: {
+      title: "GitHub",
+      description: "View source code, file issues, and contribute.",
+    },
+  },
 } as const;

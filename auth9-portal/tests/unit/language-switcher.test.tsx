@@ -15,38 +15,58 @@ function renderSwitcher() {
 }
 
 describe("LanguageSwitcher", () => {
-  it("renders a language select with aria-label", async () => {
+  it("renders a trigger button with aria-label", async () => {
     renderSwitcher();
-    const select = await screen.findByRole("combobox", { name: /switch language|切换语言/i });
-    expect(select).toBeInTheDocument();
+    const button = await screen.findByRole("button", {
+      name: /switch language|切换语言|言語を切り替え/i,
+    });
+    expect(button).toBeInTheDocument();
   });
 
-  it("renders all three language options", async () => {
+  it("renders all three language options when opened", async () => {
+    const user = userEvent.setup();
     renderSwitcher();
-    const options = await screen.findAllByRole("option");
-    expect(options).toHaveLength(3);
 
-    const values = options.map((opt) => (opt as HTMLOptionElement).value);
-    expect(values).toContain("zh-CN");
-    expect(values).toContain("en-US");
-    expect(values).toContain("ja");
+    const trigger = await screen.findByRole("button", {
+      name: /switch language|切换语言|言語を切り替え/i,
+    });
+    await user.click(trigger);
+
+    const items = await screen.findAllByRole("menuitemradio");
+    expect(items).toHaveLength(3);
   });
 
-  it("displays localized language names", async () => {
+  it("displays localized language names when opened", async () => {
+    const user = userEvent.setup();
     renderSwitcher();
-    await screen.findAllByRole("option");
 
+    const trigger = await screen.findByRole("button", {
+      name: /switch language|切换语言|言語を切り替え/i,
+    });
+    await user.click(trigger);
+
+    await screen.findAllByRole("menuitemradio");
     expect(screen.getByText("简体中文")).toBeInTheDocument();
     expect(screen.getByText("English")).toBeInTheDocument();
     expect(screen.getByText("日本語")).toBeInTheDocument();
   });
 
-  it("allows changing language via select", async () => {
+  it("allows changing language via radio item click", async () => {
     const user = userEvent.setup();
     renderSwitcher();
 
-    const select = await screen.findByRole("combobox");
-    await user.selectOptions(select, "ja");
-    expect((select as HTMLSelectElement).value).toBe("ja");
+    const trigger = await screen.findByRole("button", {
+      name: /switch language|切换语言|言語を切り替え/i,
+    });
+    await user.click(trigger);
+
+    const jaItem = await screen.findByText("日本語");
+    await user.click(jaItem);
+
+    // After selection, menu closes; re-open to verify
+    await user.click(trigger);
+    const items = await screen.findAllByRole("menuitemradio");
+    const jaRadio = items.find((item) => item.textContent?.includes("日本語"));
+    expect(jaRadio).toHaveAttribute("aria-checked", "true");
   });
 });

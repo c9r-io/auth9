@@ -18,8 +18,8 @@
 
 ### 全局控件定义
 - **主题切换（Theme Toggle）**：在 Light / Dark 模式之间切换
-- **语言切换（Language Switcher）**：在 `zh-CN` / `en-US` / `ja` 之间切换（三语支持）
-- 两者应始终并排出现，保持相同的视觉风格
+- **语言切换（Language Switcher）**：在 `zh-CN` / `en-US` / `ja` 之间切换（三语支持）。使用 `DropdownMenu` + `DropdownMenuRadioGroup` 实现，触发按钮为 globe 图标（`.theme-btn` 样式）
+- 两者应始终并排出现，保持相同的视觉风格（均使用 `.theme-btn` 样式，44×44px 触摸目标）
 
 ---
 

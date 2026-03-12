@@ -87,7 +87,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (13 个文档, 60 个场景)
+### 认证流程 (14 个文档, 65 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 5 |
@@ -103,6 +103,7 @@
 | [auth/11-tenant-selection-token-exchange.md](./auth/11-tenant-selection-token-exchange.md) | 登录后 tenant 选择、tenant token exchange、identity token 权限收敛、gRPC tenant token 使用 | 5 |
 | [auth/12-enterprise-sso-ui-regression.md](./auth/12-enterprise-sso-ui-regression.md) | 企业 SSO UI 入口可见性与异常回归（Portal `/login`） | 2 |
 | [auth/13-keycloak-ui-visibility-regression.md](./auth/13-keycloak-ui-visibility-regression.md) | 社交登录/关联异常路径下的 Keycloak UI 可视性回归（仅检查是否有原生 UI 泄漏） | 5 |
+| [auth/14-landing-public-pages.md](./auth/14-landing-public-pages.md) | Landing 公共页面（Privacy / Terms / Docs）入口、内容、三语翻译 | 5 |
 
 ### 系统设置 (3 个文档, 15 个场景)
 | 文档 | 描述 | 场景数 |
@@ -199,7 +200,7 @@
 | 邀请管理 | 3 | 15 |
 | 会话与安全 | 8 | 39 |
 | Webhook | 4 | 17 |
-| 认证流程 | 13 | 60 |
+| 认证流程 | 14 | 65 |
 | 系统设置 | 3 | 15 |
 | 身份提供商 | 3 | 15 |
 | Passkeys | 3 | 15 |
@@ -209,7 +210,7 @@
 | SDK | 6 | 30 |
 | 集成测试 | 11 | 54 |
 | SCIM Provisioning | 5 | 25 |
-| **总计** | **95** | **449** |
+| **总计** | **96** | **454** |
 
 ---
 
@@ -364,6 +365,7 @@ cargo run --bin seed-data -- --dataset=qa-basic --reset
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-12 | 5.5.0 | **Landing 公共页面 + 语言切换器 DropdownMenu 重构**：新增 `auth/14-landing-public-pages.md`（5 场景），覆盖 `/privacy`、`/terms`、`/docs` 页面入口可见性、内容完整性、三语翻译；跨文档影响：更新 UIUX `12-i18n-localization.md`（语言切换器从 `<select>` 改为 DropdownMenu 描述）、`13-landing-page-interactions.md`（补充 Footer 链接说明）、`14-global-controls-placement.md`（更新 LanguageSwitcher 实现描述）；新增 UIUX `23-public-pages-layout.md`（5 场景）覆盖 PublicPageLayout 布局、prose-glass 排版、Docs 卡片网格；共 96 个文档 454 个场景 |
 | 2026-03-07 | 5.4.1 | **i18n 三语扩展 cross-doc 同步**：更新 `auth/01-oidc-login.md`、`passkeys/02-passkey-auth.md`、`auth/12-enterprise-sso-ui-regression.md` 的语言说明，从双语扩展为三语（追加 `ja`） |
 | 2026-02-22 | 5.3.0 | **新增 SCIM 2.0 Provisioning 测试文档**：覆盖 SCIM Bearer Token 管理（`provisioning/01`）、用户 CRUD（`provisioning/02`）、组 CRUD 与 Group-Role 映射（`provisioning/03`）、Bulk 批量操作与 Discovery 端点（`provisioning/04`）、鉴权安全与审计日志（`provisioning/05`）；跨文档影响：更新 `webhook/02-trigger.md` 新增 6 个 SCIM 事件类型、`identity-provider/03` 补充 SCIM Token 管理端点引用；共 94 个文档 444 个场景 |
 | 2026-02-22 | 5.2.1 | 新增仓库级周期治理入口脚本 `scripts/run-weekly-qa-governance.sh`（扩展审计 + 严格 lint + 日志落盘），并在 README 文档治理章节补充定期执行建议 |

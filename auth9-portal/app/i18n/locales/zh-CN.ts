@@ -1533,4 +1533,97 @@ export default {
       logo_url: "Logo URL",
     },
   },
+  legal: {
+    privacy: {
+      metaTitle: "隐私政策 - Auth9",
+      metaDescription: "Auth9 的隐私政策",
+      title: "隐私政策",
+      lastUpdated: "最后更新：2026 年 3 月",
+      sections: {
+        dataCollection: {
+          title: "数据收集",
+          body: "我们收集您在注册和使用 Auth9 服务时提供的信息，包括邮箱地址、显示名称和认证凭据。我们还自动收集使用数据，例如 IP 地址、设备信息和登录活动。",
+        },
+        dataUsage: {
+          title: "数据使用",
+          body: "您的数据用于提供和改进 Auth9 服务、验证您的身份、发送服务通知以及确保平台的安全性。我们不会将您的个人数据用于广告目的。",
+        },
+        dataSharing: {
+          title: "数据共享",
+          body: "我们不会将您的个人信息出售给第三方。数据仅在以下情况下共享：根据您的租户管理员的配置、遵守法律义务，或者在获得您明确同意的情况下。",
+        },
+        cookies: {
+          title: "Cookie",
+          body: "Auth9 使用必要的 Cookie 来维持会话状态和用户偏好（如语言和主题设置）。这些 Cookie 对服务的正常运行至关重要，不用于追踪或广告用途。",
+        },
+        security: {
+          title: "安全措施",
+          body: "我们采用行业标准的安全措施保护您的数据，包括传输和静态加密、定期安全审计以及访问控制。认证令牌经过加密签名和安全存储。",
+        },
+        contact: {
+          title: "联系方式",
+          body: "如果您对本隐私政策有任何疑问，请通过我们 GitHub 仓库的 Issues 页面联系我们。",
+        },
+      },
+    },
+    terms: {
+      metaTitle: "服务条款 - Auth9",
+      metaDescription: "Auth9 的服务条款",
+      title: "服务条款",
+      lastUpdated: "最后更新：2026 年 3 月",
+      sections: {
+        acceptance: {
+          title: "条款接受",
+          body: "使用 Auth9 即表示您同意受这些条款的约束。如果您不同意这些条款的任何部分，请不要使用我们的服务。",
+        },
+        accountResponsibility: {
+          title: "账户责任",
+          body: "您有责任维护您账户凭据的安全，并对通过您的账户进行的所有活动负责。请立即报告任何未授权的访问。",
+        },
+        usageRules: {
+          title: "使用规范",
+          body: "您同意不将 Auth9 用于任何非法目的，不试图获取其他用户账户的未授权访问，不干扰或破坏服务的正常运行。",
+        },
+        intellectualProperty: {
+          title: "知识产权",
+          body: "Auth9 的代码在其仓库中指定的许可证下提供。您通过服务上传或创建的内容仍归您所有。",
+        },
+        limitationOfLiability: {
+          title: "责任限制",
+          body: "Auth9 按「现状」提供，不提供任何明示或暗示的保证。在法律允许的最大范围内，我们不对因使用服务而产生的间接、偶然或后果性损害承担责任。",
+        },
+        termination: {
+          title: "终止",
+          body: "我们保留在违反这些条款的情况下暂停或终止账户的权利。您可以随时通过删除账户来终止对服务的使用。",
+        },
+        governingLaw: {
+          title: "管辖法律",
+          body: "这些条款受适用法律管辖并据其解释。任何争议应通过友好协商解决，协商不成的，提交有管辖权的法院解决。",
+        },
+        contact: {
+          title: "联系方式",
+          body: "如果您对本服务条款有任何疑问，请通过我们 GitHub 仓库的 Issues 页面联系我们。",
+        },
+      },
+    },
+  },
+  docs: {
+    metaTitle: "文档 - Auth9",
+    metaDescription: "Auth9 文档与资源",
+    title: "文档",
+    description: "探索 Auth9 的指南、API 参考和资源。",
+    comingSoon: "即将推出",
+    gettingStarted: {
+      title: "快速入门",
+      description: "了解如何设置和配置 Auth9 进行身份管理。",
+    },
+    apiReference: {
+      title: "API 参考",
+      description: "完整的 REST 和 gRPC API 参考文档。",
+    },
+    github: {
+      title: "GitHub",
+      description: "查看源代码、提交问题和参与贡献。",
+    },
+  },
 } as const;

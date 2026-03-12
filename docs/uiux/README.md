@@ -30,7 +30,7 @@
 |------|------|--------|
 | [06-accessibility.md](./06-accessibility.md) | WCAG 合规性、键盘导航、屏幕阅读器 | 5 |
 
-### 页面专项 (15 个文档, 80 个场景)
+### 页面专项 (16 个文档, 85 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [07-dashboard-page.md](./07-dashboard-page.md) | 概览页统计、动态列表 | 5 |
@@ -48,6 +48,7 @@
 | [19-analytics-audit-pages.md](./19-analytics-audit-pages.md) | Analytics 趋势图表、Audit Logs 表格、Security Alerts 严重度过滤 | 6 |
 | [20-onboarding-auth-flow.md](./20-onboarding-auth-flow.md) | Onboarding 引导、Login 多方式切换、Register、Invite Accept、Tenant Select | 6 |
 | [21-tenant-detail-pages.md](./21-tenant-detail-pages.md) | 租户详情概览、Webhooks 配置、SSO 连接器、Invitations 邀请管理 | 5 |
+| [23-public-pages-layout.md](./23-public-pages-layout.md) | 公共页面布局（Privacy/Terms/Docs）、prose-glass 排版、卡片网格 | 5 |
 
 ---
 
@@ -58,8 +59,8 @@
 | 视觉设计 | 3 | 13 |
 | 交互体验 | 3 | 14 |
 | 可访问性 | 1 | 5 |
-| 页面专项 | 15 | 80 |
-| **总计** | **22** | **112** |
+| 页面专项 | 16 | 85 |
+| **总计** | **23** | **117** |
 
 ---
 
