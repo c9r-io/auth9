@@ -398,13 +398,13 @@ export default function InvitationsPage() {
                     <td className="px-4 py-3 text-[var(--text-secondary)]">{formatters.dateTime(invitation.expires_at)}</td>
                     <td className="px-4 py-3 text-[var(--text-secondary)]">{formatters.dateTime(invitation.created_at)}</td>
                     <td className="px-4 py-3">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">{t("tenants.actions.openMenu")}</span>
-                            <DotsHorizontalIcon className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0" aria-label={t("tenants.actions.openMenu")}>
+                              <span className="sr-only">{t("tenants.actions.openMenu")}</span>
+                              <DotsHorizontalIcon className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>{t("tenants.invitations.menuActions")}</DropdownMenuLabel>
                           {invitation.status === "pending" && (

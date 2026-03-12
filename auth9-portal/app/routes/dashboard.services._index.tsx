@@ -229,7 +229,7 @@ export default function ServicesPage() {
                   </a>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-9 w-9 p-0">
+                      <Button variant="ghost" className="h-9 w-9 p-0" aria-label={t("services.openMenu")}>
                         <span className="sr-only">{t("services.openMenu")}</span>
                         <DotsHorizontalIcon className="h-4 w-4" />
                       </Button>

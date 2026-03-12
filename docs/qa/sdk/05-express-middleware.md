@@ -31,6 +31,8 @@ Express 中间件提供三个功能：
 3. 准备 **有效 Tenant Access Token**（不要用过期 token、Identity Token 或手工伪造无效签名 token）。
 4. 若集成测试依赖真实租户权限，请先确认测试用户在目标租户中有成员关系。
 
+> **重要**：Auth9 的 JWKS 默认可能同时包含 `auth9-current` 和 `auth9-previous` 两把公钥，这是**正常的密钥轮换过渡状态**。只要 JWT header 中带正确的 `kid`，`jose` 的远程 JWKS 解析会按 `kid` 选中对应密钥，不会因为“多密钥”本身而失败。
+
 ---
 
 ## 场景 1：成功认证 — req.auth 注入
@@ -71,6 +73,14 @@ Express 中间件提供三个功能：
    curl -H "Authorization: Bearer {tenant_access_token}" \
      http://localhost:3001/test
    ```
+
+### 常见误报排查
+
+| 现象 | 实际原因 | 解决 |
+|------|----------|------|
+| `UnauthorizedError: Invalid or expired token` 且 QA 认为是“JWKS 多密钥” | 使用了 Identity Token、过期 token，或手工伪造/重签了一个缺少正确 `kid` 的 JWT | 只使用 Auth9 实际签发的 Tenant Access Token；不要自己重签 |
+| `multiple matching keys found in the JSON Web Key Set` | token header 缺少 `kid`，或签名算法/密钥类型与 JWKS 不匹配，导致无法唯一选 key | 解码 JWT header，确认存在正确的 `kid`，并与 `/.well-known/jwks.json` 中某个 key 一致 |
+| 返回 401 且只有开启了 `audience` 时复现 | `audience` 配置与 token 的 `aud` 不一致 | `audience` 必须等于签发 Tenant Access Token 时使用的 `service_id/client_id` |
 
 ### 预期结果
 - 状态码 200

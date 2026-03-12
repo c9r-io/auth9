@@ -76,17 +76,14 @@ console.log('Transition:', styles.transition);
 // 预期: all 0.3s cubic-bezier(0.4, 0, 0.2, 1)
 
 // 悬停后检查 transform 属性
-// .liquid-glass:hover 使用 !important 覆盖 fadeInUp forwards 锁定值
-card.dispatchEvent(new MouseEvent('mouseenter'));
-setTimeout(() => {
-  console.log('transform:', getComputedStyle(card).transform);
-  // 预期: matrix(1, 0, 0, 1, 0, -2) — 即 translateY(-2px)
-}, 400);
+// 注意：dispatchEvent('mouseenter') 不会可靠触发 CSS :hover。
+// 请使用真实鼠标悬停（DevTools Force state / Playwright page.hover）。
 ```
 
 #### 常见误报排查
 | 现象 | 原因 | 解决 |
 |------|------|------|
+| `transform` 悬停前后不变 | 使用了 `mouseenter` 事件而不是真实 `:hover` 状态 | 用 DevTools `:hov` / Playwright `locator.hover()` / 实际鼠标悬停重新验证 |
 | `transform` 悬停前后不变 | hover 样式未加载或被其他样式覆盖 | 确认 `.liquid-glass:hover` 的 `!important` 生效 |
 | `transform` 为 `matrix(1,0,0,1,0,0)`（非悬停态） | 正常——`fadeInUp` 动画结束后 transform 为 `translateY(0)` | 确保在悬停状态下检查 |
 

@@ -137,9 +137,13 @@ export function UsersDirectory({
                     <FormattedDate date={user.updated_at} />
                   </td>
                   <td className="px-4 py-3">
-                    <DropdownMenu>
+                      <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-11 w-11 p-0 active:scale-95 sm:h-8 sm:w-8">
+                        <Button
+                          variant="ghost"
+                          className="h-11 w-11 p-0 active:scale-95 sm:h-8 sm:w-8"
+                          aria-label={t("usersPage.openMenu")}
+                        >
                           <span className="sr-only">{t("usersPage.openMenu")}</span>
                           <DotsHorizontalIcon className="h-4 w-4" />
                         </Button>

@@ -5,8 +5,8 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || "";
 const TENANT_ID = process.env.TENANT_ID || "6e71e4d8-7752-4c7d-aafc-66c02a77ca00";
 const SERVICE_ID = process.env.SERVICE_ID || "auth9-portal";
 const USER_ID = process.env.USER_ID || "0ed10582-aab3-4525-b735-8a354e3f1401";
-const CLIENT_ID = process.env.CLIENT_ID || "auth9-portal";
-const CLIENT_SECRET = process.env.CLIENT_SECRET || "";
+const CLIENT_ID = process.env.CLIENT_ID || "auth9-m2m-test";
+const CLIENT_SECRET = process.env.CLIENT_SECRET || "m2m-test-secret-do-not-use-in-production";
 const GRPC_ADDRESS = process.env.GRPC_ADDRESS || "localhost:50051";
 const DOMAIN = process.env.DOMAIN || "http://localhost:8080";
 
@@ -170,7 +170,8 @@ async function testScenario4() {
     
     // Clear cache - should fetch new token
     creds.clearCache();
-    await sleep(100);
+    // JWT claims are second-granularity; wait long enough to avoid same-second reissue.
+    await sleep(1100);
     const token3 = await creds.getToken();
     console.log("Token 3 (after clear):", token3 ? `${token3.substring(0, 30)}...` : "null");
     

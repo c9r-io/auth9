@@ -189,6 +189,21 @@ WHERE tu.user_id = '{user_id}' AND tu.tenant_id = '{tenant_id}';
 - auth9-core 运行中
 - 已创建服务，拥有有效的 client_id 和 client_secret
 
+### 步骤 0：验证测试凭据（避免误报）
+
+> 默认 Docker/本地开发环境会自动 seed 一个**可直接用于 QA 的 M2M 测试 client**：
+>
+> - `client_id`: `auth9-m2m-test`
+> - `client_secret`: `m2m-test-secret-do-not-use-in-production`
+>
+> 不要直接使用 `clients` 表里已有但**拿不到明文 secret** 的历史 client（例如 `auth9-portal`）；数据库里只保存 Argon2 hash，无法反推出原始 secret。
+
+```bash
+mysql -h 127.0.0.1 -P 4000 -u root auth9 -e \
+  "SELECT client_id FROM clients WHERE client_id = 'auth9-m2m-test';"
+# 预期: 存在 auth9-m2m-test
+```
+
 ### 目的
 验证 ClientCredentials 获取 M2M Token 并正确缓存
 
@@ -199,8 +214,8 @@ WHERE tu.user_id = '{user_id}' AND tu.tenant_id = '{tenant_id}';
 
    const creds = new ClientCredentials({
      domain: "http://localhost:8080",
-     clientId: "{client_id}",
-     clientSecret: "{client_secret}",
+     clientId: "auth9-m2m-test",
+     clientSecret: "m2m-test-secret-do-not-use-in-production", // pragma: allowlist secret
    });
 
    const token1 = await creds.getToken();
@@ -223,6 +238,13 @@ WHERE tu.user_id = '{user_id}' AND tu.tenant_id = '{tenant_id}';
 - 第二次调用：不发出 HTTP 请求（缓存命中），返回相同 Token
 - `clearCache()` 后：重新发出 HTTP 请求，返回新 Token
 - Token 是三段式 JWT 格式
+
+### 常见失败原因
+
+| 现象 | 原因 | 解决 |
+|------|------|------|
+| `Invalid client credentials` | 使用了数据库中已有但未知明文 secret 的 client | 改用 seed 的 `auth9-m2m-test` / `m2m-test-secret-do-not-use-in-production` |
+| 第三次获取 token 仍与第一次相同 | 清缓存后取 token 太快，服务端在同一秒内重新签发了内容相同的 JWT | `clearCache()` 后等待至少 1 秒再比较，或只验证“重新发起 HTTP 请求” |
 
 ---
 

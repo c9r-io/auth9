@@ -351,9 +351,13 @@ export default function RolesPage() {
                             <GearIcon className="mr-1 h-3.5 w-3.5" />
                             {t("rolesPage.managePermissions")}
                           </Button>
-                          <DropdownMenu>
+                            <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-11 w-11 min-h-[44px] min-w-[44px] p-0">
+                              <Button
+                                variant="ghost"
+                                className="h-11 w-11 min-h-[44px] min-w-[44px] p-0"
+                                aria-label={t("rolesPage.openMenu")}
+                              >
                                 <span className="sr-only">{t("rolesPage.openMenu")}</span>
                                 <DotsHorizontalIcon className="h-3.5 w-3.5" />
                               </Button>

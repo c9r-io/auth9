@@ -219,13 +219,13 @@ curl -H "Authorization: Bearer $ADMIN_TOKEN" \
 3. 检查自动吊销功能
 
 ### 预期安全行为
-- 检测异常使用模式
-- 自动告警
-- 支持紧急吊销
+- **当前已实现基线**：支持紧急手动吊销/轮换（如 Client Secret、Webhook Secret）
+- **当前未内建**：异常使用模式自动检测、自动告警、自动通知用户
+- 若验证“自动检测/告警”，应记录为**产品能力缺口 / backlog**，不是回归缺陷
 
 ### 验证方法
 ```bash
-# 模拟异常使用
+# 模拟异常使用（能力探测，不是当前回归门槛）
 # 1. 从多个 IP 快速使用同一 API Key
 for i in {1..100}; do
   curl -H "X-API-Key: $API_KEY" \
@@ -234,15 +234,16 @@ for i in {1..100}; do
 done
 
 # 检查是否触发告警
-# 查看监控/日志
+# 当前默认预期：不会自动告警；需记录为未实现能力
 
-# 测试紧急吊销
+# 测试紧急吊销（用当前已实现的 secret 轮换端点）
 curl -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:8080/api/v1/api-keys/{key_id}/revoke
+  http://localhost:8080/api/v1/services/{service_id}/clients/{client_id}/regenerate-secret
 
-# 验证吊销生效
-curl -H "X-API-Key: $REVOKED_KEY" \
-  http://localhost:8080/api/v1/users
+# 验证旧 secret 失效
+curl -X POST http://localhost:8080/api/v1/auth/token \
+  -H "Content-Type: application/json" \
+  -d '{"grant_type":"client_credentials","client_id":"{client_id}","client_secret":"{old_secret}"}'
 # 预期: 401
 
 # 检查是否通知用户
@@ -250,10 +251,9 @@ curl -H "X-API-Key: $REVOKED_KEY" \
 ```
 
 ### 修复建议
-- 实现异常检测
-- 集成安全告警系统
-- 支持一键吊销
-- 泄露后自动通知
+- 如需更高安全基线：实现异常检测与安全告警系统
+- 保持手动轮换/吊销流程可用并纳入 runbook
+- 将“自动检测/通知”作为 backlog 能力跟踪，而非当前回归门槛
 
 ---
 
