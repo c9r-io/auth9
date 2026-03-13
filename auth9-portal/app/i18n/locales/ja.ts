@@ -217,7 +217,7 @@ export default {
     help: { name: "テナントの表示名", slug: "URLで使用する一意の識別子（小文字、スペースなし）", logoUrl: "組織ロゴのURL（任意）" },
     placeholders: { name: "Acme Corp", slug: "acme", logoUrl: "https://...", search: "テナントを検索..." },
     actions: { create: "テナントを作成", createSubmit: "作成", creating: "作成中...", edit: "編集", save: "変更を保存", saving: "保存中...", search: "検索", clear: "クリア", invitations: "招待", webhooks: "Webhooks", services: "Services", enterpriseSso: "Enterprise SSO", openMenu: "メニューを開く", backToList: "テナント一覧に戻る" },
-    delete: { title: "テナントを削除", description: "このテナントを削除してもよろしいですか？" },
+    delete: { title: "テナントを削除", descriptionLead: "", descriptionTail: "を削除してもよろしいですか？" },
     empty: "テナントが見つかりません",
     pagination: { page: "{{totalPages}}ページ中{{page}}ページ目", previous: "前へ", next: "次へ" },
     statuses: { active: "有効", inactive: "無効", suspended: "停止中", pending: "保留中" },

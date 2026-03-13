@@ -165,7 +165,7 @@ export default function BrandingSettingsPage() {
           <CardDescription>{t("settings.brandingPage.description")}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form method="post" className="space-y-6 pb-24 md:pb-0">
+          <Form id="branding-settings-form" method="post" className="space-y-6 pb-24 md:pb-0">
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-[var(--text-primary)] border-b pb-2">{t("settings.brandingPage.companyIdentity")}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -257,7 +257,7 @@ export default function BrandingSettingsPage() {
               </div>
             </div>
 
-            <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--glass-border-subtle)] bg-[var(--bg-secondary)]/95 px-6 py-4 backdrop-blur md:static md:inset-auto md:z-auto md:border-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-0">
+            <div className="hidden md:block">
               <div className="flex flex-wrap items-center gap-3">
                 <Button type="submit" name="intent" value="save" disabled={isSubmitting && currentIntent === "save"}>{isSubmitting && currentIntent === "save" ? t("settings.brandingPage.saving") : t("settings.brandingPage.saveChanges")}</Button>
                 <Button type="submit" name="intent" value="reset" variant="outline" disabled={isSubmitting || isDefault}>
@@ -269,6 +269,31 @@ export default function BrandingSettingsPage() {
           </Form>
         </CardContent>
       </Card>
+
+      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-[var(--glass-border-subtle)] bg-[var(--bg-secondary)]/95 px-6 py-4 backdrop-blur md:hidden">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="submit"
+            form="branding-settings-form"
+            name="intent"
+            value="save"
+            disabled={isSubmitting && currentIntent === "save"}
+          >
+            {isSubmitting && currentIntent === "save" ? t("settings.brandingPage.saving") : t("settings.brandingPage.saveChanges")}
+          </Button>
+          <Button
+            type="submit"
+            form="branding-settings-form"
+            name="intent"
+            value="reset"
+            variant="outline"
+            disabled={isSubmitting || isDefault}
+          >
+            <ResetIcon className="h-4 w-4 mr-2" />
+            {isSubmitting && currentIntent === "reset" ? t("settings.brandingPage.resetting") : t("settings.brandingPage.resetToDefaults")}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -618,7 +618,8 @@ export default {
     },
     delete: {
       title: "删除租户",
-      description: "确定要删除此租户吗？",
+      descriptionLead: "确定要删除",
+      descriptionTail: "吗？",
     },
     empty: "未找到租户",
     pagination: {

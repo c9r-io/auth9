@@ -308,7 +308,13 @@ export default function TenantsIndexPage() {
                     onClick={async () => {
                       const ok = await confirm({
                         title: t("tenants.delete.title"),
-                        description: t("tenants.delete.description"),
+                        description: (
+                          <>
+                            {t("tenants.delete.descriptionLead")}{" "}
+                            <strong className="font-semibold text-[var(--text-primary)]">{tenant.name}</strong>
+                            {t("tenants.delete.descriptionTail")}
+                          </>
+                        ),
                         variant: "destructive",
                       });
                       if (ok) {
@@ -387,7 +393,13 @@ export default function TenantsIndexPage() {
                             onClick={async () => {
                               const ok = await confirm({
                                 title: t("tenants.delete.title"),
-                                description: t("tenants.delete.description"),
+                                description: (
+                                  <>
+                                    {t("tenants.delete.descriptionLead")}{" "}
+                                    <strong className="font-semibold text-[var(--text-primary)]">{tenant.name}</strong>
+                                    {t("tenants.delete.descriptionTail")}
+                                  </>
+                                ),
                                 variant: "destructive",
                               });
                               if (ok) {

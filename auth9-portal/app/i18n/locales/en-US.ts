@@ -618,7 +618,8 @@ export default {
     },
     delete: {
       title: "Delete Tenant",
-      description: "Are you sure you want to delete this tenant?",
+      descriptionLead: "Are you sure you want to delete",
+      descriptionTail: "?",
     },
     empty: "No tenants found",
     pagination: {
