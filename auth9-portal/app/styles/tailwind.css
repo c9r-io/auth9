@@ -164,11 +164,11 @@
   @keyframes fadeInUp {
     0% {
       opacity: 0;
-      transform: translateY(20px);
+      translate: 0 20px;
     }
     100% {
       opacity: 1;
-      transform: translateY(0);
+      translate: 0 0;
     }
   }
 
@@ -1235,8 +1235,8 @@
 @layer utilities {
   .animate-fade-in-up {
     opacity: 1;
-    transform: translateY(0);
-    animation: fadeInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+    translate: 0 0;
+    animation: fadeInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
   .delay-1 { animation-delay: 50ms; opacity: 0; }
