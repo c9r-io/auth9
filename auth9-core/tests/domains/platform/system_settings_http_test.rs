@@ -9,6 +9,7 @@ use crate::support::http::{
 };
 use auth9_core::domains::platform::api::system_settings::TestEmailResponse;
 use auth9_core::models::system_settings::SystemSettingRow;
+use auth9_core::repository::MaliciousIpBlacklistRepository;
 use axum::http::StatusCode;
 use chrono::Utc;
 use serde_json::json;
@@ -661,4 +662,72 @@ async fn test_update_email_settings_requires_auth() {
         crate::support::http::put_json(&app, "/api/v1/system/email", &input).await;
 
     assert_eq!(status, StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_get_malicious_ip_blacklist_returns_entries() {
+    let mock_kc = MockKeycloakServer::new().await;
+    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    state
+        .malicious_ip_blacklist_repo
+        .add_entry(
+            auth9_core::models::system_settings::MaliciousIpBlacklistEntry {
+                id: auth9_core::models::common::StringUuid::new_v4(),
+                ip_address: "203.0.113.10".to_string(),
+                reason: Some("known_malicious".to_string()),
+                created_by: None,
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            },
+        )
+        .await;
+    let app = build_system_settings_test_router(state);
+    let token = create_test_identity_token();
+
+    let (status, body): (StatusCode, Option<serde_json::Value>) = get_json_with_auth(
+        &app,
+        "/api/v1/system/security/malicious-ip-blacklist",
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let response = body.unwrap();
+    assert_eq!(response["data"][0]["ip_address"], "203.0.113.10");
+}
+
+#[tokio::test]
+async fn test_update_malicious_ip_blacklist_deduplicates_entries() {
+    let mock_kc = MockKeycloakServer::new().await;
+    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let app = build_system_settings_test_router(state.clone());
+    let token = create_test_identity_token();
+
+    let input = json!({
+        "entries": [
+            { "ip_address": "203.0.113.10" },
+            { "ip_address": "203.0.113.10" }
+        ]
+    });
+
+    let (status, body): (StatusCode, Option<serde_json::Value>) = put_json_with_auth(
+        &app,
+        "/api/v1/system/security/malicious-ip-blacklist",
+        &input,
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let response = body.unwrap();
+    assert_eq!(response["data"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        state
+            .malicious_ip_blacklist_repo
+            .list()
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
 }

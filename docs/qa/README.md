@@ -23,13 +23,14 @@
 2. 版本发布前强制执行一次 `./scripts/run-weekly-qa-governance.sh`
 3. 仅看审计不阻断时可用 `./scripts/run-weekly-qa-governance.sh --no-lint`
 
-### 租户管理 (4 个文档, 20 个场景)
+### 租户管理 (5 个文档, 25 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [tenant/01-crud.md](./tenant/01-crud.md) | 创建、更新、删除操作 | 5 |
 | [tenant/02-list-settings.md](./tenant/02-list-settings.md) | 列表、搜索、设置 | 5 |
 | [tenant/03-status-lifecycle.md](./tenant/03-status-lifecycle.md) | 租户状态生命周期（Active/Inactive/Suspended）及业务影响 | 5 |
 | [tenant/04-b2b-org-creation.md](./tenant/04-b2b-org-creation.md) | B2B 组织自助创建、域名验证、Pending 状态、/users/me/tenants | 5 |
+| [tenant/05-security-malicious-ip-blacklist.md](./tenant/05-security-malicious-ip-blacklist.md) | 租户级恶意 IP 黑名单配置、租户隔离与平台优先级 | 5 |
 
 ### 用户管理 (6 个文档, 28 个场景)
 | 文档 | 描述 | 场景数 |
@@ -373,6 +374,7 @@ cargo run --bin seed-data -- --dataset=qa-basic --reset
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-14 | 5.5.1 | **租户级恶意 IP 黑名单文档同步**：新增 `tenant/05-security-malicious-ip-blacklist.md`，覆盖租户详情页入口可见性、租户级黑名单配置、非法 IP 拒绝、跨租户隔离、平台级优先；同步更新 `session/04-boundary.md` 对可疑 IP 告警来源的说明，并为 `security/authorization/01-tenant-isolation.md` 补充租户级黑名单隔离场景；共 97 个文档 459 个场景 |
 | 2026-03-12 | 5.5.0 | **Landing 公共页面 + 语言切换器 DropdownMenu 重构**：新增 `auth/14-landing-public-pages.md`（5 场景），覆盖 `/privacy`、`/terms`、`/docs` 页面入口可见性、内容完整性、三语翻译；跨文档影响：更新 UIUX `12-i18n-localization.md`（语言切换器从 `<select>` 改为 DropdownMenu 描述）、`13-landing-page-interactions.md`（补充 Footer 链接说明）、`14-global-controls-placement.md`（更新 LanguageSwitcher 实现描述）；新增 UIUX `23-public-pages-layout.md`（5 场景）覆盖 PublicPageLayout 布局、prose-glass 排版、Docs 卡片网格；共 96 个文档 454 个场景 |
 | 2026-03-07 | 5.4.1 | **i18n 三语扩展 cross-doc 同步**：更新 `auth/01-oidc-login.md`、`passkeys/02-passkey-auth.md`、`auth/12-enterprise-sso-ui-regression.md` 的语言说明，从双语扩展为三语（追加 `ja`） |
 | 2026-02-22 | 5.3.0 | **新增 SCIM 2.0 Provisioning 测试文档**：覆盖 SCIM Bearer Token 管理（`provisioning/01`）、用户 CRUD（`provisioning/02`）、组 CRUD 与 Group-Role 映射（`provisioning/03`）、Bulk 批量操作与 Discovery 端点（`provisioning/04`）、鉴权安全与审计日志（`provisioning/05`）；跨文档影响：更新 `webhook/02-trigger.md` 新增 6 个 SCIM 事件类型、`identity-provider/03` 补充 SCIM Token 管理端点引用；共 94 个文档 444 个场景 |

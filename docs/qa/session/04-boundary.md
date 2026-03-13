@@ -88,14 +88,14 @@ SELECT event_type FROM login_events WHERE user_id = '{user_id}' ORDER BY created
 
 ---
 
-## 场景 4：可疑 IP 告警（密码喷洒与平台级黑名单）
+## 场景 4：可疑 IP 告警（密码喷洒与平台级 / 租户级黑名单）
 
 ### 初始状态
 - seed.sql 数据已加载
 - 系统中存在多个用户账号
 
 ### 目的
-验证可疑 IP 检测既支持密码喷洒行为模式，也支持平台级恶意 IP 黑名单命中。
+验证可疑 IP 检测既支持密码喷洒行为模式，也支持平台级 / 租户级恶意 IP 黑名单命中。
 
 ### 测试操作流程
 1. 路径 A：从同一 IP 模拟对 5 个以上不同账户的登录失败事件：
@@ -112,19 +112,20 @@ for i in $(seq 1 6); do
 done
 ```
 
-2. 路径 B：先在「设置」→「安全设置」中保存黑名单 IP `10.99.99.99`，再发送单条来自该 IP 的登录失败事件
+2. 路径 B：先在「设置」→「安全设置」中保存平台级黑名单 IP `10.99.99.99`，或在租户详情页「Security Settings」中保存租户级黑名单 IP `10.99.99.99`，再发送单条来自该 IP 的登录失败事件
 3. 查询安全告警表确认告警生成
 
 ### 预期结果
 - 同一 IP 对 5+ 不同账户登录失败后触发 `suspicious_ip` 告警
 - 或黑名单 IP 出现单次登录尝试时直接触发 `suspicious_ip` 告警
+- 黑名单路径下 `details.blacklist_scope` 应反映 `platform` 或 `tenant`
 - 告警严重度为 `critical`
 
 ### 预期数据状态
 ```sql
 SELECT alert_type, severity, details FROM security_alerts
 WHERE alert_type = 'suspicious_ip' ORDER BY created_at DESC LIMIT 1;
--- 预期: severity = 'critical', details 包含 detection_reason = 'password_spray' 或 'ip_blacklist'
+-- 预期: severity = 'critical', details 包含 detection_reason = 'password_spray' 或 'ip_blacklist'；黑名单路径下包含 blacklist_scope = "platform" 或 "tenant"
 ```
 
 ### 故障排查

@@ -36,7 +36,8 @@ pub use auth9_core::models::service::{
 };
 pub use auth9_core::models::session::{CreateSessionInput, Session};
 pub use auth9_core::models::system_settings::{
-    MaliciousIpBlacklistEntry, SystemSettingRow, UpsertSystemSettingInput,
+    MaliciousIpBlacklistEntry, SystemSettingRow, TenantMaliciousIpBlacklistEntry,
+    UpsertSystemSettingInput,
 };
 pub use auth9_core::models::tenant::{
     CreateTenantInput, Tenant, TenantSettings, TenantStatus, UpdateTenantInput,
@@ -1544,18 +1545,25 @@ impl SystemSettingsRepository for TestSystemSettingsRepository {
 
 pub struct TestMaliciousIpBlacklistRepository {
     entries: RwLock<Vec<MaliciousIpBlacklistEntry>>,
+    tenant_entries: RwLock<Vec<TenantMaliciousIpBlacklistEntry>>,
 }
 
 impl TestMaliciousIpBlacklistRepository {
     pub fn new() -> Self {
         Self {
             entries: RwLock::new(vec![]),
+            tenant_entries: RwLock::new(vec![]),
         }
     }
 
     #[allow(dead_code)]
     pub async fn add_entry(&self, entry: MaliciousIpBlacklistEntry) {
         self.entries.write().await.push(entry);
+    }
+
+    #[allow(dead_code)]
+    pub async fn add_tenant_entry(&self, entry: TenantMaliciousIpBlacklistEntry) {
+        self.tenant_entries.write().await.push(entry);
     }
 }
 
@@ -1571,6 +1579,20 @@ impl MaliciousIpBlacklistRepository for TestMaliciousIpBlacklistRepository {
         Ok(self.entries.read().await.clone())
     }
 
+    async fn list_by_tenant(
+        &self,
+        tenant_id: StringUuid,
+    ) -> Result<Vec<TenantMaliciousIpBlacklistEntry>> {
+        Ok(self
+            .tenant_entries
+            .read()
+            .await
+            .iter()
+            .filter(|entry| entry.tenant_id == tenant_id)
+            .cloned()
+            .collect())
+    }
+
     async fn replace_all(
         &self,
         entries: &[MaliciousIpBlacklistEntry],
@@ -1581,6 +1603,22 @@ impl MaliciousIpBlacklistRepository for TestMaliciousIpBlacklistRepository {
         Ok(stored.clone())
     }
 
+    async fn replace_all_for_tenant(
+        &self,
+        tenant_id: StringUuid,
+        entries: &[TenantMaliciousIpBlacklistEntry],
+        _created_by: Option<StringUuid>,
+    ) -> Result<Vec<TenantMaliciousIpBlacklistEntry>> {
+        let mut stored = self.tenant_entries.write().await;
+        stored.retain(|entry| entry.tenant_id != tenant_id);
+        stored.extend(entries.iter().cloned());
+        Ok(stored
+            .iter()
+            .filter(|entry| entry.tenant_id == tenant_id)
+            .cloned()
+            .collect())
+    }
+
     async fn find_by_ip(&self, ip_address: &str) -> Result<Option<MaliciousIpBlacklistEntry>> {
         Ok(self
             .entries
@@ -1588,6 +1626,20 @@ impl MaliciousIpBlacklistRepository for TestMaliciousIpBlacklistRepository {
             .await
             .iter()
             .find(|entry| entry.ip_address == ip_address)
+            .cloned())
+    }
+
+    async fn find_by_ip_in_tenant(
+        &self,
+        tenant_id: StringUuid,
+        ip_address: &str,
+    ) -> Result<Option<TenantMaliciousIpBlacklistEntry>> {
+        Ok(self
+            .tenant_entries
+            .read()
+            .await
+            .iter()
+            .find(|entry| entry.tenant_id == tenant_id && entry.ip_address == ip_address)
             .cloned())
     }
 }

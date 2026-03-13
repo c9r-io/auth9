@@ -7,11 +7,14 @@ use crate::support::http::{
     put_json_with_auth, TestAppState,
 };
 use crate::support::{
-    create_test_identity_token, create_test_tenant, create_test_tenant_access_token,
-    create_test_tenant_access_token_for_tenant, MockKeycloakServer,
+    create_test_identity_token, create_test_jwt_manager, create_test_tenant,
+    create_test_tenant_access_token, create_test_tenant_access_token_for_tenant,
+    MockKeycloakServer,
 };
 use auth9_core::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
+use auth9_core::models::system_settings::TenantMaliciousIpBlacklistEntry;
 use auth9_core::models::tenant::{Tenant, TenantStatus};
+use auth9_core::repository::MaliciousIpBlacklistRepository;
 use axum::body::Body;
 use axum::http::{Method, Request, StatusCode};
 use serde_json::json;
@@ -539,4 +542,120 @@ async fn test_list_tenants_default_pagination() {
     assert_eq!(response.data.len(), 5);
     assert_eq!(response.pagination.page, 1);
     assert_eq!(response.pagination.per_page, 20);
+}
+
+#[tokio::test]
+async fn test_get_tenant_malicious_ip_blacklist_returns_entries() {
+    let mock_kc = MockKeycloakServer::new().await;
+    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let tenant_id = Uuid::new_v4();
+    let token = create_test_tenant_access_token_for_tenant(tenant_id);
+    state
+        .tenant_repo
+        .add_tenant(create_test_tenant(Some(tenant_id)))
+        .await;
+    state
+        .malicious_ip_blacklist_repo
+        .add_tenant_entry(TenantMaliciousIpBlacklistEntry {
+            id: auth9_core::models::common::StringUuid::new_v4(),
+            tenant_id: tenant_id.into(),
+            ip_address: "203.0.113.10".to_string(),
+            reason: Some("tenant_only".to_string()),
+            created_by: None,
+            created_at: chrono::Utc::now(),
+            updated_at: chrono::Utc::now(),
+        })
+        .await;
+    let app = build_test_router(state);
+
+    let (status, body): (StatusCode, Option<serde_json::Value>) = get_json_with_auth(
+        &app,
+        &format!("/api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist"),
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let response = body.unwrap();
+    assert_eq!(response["data"][0]["ip_address"], "203.0.113.10");
+}
+
+#[tokio::test]
+async fn test_update_tenant_malicious_ip_blacklist_returns_200() {
+    let mock_kc = MockKeycloakServer::new().await;
+    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let tenant_id = Uuid::new_v4();
+    let token = create_test_tenant_access_token_for_tenant(tenant_id);
+    state
+        .tenant_repo
+        .add_tenant(create_test_tenant(Some(tenant_id)))
+        .await;
+    let app = build_test_router(state.clone());
+
+    let input = json!({
+        "entries": [
+            { "ip_address": "203.0.113.10" },
+            { "ip_address": "203.0.113.10" }
+        ]
+    });
+
+    let (status, body): (StatusCode, Option<serde_json::Value>) = put_json_with_auth(
+        &app,
+        &format!("/api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist"),
+        &input,
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    let response = body.unwrap();
+    assert_eq!(response["data"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        state
+            .malicious_ip_blacklist_repo
+            .list_by_tenant(tenant_id.into())
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+#[tokio::test]
+async fn test_update_tenant_malicious_ip_blacklist_denies_cross_tenant_access() {
+    let mock_kc = MockKeycloakServer::new().await;
+    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let tenant_id = Uuid::new_v4();
+    let other_tenant_id = Uuid::new_v4();
+    let token = create_test_jwt_manager()
+        .create_tenant_access_token(
+            Uuid::new_v4(),
+            "member@test.com",
+            other_tenant_id,
+            "auth9-test-service",
+            vec!["member".to_string()],
+            vec![],
+        )
+        .unwrap();
+    state
+        .tenant_repo
+        .add_tenant(create_test_tenant(Some(tenant_id)))
+        .await;
+    let app = build_test_router(state);
+
+    let input = json!({
+        "entries": [
+            { "ip_address": "203.0.113.10" }
+        ]
+    });
+
+    let (status, _body): (StatusCode, Option<serde_json::Value>) = put_json_with_auth(
+        &app,
+        &format!("/api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist"),
+        &input,
+        &token,
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
 }

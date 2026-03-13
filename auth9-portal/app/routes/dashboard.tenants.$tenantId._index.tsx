@@ -1,5 +1,6 @@
 import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { Form, Link, useActionData, useFetcher, useLoaderData, useNavigation } from "react-router";
+import { useEffect, useState } from "react";
 import { ArrowLeftIcon, EnvelopeClosedIcon, GlobeIcon, Link2Icon, PersonIcon } from "@radix-ui/react-icons";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -8,7 +9,15 @@ import { Label } from "~/components/ui/label";
 import { Switch } from "~/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { redirect } from "react-router";
-import { tenantApi, serviceApi, invitationApi, webhookApi, tenantServiceApi, tenantUserApi } from "~/services/api";
+import {
+  tenantApi,
+  serviceApi,
+  invitationApi,
+  webhookApi,
+  tenantServiceApi,
+  tenantUserApi,
+  systemApi,
+} from "~/services/api";
 import { mapApiError } from "~/lib/error-messages";
 import { getAccessToken } from "~/services/session.server";
 import { FormattedDate } from "~/components/ui/formatted-date";
@@ -43,6 +52,9 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     tenantServiceApi.listServices(tenantId, accessToken || undefined).catch(() => ({ data: [] })),
     tenantUserApi.list(tenantId, accessToken || undefined).catch(() => ({ data: [] })),
   ]);
+  const tenantBlacklistRes = await systemApi
+    .getTenantMaliciousIpBlacklist(tenantId, accessToken || undefined)
+    .catch(() => ({ data: [] }));
 
   const enabledServicesCount = tenantServicesRes.data.filter((s: { enabled: boolean }) => s.enabled).length;
   const totalGlobalServicesCount = tenantServicesRes.data.length;
@@ -55,6 +67,7 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
     webhooksCount: webhooksRes.data.length,
     enabledServicesCount,
     totalGlobalServicesCount,
+    tenantBlacklist: tenantBlacklistRes.data,
   };
 }
 
@@ -99,6 +112,18 @@ export async function action({ request, params }: ActionFunctionArgs) {
       }, accessToken || undefined);
       return { success: true, settingsUpdated: true };
     }
+
+    if (intent === "update_tenant_malicious_ip_blacklist") {
+      const raw = (formData.get("tenantMaliciousIps") as string) || "";
+      const entries = raw
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .map((ip_address) => ({ ip_address }));
+
+      await systemApi.updateTenantMaliciousIpBlacklist(tenantId, entries, accessToken || undefined);
+      return { success: true, tenantBlacklistUpdated: true };
+    }
   } catch (error) {
     const message = mapApiError(error, locale);
     return Response.json({ error: message }, { status: 400 });
@@ -121,7 +146,7 @@ function getStatusLabel(status: string, t: ReturnType<typeof useI18n>["t"]) {
 
 export default function TenantDetailPage() {
   const { t } = useI18n();
-  const { tenant, usersCount, servicesCount, pendingInvitationsCount, webhooksCount, enabledServicesCount, totalGlobalServicesCount } =
+  const { tenant, usersCount, servicesCount, pendingInvitationsCount, webhooksCount, enabledServicesCount, totalGlobalServicesCount, tenantBlacklist = [] } =
     useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -148,6 +173,14 @@ export default function TenantDetailPage() {
   const settingsError = settingsFetcher.data && "error" in (settingsFetcher.data as Record<string, unknown>)
     ? String((settingsFetcher.data as Record<string, unknown>).error)
     : null;
+  const tenantBlacklistEntries = Array.isArray(tenantBlacklist) ? tenantBlacklist : [];
+  const [tenantBlacklistText, setTenantBlacklistText] = useState(
+    tenantBlacklistEntries.map((entry) => entry.ip_address).join("\n")
+  );
+
+  useEffect(() => {
+    setTenantBlacklistText(tenantBlacklistEntries.map((entry) => entry.ip_address).join("\n"));
+  }, [tenantBlacklist]);
 
   return (
     <div className="space-y-6">
@@ -285,6 +318,33 @@ export default function TenantDetailPage() {
               {settingsError && (
                 <p className="text-sm text-[var(--accent-red)] mt-3">{settingsError}</p>
               )}
+              <Form method="post" className="mt-6 space-y-4">
+                <input type="hidden" name="intent" value="update_tenant_malicious_ip_blacklist" />
+                <div className="space-y-2">
+                  <Label htmlFor="tenantMaliciousIps">{t("tenants.detail.blacklistTitle")}</Label>
+                  <p className="text-sm text-[var(--text-secondary)]">{t("tenants.detail.blacklistDescription")}</p>
+                  <textarea
+                    id="tenantMaliciousIps"
+                    name="tenantMaliciousIps"
+                    value={tenantBlacklistText}
+                    onChange={(event) => setTenantBlacklistText(event.target.value)}
+                    className="min-h-32 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    placeholder={t("tenants.detail.blacklistPlaceholder")}
+                  />
+                  <p className="text-xs text-[var(--text-secondary)]">{t("tenants.detail.blacklistHint")}</p>
+                </div>
+                {actionData && "tenantBlacklistUpdated" in actionData && actionData.tenantBlacklistUpdated && (
+                  <p className="text-sm text-[var(--accent-green)]">{t("tenants.detail.blacklistUpdated")}</p>
+                )}
+                {actionData && "error" in actionData && (
+                  <p className="text-sm text-[var(--accent-red)]">{String(actionData.error)}</p>
+                )}
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? t("tenants.actions.saving") : t("tenants.detail.saveBlacklist")}
+                  </Button>
+                </div>
+              </Form>
             </CardContent>
           </Card>
         </div>

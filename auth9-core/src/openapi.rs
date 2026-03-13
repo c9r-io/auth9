@@ -172,6 +172,8 @@ use utoipa::OpenApi;
             crate::models::system_settings::MaliciousIpBlacklistEntry,
             crate::models::system_settings::MaliciousIpBlacklistInput,
             crate::models::system_settings::UpdateMaliciousIpBlacklistRequest,
+            crate::models::system_settings::TenantMaliciousIpBlacklistEntry,
+            crate::models::system_settings::UpdateTenantMaliciousIpBlacklistRequest,
 
             // ── WebAuthn domain ────────────────────────────────────────
             crate::models::webauthn::WebAuthnCredential,
@@ -235,6 +237,8 @@ use utoipa::OpenApi;
         crate::domains::tenant_access::api::tenant::create,
         crate::domains::tenant_access::api::tenant::update,
         crate::domains::tenant_access::api::tenant::delete,
+        crate::domains::tenant_access::api::tenant::get_tenant_malicious_ip_blacklist,
+        crate::domains::tenant_access::api::tenant::update_tenant_malicious_ip_blacklist,
 
         // ── Tenant Access: User ────────────────────────────────────
         crate::domains::tenant_access::api::user::list,

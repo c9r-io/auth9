@@ -2,7 +2,7 @@
 
 **模块**: 授权安全
 **测试范围**: 多租户数据隔离
-**场景数**: 4
+**场景数**: 5
 **风险等级**: 🔴 极高
 **ASVS 5.0 矩阵ID**: M-AUTHZ-01
 **OWASP ASVS 5.0**: V8.1,V8.2,V4.2
@@ -309,6 +309,55 @@ curl -s -o /dev/null -w "%{http_code}" \
 
 ---
 
+## 场景 5：租户级恶意 IP 黑名单隔离
+
+### 前置条件
+- 租户 A 和租户 B 都存在，且各自有独立用户
+- 租户 A 管理员（非平台管理员）已在 `PUT /api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist` 为租户 A 保存 `203.0.113.10`
+- 租户 B 未保存该 IP
+
+### 攻击目标
+验证安全检测中的黑名单能力不会跨租户泄露或误封。
+
+### 攻击步骤
+1. 使用租户 A 用户触发来自 `203.0.113.10` 的 `LOGIN_ERROR` 事件
+2. 使用租户 B 用户触发来自相同 IP 的 `LOGIN_ERROR` 事件
+3. 查询 `security_alerts` 中最近的 `suspicious_ip` 记录
+4. 再在平台级黑名单中加入 `203.0.113.10`，重复第 1 步
+
+### 预期安全行为
+- 只有租户 A 命中租户级黑名单时生成 `suspicious_ip`
+- 租户 B 不因租户 A 的配置受到影响
+- 当平台级与租户级同时存在时，平台级优先
+- 告警 `details.blacklist_scope` 明确标识 `tenant` 或 `platform`
+
+### 验证方法
+```bash
+SECRET="${KEYCLOAK_WEBHOOK_SECRET:-dev-webhook-secret-change-in-production}"
+
+BODY='{"type":"LOGIN_ERROR","realmId":"auth9","clientId":"auth9-portal","userId":"{tenant_a_user_id}","ipAddress":"203.0.113.10","error":"invalid_user_credentials","time":'$(date +%s000)',"details":{"username":"tenant-a@example.com","email":"tenant-a@example.com"}}'
+SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
+curl -s -X POST "http://localhost:8080/api/v1/keycloak/events" \
+  -H "Content-Type: application/json" \
+  -H "X-Keycloak-Signature: sha256=$SIG" \
+  -d "$BODY"
+
+mysql -h 127.0.0.1 -P 4000 -u root auth9 -e "
+SELECT tenant_id,
+       JSON_EXTRACT(details, '$.blacklist_scope') AS blacklist_scope
+FROM security_alerts
+WHERE alert_type = 'suspicious_ip'
+ORDER BY created_at DESC
+LIMIT 5;"
+```
+
+### 修复建议
+- 所有安全检测命中逻辑必须带 `tenant_id` 作用域
+- 平台级规则与租户级规则显式分层，避免顺序漂移
+- 告警详情保留 `blacklist_scope`，便于审计与排障
+
+---
+
 ## 检查清单
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 发现问题 |
@@ -317,6 +366,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 | 2 | 批量操作租户泄露 | ☐ | | | |
 | 3 | 关联资源跨租户访问 | ☐ | | | |
 | 4 | 管理员权限边界测试 | ☐ | | | |
+| 5 | 租户级恶意 IP 黑名单隔离 | ☐ | | | |
 
 ---
 
@@ -337,7 +387,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 **适用控制**: V8.1,V8.2,V4.2  
 **关联任务**: Backlog #2, #20  
 **建议回归频率**: 每次发布前 + 缺陷修复后必跑  
-**场景总数**: 4
+**场景总数**: 5
 
 ### 执行清单
 - [ ] M-AUTHZ-01-C01 | 控制: V8.1 | 任务: #2, #20 | 动作: 执行文档内相关攻击步骤并记录证据

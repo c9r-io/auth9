@@ -7,7 +7,8 @@ use crate::models::common::StringUuid;
 use crate::models::email::EmailProviderConfig;
 use crate::models::system_settings::{
     MaliciousIpBlacklistEntry, MaliciousIpBlacklistInput, SettingCategory, SettingKey,
-    SystemSettingResponse, SystemSettingRow, UpsertSystemSettingInput,
+    SystemSettingResponse, SystemSettingRow, TenantMaliciousIpBlacklistEntry,
+    UpsertSystemSettingInput,
 };
 use crate::repository::{MaliciousIpBlacklistRepository, SystemSettingsRepository};
 use async_trait::async_trait;
@@ -24,7 +25,11 @@ pub struct SystemSettingsService<R: SystemSettingsRepository> {
 
 impl<R: SystemSettingsRepository> SystemSettingsService<R> {
     pub fn new(repo: Arc<R>, encryption_key: Option<EncryptionKey>) -> Self {
-        Self::new_with_blacklist(repo, Arc::new(NoopMaliciousIpBlacklistRepository), encryption_key)
+        Self::new_with_blacklist(
+            repo,
+            Arc::new(NoopMaliciousIpBlacklistRepository),
+            encryption_key,
+        )
     }
 
     pub fn new_with_blacklist(
@@ -139,34 +144,54 @@ impl<R: SystemSettingsRepository> SystemSettingsService<R> {
         self.malicious_ip_blacklist_repo.list().await
     }
 
+    pub async fn list_tenant_malicious_ip_blacklist(
+        &self,
+        tenant_id: StringUuid,
+    ) -> Result<Vec<TenantMaliciousIpBlacklistEntry>> {
+        self.malicious_ip_blacklist_repo
+            .list_by_tenant(tenant_id)
+            .await
+    }
+
     pub async fn update_malicious_ip_blacklist(
         &self,
         entries: Vec<MaliciousIpBlacklistInput>,
         actor_id: Option<StringUuid>,
     ) -> Result<Vec<MaliciousIpBlacklistEntry>> {
-        let mut normalized = Vec::new();
-        let mut seen = std::collections::HashSet::new();
-
-        for entry in entries {
-            entry
-                .validate()
-                .map_err(|e| AppError::Validation(e.to_string()))?;
-
-            let ip = normalize_ip(&entry.ip_address)?;
-            if seen.insert(ip.clone()) {
-                normalized.push(MaliciousIpBlacklistEntry {
-                    id: StringUuid::new_v4(),
-                    ip_address: ip,
-                    reason: entry.reason.map(|reason| reason.trim().to_string()),
-                    created_by: actor_id,
-                    created_at: chrono::Utc::now(),
-                    updated_at: chrono::Utc::now(),
-                });
-            }
-        }
+        let normalized =
+            normalize_blacklist_entries(entries, |ip, reason| MaliciousIpBlacklistEntry {
+                id: StringUuid::new_v4(),
+                ip_address: ip,
+                reason,
+                created_by: actor_id,
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            })?;
 
         self.malicious_ip_blacklist_repo
             .replace_all(&normalized, actor_id)
+            .await
+    }
+
+    pub async fn update_tenant_malicious_ip_blacklist(
+        &self,
+        tenant_id: StringUuid,
+        entries: Vec<MaliciousIpBlacklistInput>,
+        actor_id: Option<StringUuid>,
+    ) -> Result<Vec<TenantMaliciousIpBlacklistEntry>> {
+        let normalized =
+            normalize_blacklist_entries(entries, |ip, reason| TenantMaliciousIpBlacklistEntry {
+                id: StringUuid::new_v4(),
+                tenant_id,
+                ip_address: ip,
+                reason,
+                created_by: actor_id,
+                created_at: chrono::Utc::now(),
+                updated_at: chrono::Utc::now(),
+            })?;
+
+        self.malicious_ip_blacklist_repo
+            .replace_all_for_tenant(tenant_id, &normalized, actor_id)
             .await
     }
 
@@ -175,7 +200,9 @@ impl<R: SystemSettingsRepository> SystemSettingsService<R> {
         ip_address: &str,
     ) -> Result<Option<MaliciousIpBlacklistEntry>> {
         let normalized = normalize_ip(ip_address)?;
-        self.malicious_ip_blacklist_repo.find_by_ip(&normalized).await
+        self.malicious_ip_blacklist_repo
+            .find_by_ip(&normalized)
+            .await
     }
 
     // ========================================================================
@@ -315,6 +342,13 @@ impl MaliciousIpBlacklistRepository for NoopMaliciousIpBlacklistRepository {
         Ok(vec![])
     }
 
+    async fn list_by_tenant(
+        &self,
+        _tenant_id: StringUuid,
+    ) -> Result<Vec<TenantMaliciousIpBlacklistEntry>> {
+        Ok(vec![])
+    }
+
     async fn replace_all(
         &self,
         entries: &[MaliciousIpBlacklistEntry],
@@ -323,9 +357,53 @@ impl MaliciousIpBlacklistRepository for NoopMaliciousIpBlacklistRepository {
         Ok(entries.to_vec())
     }
 
+    async fn replace_all_for_tenant(
+        &self,
+        _tenant_id: StringUuid,
+        entries: &[TenantMaliciousIpBlacklistEntry],
+        _created_by: Option<StringUuid>,
+    ) -> Result<Vec<TenantMaliciousIpBlacklistEntry>> {
+        Ok(entries.to_vec())
+    }
+
     async fn find_by_ip(&self, _ip_address: &str) -> Result<Option<MaliciousIpBlacklistEntry>> {
         Ok(None)
     }
+
+    async fn find_by_ip_in_tenant(
+        &self,
+        _tenant_id: StringUuid,
+        _ip_address: &str,
+    ) -> Result<Option<TenantMaliciousIpBlacklistEntry>> {
+        Ok(None)
+    }
+}
+
+fn normalize_blacklist_entries<T, F>(
+    entries: Vec<MaliciousIpBlacklistInput>,
+    mut map: F,
+) -> Result<Vec<T>>
+where
+    F: FnMut(String, Option<String>) -> T,
+{
+    let mut normalized = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+
+    for entry in entries {
+        entry
+            .validate()
+            .map_err(|e| AppError::Validation(e.to_string()))?;
+
+        let ip = normalize_ip(&entry.ip_address)?;
+        if seen.insert(ip.clone()) {
+            normalized.push(map(
+                ip,
+                entry.reason.map(|reason| reason.trim().to_string()),
+            ));
+        }
+    }
+
+    Ok(normalized)
 }
 
 #[cfg(test)]
@@ -359,18 +437,17 @@ mod tests {
         let mock = MockSystemSettingsRepository::new();
         let mut blacklist = MockMaliciousIpBlacklistRepository::new();
 
-        blacklist.expect_replace_all().returning(|entries, created_by| {
-            assert_eq!(created_by, Some(StringUuid::nil()));
-            assert_eq!(entries.len(), 1);
-            assert_eq!(entries[0].ip_address, "203.0.113.10");
-            Ok(entries.to_vec())
-        });
+        blacklist
+            .expect_replace_all()
+            .returning(|entries, created_by| {
+                assert_eq!(created_by, Some(StringUuid::nil()));
+                assert_eq!(entries.len(), 1);
+                assert_eq!(entries[0].ip_address, "203.0.113.10");
+                Ok(entries.to_vec())
+            });
 
-        let service = SystemSettingsService::new_with_blacklist(
-            Arc::new(mock),
-            Arc::new(blacklist),
-            None,
-        );
+        let service =
+            SystemSettingsService::new_with_blacklist(Arc::new(mock), Arc::new(blacklist), None);
 
         let entries = service
             .update_malicious_ip_blacklist(

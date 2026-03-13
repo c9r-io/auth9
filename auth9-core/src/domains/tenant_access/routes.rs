@@ -46,6 +46,11 @@ where
                 .delete(tenant_access_api::tenant::delete::<S>),
         )
         .route(
+            "/api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist",
+            get(tenant_access_api::tenant::get_tenant_malicious_ip_blacklist::<S>)
+                .put(tenant_access_api::tenant::update_tenant_malicious_ip_blacklist::<S>),
+        )
+        .route(
             "/api/v1/tenants/{tenant_id}/sso/connectors",
             get(tenant_access_api::tenant_sso::list_connectors::<S>)
                 .post(tenant_access_api::tenant_sso::create_connector::<S>),

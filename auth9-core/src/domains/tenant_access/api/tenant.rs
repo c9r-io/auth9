@@ -8,12 +8,15 @@ use crate::http_support::{
 };
 use crate::middleware::auth::AuthUser;
 use crate::models::common::StringUuid;
+use crate::models::system_settings::{
+    TenantMaliciousIpBlacklistEntry, UpdateTenantMaliciousIpBlacklistRequest,
+};
 use crate::models::tenant::{CreateTenantInput, UpdateTenantInput};
 use crate::models::user::AddUserToTenantInput;
 use crate::policy::{self, PolicyAction, PolicyInput, ResourceScope, TenantListMode};
 use crate::repository::audit::CreateAuditLogInput;
 use crate::repository::AuditRepository;
-use crate::state::HasServices;
+use crate::state::{HasServices, HasSystemSettings};
 use axum::{
     extract::{Path, Query, State},
     http::HeaderMap,
@@ -306,6 +309,95 @@ pub async fn delete<S: HasServices>(
     )
     .await;
     Ok(Json(MessageResponse::new("Tenant deleted successfully")))
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist",
+    tag = "Tenant Access",
+    params(
+        ("tenant_id" = String, Path, description = "Tenant ID (UUID)")
+    ),
+    responses(
+        (status = 200, description = "Success", body = [TenantMaliciousIpBlacklistEntry]),
+        (status = 403, description = "Forbidden"),
+        (status = 404, description = "Not found")
+    )
+)]
+pub async fn get_tenant_malicious_ip_blacklist<S: HasServices + HasSystemSettings>(
+    State(state): State<S>,
+    auth: AuthUser,
+    Path(tenant_id): Path<Uuid>,
+) -> Result<impl IntoResponse> {
+    policy::enforce_with_state(
+        &state,
+        &auth,
+        &PolicyInput {
+            action: PolicyAction::TenantRead,
+            scope: ResourceScope::Tenant(StringUuid::from(tenant_id)),
+        },
+    )
+    .await?;
+
+    let entries = state
+        .system_settings_service()
+        .list_tenant_malicious_ip_blacklist(StringUuid::from(tenant_id))
+        .await?;
+    Ok(Json(SuccessResponse::new(entries)))
+}
+
+#[utoipa::path(
+    put,
+    path = "/api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist",
+    tag = "Tenant Access",
+    params(
+        ("tenant_id" = String, Path, description = "Tenant ID (UUID)")
+    ),
+    request_body = UpdateTenantMaliciousIpBlacklistRequest,
+    responses(
+        (status = 200, description = "Success", body = [TenantMaliciousIpBlacklistEntry]),
+        (status = 403, description = "Forbidden"),
+        (status = 404, description = "Not found")
+    )
+)]
+pub async fn update_tenant_malicious_ip_blacklist<S: HasServices + HasSystemSettings>(
+    State(state): State<S>,
+    auth: AuthUser,
+    headers: HeaderMap,
+    Path(tenant_id): Path<Uuid>,
+    Json(request): Json<UpdateTenantMaliciousIpBlacklistRequest>,
+) -> Result<impl IntoResponse> {
+    policy::enforce_with_state(
+        &state,
+        &auth,
+        &PolicyInput {
+            action: PolicyAction::TenantOwner,
+            scope: ResourceScope::Tenant(StringUuid::from(tenant_id)),
+        },
+    )
+    .await?;
+
+    let entries = state
+        .system_settings_service()
+        .update_tenant_malicious_ip_blacklist(
+            StringUuid::from(tenant_id),
+            request.entries,
+            Some(StringUuid(auth.user_id)),
+        )
+        .await?;
+
+    let _ = write_audit_log_generic(
+        &state,
+        &headers,
+        "tenant.security.malicious_ip_blacklist.update",
+        "tenant_security_setting",
+        Some(tenant_id),
+        None,
+        serde_json::to_value(&entries).ok(),
+    )
+    .await;
+
+    Ok(Json(SuccessResponse::new(entries)))
 }
 
 #[cfg(test)]

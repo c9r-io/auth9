@@ -117,6 +117,17 @@ pub struct MaliciousIpBlacklistEntry {
     pub updated_at: DateTime<Utc>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, ToSchema)]
+pub struct TenantMaliciousIpBlacklistEntry {
+    pub id: StringUuid,
+    pub tenant_id: StringUuid,
+    pub ip_address: String,
+    pub reason: Option<String>,
+    pub created_by: Option<StringUuid>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, ToSchema, Validate)]
 pub struct MaliciousIpBlacklistInput {
     #[validate(length(min = 1, max = 45))]
@@ -127,6 +138,12 @@ pub struct MaliciousIpBlacklistInput {
 
 #[derive(Debug, Clone, Deserialize, Serialize, ToSchema, Validate)]
 pub struct UpdateMaliciousIpBlacklistRequest {
+    #[validate(length(max = 1000))]
+    pub entries: Vec<MaliciousIpBlacklistInput>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, ToSchema, Validate)]
+pub struct UpdateTenantMaliciousIpBlacklistRequest {
     #[validate(length(max = 1000))]
     pub entries: Vec<MaliciousIpBlacklistInput>,
 }

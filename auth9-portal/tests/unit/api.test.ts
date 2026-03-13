@@ -841,6 +841,39 @@ describe('API Service', () => {
         })
       );
     });
+
+    it('should get tenant malicious ip blacklist', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [{ id: 'entry-1', tenant_id: 'tenant-123', ip_address: '203.0.113.10', created_at: '', updated_at: '' }] }),
+      });
+
+      const result = await systemApi.getTenantMaliciousIpBlacklist('tenant-123');
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/tenants/tenant-123/security/malicious-ip-blacklist'),
+        expect.objectContaining({ headers: expect.any(Object) })
+      );
+      expect(result.data[0].tenant_id).toBe('tenant-123');
+    });
+
+    it('should update tenant malicious ip blacklist', async () => {
+      const entries = [{ ip_address: '203.0.113.10' }];
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [] }),
+      });
+
+      await systemApi.updateTenantMaliciousIpBlacklist('tenant-123', entries);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/tenants/tenant-123/security/malicious-ip-blacklist'),
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ entries }),
+        })
+      );
+    });
   });
 
   describe('invitationApi', () => {

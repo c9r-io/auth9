@@ -57,6 +57,10 @@ export interface MaliciousIpBlacklistEntry {
   updated_at: string;
 }
 
+export interface TenantMaliciousIpBlacklistEntry extends MaliciousIpBlacklistEntry {
+  tenant_id: string;
+}
+
 // System Setting Response from backend
 export interface SystemSettingResponse {
   category: string;
@@ -132,6 +136,35 @@ export const systemApi = {
   ): Promise<{ data: MaliciousIpBlacklistEntry[] }> => {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/system/security/malicious-ip-blacklist`,
+      {
+        method: "PUT",
+        headers: getHeaders(accessToken),
+        body: JSON.stringify({ entries }),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  getTenantMaliciousIpBlacklist: async (
+    tenantId: string,
+    accessToken?: string
+  ): Promise<{ data: TenantMaliciousIpBlacklistEntry[] }> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/tenants/${tenantId}/security/malicious-ip-blacklist`,
+      {
+        headers: getHeaders(accessToken),
+      }
+    );
+    return handleResponse(response);
+  },
+
+  updateTenantMaliciousIpBlacklist: async (
+    tenantId: string,
+    entries: Array<{ ip_address: string; reason?: string }>,
+    accessToken?: string
+  ): Promise<{ data: TenantMaliciousIpBlacklistEntry[] }> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/tenants/${tenantId}/security/malicious-ip-blacklist`,
       {
         method: "PUT",
         headers: getHeaders(accessToken),

@@ -11,11 +11,10 @@
 pub use super::mock_keycloak::MockKeycloakServer;
 use crate::support::{
     create_test_jwt_manager, TestActionRepository, TestAuditRepository, TestInvitationRepository,
-    TestLinkedIdentityRepository, TestLoginEventRepository, TestPasswordResetRepository,
-    TestMaliciousIpBlacklistRepository,
-    TestRbacRepository, TestSecurityAlertRepository, TestServiceBrandingRepository,
-    TestServiceRepository, TestSessionRepository, TestSystemSettingsRepository,
-    TestTenantRepository, TestUserRepository, TestWebhookRepository,
+    TestLinkedIdentityRepository, TestLoginEventRepository, TestMaliciousIpBlacklistRepository,
+    TestPasswordResetRepository, TestRbacRepository, TestSecurityAlertRepository,
+    TestServiceBrandingRepository, TestServiceRepository, TestSessionRepository,
+    TestSystemSettingsRepository, TestTenantRepository, TestUserRepository, TestWebhookRepository,
 };
 use crate::support::{
     TestScimGroupMappingRepository, TestScimLogRepository, TestScimTokenRepository,
@@ -776,6 +775,11 @@ pub fn build_system_settings_test_router(state: TestAppState) -> Router {
         .route(
             "/api/v1/system/email/send-test",
             post(system_settings::send_test_email::<TestAppState>),
+        )
+        .route(
+            "/api/v1/system/security/malicious-ip-blacklist",
+            get(system_settings::get_malicious_ip_blacklist::<TestAppState>)
+                .put(system_settings::update_malicious_ip_blacklist::<TestAppState>),
         )
         .with_state(state)
 }

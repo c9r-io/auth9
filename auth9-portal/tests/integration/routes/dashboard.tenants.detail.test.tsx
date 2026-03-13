@@ -3,7 +3,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import TenantDetailPage, { loader, action } from "~/routes/dashboard.tenants.$tenantId._index";
-import { tenantApi, serviceApi, invitationApi, webhookApi, tenantServiceApi, tenantUserApi } from "~/services/api";
+import { tenantApi, serviceApi, invitationApi, webhookApi, tenantServiceApi, tenantUserApi, systemApi } from "~/services/api";
 
 // Mock the APIs
 vi.mock("~/services/api", () => ({
@@ -25,6 +25,10 @@ vi.mock("~/services/api", () => ({
   },
   tenantUserApi: {
     list: vi.fn(),
+  },
+  systemApi: {
+    getTenantMaliciousIpBlacklist: vi.fn(),
+    updateTenantMaliciousIpBlacklist: vi.fn(),
   },
 }));
 
@@ -59,6 +63,7 @@ const mockServices = [
 describe("Tenant Detail Page", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(systemApi.getTenantMaliciousIpBlacklist).mockResolvedValue({ data: [] });
   });
 
   // ============================================================================
@@ -99,9 +104,11 @@ describe("Tenant Detail Page", () => {
         webhooksCount: 2,
         enabledServicesCount: 2,
         totalGlobalServicesCount: 3,
+        tenantBlacklist: [],
       });
       expect(tenantApi.get).toHaveBeenCalledWith("tenant-1", undefined);
       expect(tenantServiceApi.listServices).toHaveBeenCalledWith("tenant-1", undefined);
+      expect(systemApi.getTenantMaliciousIpBlacklist).toHaveBeenCalledWith("tenant-1", undefined);
     });
 
     it("throws error when tenantId is missing", async () => {
@@ -130,6 +137,7 @@ describe("Tenant Detail Page", () => {
       webhooksCount: 2,
       enabledServicesCount: 2,
       totalGlobalServicesCount: 3,
+      tenantBlacklist: [],
     };
 
     it("renders tenant name in header", async () => {
@@ -236,6 +244,7 @@ describe("Tenant Detail Page", () => {
       webhooksCount: 2,
       enabledServicesCount: 2,
       totalGlobalServicesCount: 3,
+      tenantBlacklist: [],
     };
 
     it("renders configuration card with title", async () => {
@@ -790,8 +799,9 @@ describe("Tenant Detail Page", () => {
             servicesCount: 5,
             pendingInvitationsCount: 3,
             webhooksCount: 2,
-                  enabledServicesCount: 2,
+            enabledServicesCount: 2,
             totalGlobalServicesCount: 3,
+            tenantBlacklist: [],
           }),
           action: () => ({ error: "Operation not allowed" }),
         },
@@ -807,7 +817,7 @@ describe("Tenant Detail Page", () => {
       await user.click(screen.getByRole("button", { name: "Save Changes" }));
 
       await waitFor(() => {
-        expect(screen.getByText("Operation not allowed")).toBeInTheDocument();
+        expect(screen.getAllByText("Operation not allowed").length).toBeGreaterThan(0);
       });
     });
   });
@@ -825,6 +835,7 @@ describe("Tenant Detail Page", () => {
       webhooksCount: 2,
       enabledServicesCount: 2,
       totalGlobalServicesCount: 3,
+      tenantBlacklist: [],
     };
 
     it("renders security settings card with MFA switch", async () => {
@@ -842,6 +853,7 @@ describe("Tenant Detail Page", () => {
         expect(screen.getByText("Security Settings")).toBeInTheDocument();
         expect(screen.getByText("Require MFA")).toBeInTheDocument();
         expect(screen.getByText(/require all users in this tenant/i)).toBeInTheDocument();
+        expect(screen.getByText("Tenant Malicious IP Blacklist")).toBeInTheDocument();
       });
 
       // MFA switch should be present and unchecked (settings is {})
@@ -981,6 +993,34 @@ describe("Tenant Detail Page", () => {
       expect(response).toBeInstanceOf(Response);
       const json = await (response as Response).json();
       expect(json).toEqual({ error: "MFA update failed" });
+    });
+  });
+
+  describe("action - update_tenant_malicious_ip_blacklist", () => {
+    it("updates tenant blacklist successfully", async () => {
+      vi.mocked(systemApi.updateTenantMaliciousIpBlacklist).mockResolvedValue({ data: [] });
+
+      const formData = new FormData();
+      formData.append("intent", "update_tenant_malicious_ip_blacklist");
+      formData.append("tenantMaliciousIps", "203.0.113.10\n198.51.100.24");
+
+      const request = new Request("http://localhost/dashboard/tenants/tenant-1", {
+        method: "POST",
+        body: formData,
+      });
+
+      const response = await action({
+        request,
+        params: { tenantId: "tenant-1" },
+        context: {},
+      });
+
+      expect(systemApi.updateTenantMaliciousIpBlacklist).toHaveBeenCalledWith(
+        "tenant-1",
+        [{ ip_address: "203.0.113.10" }, { ip_address: "198.51.100.24" }],
+        undefined
+      );
+      expect(response).toEqual({ success: true, tenantBlacklistUpdated: true });
     });
   });
 });
