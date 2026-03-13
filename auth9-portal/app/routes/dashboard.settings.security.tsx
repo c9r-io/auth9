@@ -6,6 +6,7 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "~/components/ui/select";
 import { Switch } from "~/components/ui/switch";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
@@ -152,6 +153,16 @@ export default function SecuritySettingsPage() {
     setBlacklistText(blacklist.map((entry) => entry.ip_address).join("\n"));
   }, [blacklist]);
 
+  const syncHiddenBooleanField = (fieldName: string, checked: boolean) => {
+    const input = document.getElementById(fieldName) as HTMLInputElement | null;
+    if (input) {
+      input.value = checked ? "true" : "false";
+    }
+  };
+
+  const actionBarClassName =
+    "sticky bottom-0 z-10 -mx-6 -mb-6 flex flex-wrap items-center gap-3 border-t border-[var(--glass-border-subtle)] bg-[var(--bg-secondary)]/95 px-6 py-4 backdrop-blur supports-[backdrop-filter]:bg-[var(--bg-secondary)]/80 md:static md:mx-0 md:mb-0 md:border-t-0 md:bg-transparent md:px-0 md:py-0 md:backdrop-blur-none";
+
   return (
     <div className="space-y-6">
       <Card>
@@ -181,7 +192,7 @@ export default function SecuritySettingsPage() {
             {actionData?.error && <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--accent-red)]">{actionData.error}</div>}
             {actionData?.success && <div className="rounded-md bg-[var(--accent-green)]/10 p-3 text-sm text-[var(--accent-green)]">{actionData.message}</div>}
 
-            <div className="sticky bottom-0 z-10 -mb-4 flex flex-wrap items-center gap-3 border-t bg-[var(--bg-secondary)] pb-4 pt-4 md:static">
+            <div className={actionBarClassName}>
               <Button type="submit" disabled={isSubmitting}>{isSubmitting ? t("settings.securitySettings.saving") : t("settings.securitySettings.saveBlacklist")}</Button>
             </div>
           </Form>
@@ -198,13 +209,23 @@ export default function SecuritySettingsPage() {
         <CardContent>
           <div className="space-y-4">
             <div className="max-w-xs space-y-2">
-              <Label htmlFor="tenantSelect">{t("settings.securitySettings.selectTenant")}</Label>
-              <select id="tenantSelect" value={selectedTenant} onChange={(event) => setSelectedTenant(event.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm">
-                <option value="">{t("settings.securitySettings.selectTenantPlaceholder")}</option>
-                {tenants.map((tenant) => (
-                  <option key={tenant.id} value={tenant.id}>{tenant.name}</option>
-                ))}
-              </select>
+              <Label id="tenantSelectLabel" htmlFor="tenantSelectTrigger">{t("settings.securitySettings.selectTenant")}</Label>
+              <Select
+                value={selectedTenant || "__none__"}
+                onValueChange={(value) => setSelectedTenant(value === "__none__" ? "" : value)}
+              >
+                <SelectTrigger id="tenantSelectTrigger" aria-labelledby="tenantSelectLabel">
+                  <SelectValue placeholder={t("settings.securitySettings.selectTenantPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{t("settings.securitySettings.selectTenantPlaceholder")}</SelectItem>
+                  {tenants.map((tenant) => (
+                    <SelectItem key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {tenantsError && <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--accent-red)]">{tenantsError}</div>}
@@ -227,25 +248,33 @@ export default function SecuritySettingsPage() {
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">{t("settings.securitySettings.characterRequirements")}</h4>
                   <div className="grid gap-0 md:grid-cols-2">
-                    <div className="flex h-11 items-center gap-3">
-                      <Switch id="requireUppercase" defaultChecked={policy.require_uppercase} onCheckedChange={(checked: boolean) => { const input = document.querySelector('input[name="requireUppercase"]') as HTMLInputElement; if (input) input.value = checked ? "true" : "false"; }} />
-                      <input type="hidden" name="requireUppercase" value={policy.require_uppercase ? "true" : "false"} />
+                    <div className="flex min-h-[48px] items-center justify-between gap-4">
                       <Label htmlFor="requireUppercase">{t("settings.securitySettings.requireUppercase")}</Label>
+                      <div className="shrink-0">
+                        <Switch id="requireUppercase" defaultChecked={policy.require_uppercase} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("requireUppercase-hidden", checked)} />
+                        <input id="requireUppercase-hidden" type="hidden" name="requireUppercase" value={policy.require_uppercase ? "true" : "false"} />
+                      </div>
                     </div>
-                    <div className="flex h-11 items-center gap-3">
-                      <Switch id="requireLowercase" defaultChecked={policy.require_lowercase} onCheckedChange={(checked: boolean) => { const input = document.querySelector('input[name="requireLowercase"]') as HTMLInputElement; if (input) input.value = checked ? "true" : "false"; }} />
-                      <input type="hidden" name="requireLowercase" value={policy.require_lowercase ? "true" : "false"} />
+                    <div className="flex min-h-[48px] items-center justify-between gap-4">
                       <Label htmlFor="requireLowercase">{t("settings.securitySettings.requireLowercase")}</Label>
+                      <div className="shrink-0">
+                        <Switch id="requireLowercase" defaultChecked={policy.require_lowercase} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("requireLowercase-hidden", checked)} />
+                        <input id="requireLowercase-hidden" type="hidden" name="requireLowercase" value={policy.require_lowercase ? "true" : "false"} />
+                      </div>
                     </div>
-                    <div className="flex h-11 items-center gap-3">
-                      <Switch id="requireNumbers" defaultChecked={policy.require_numbers} onCheckedChange={(checked: boolean) => { const input = document.querySelector('input[name="requireNumbers"]') as HTMLInputElement; if (input) input.value = checked ? "true" : "false"; }} />
-                      <input type="hidden" name="requireNumbers" value={policy.require_numbers ? "true" : "false"} />
+                    <div className="flex min-h-[48px] items-center justify-between gap-4">
                       <Label htmlFor="requireNumbers">{t("settings.securitySettings.requireNumbers")}</Label>
+                      <div className="shrink-0">
+                        <Switch id="requireNumbers" defaultChecked={policy.require_numbers} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("requireNumbers-hidden", checked)} />
+                        <input id="requireNumbers-hidden" type="hidden" name="requireNumbers" value={policy.require_numbers ? "true" : "false"} />
+                      </div>
                     </div>
-                    <div className="flex h-11 items-center gap-3">
-                      <Switch id="requireSymbols" defaultChecked={policy.require_symbols} onCheckedChange={(checked: boolean) => { const input = document.querySelector('input[name="requireSymbols"]') as HTMLInputElement; if (input) input.value = checked ? "true" : "false"; }} />
-                      <input type="hidden" name="requireSymbols" value={policy.require_symbols ? "true" : "false"} />
+                    <div className="flex min-h-[48px] items-center justify-between gap-4">
                       <Label htmlFor="requireSymbols">{t("settings.securitySettings.requireSymbols")}</Label>
+                      <div className="shrink-0">
+                        <Switch id="requireSymbols" defaultChecked={policy.require_symbols} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("requireSymbols-hidden", checked)} />
+                        <input id="requireSymbols-hidden" type="hidden" name="requireSymbols" value={policy.require_symbols ? "true" : "false"} />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -253,7 +282,7 @@ export default function SecuritySettingsPage() {
                 {actionData?.error && <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--accent-red)]">{actionData.error}</div>}
                 {actionData?.success && <div className="rounded-md bg-[var(--accent-green)]/10 p-3 text-sm text-[var(--accent-green)]">{actionData.message}</div>}
 
-                <div className="sticky bottom-0 z-10 -mb-4 flex flex-wrap items-center gap-3 border-t bg-[var(--bg-secondary)] pb-4 pt-4 md:static">
+                <div className={actionBarClassName}>
                   <Button type="submit" disabled={isSubmitting}>{isSubmitting ? t("settings.securitySettings.saving") : t("settings.securitySettings.savePolicy")}</Button>
                 </div>
               </Form>

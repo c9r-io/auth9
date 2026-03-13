@@ -37,7 +37,7 @@
 | [08-tenants-page.md](./08-tenants-page.md) | 租户列表、搜索栏适配 | 5 |
 | [09-users-page.md](./09-users-page.md) | 用户目录、角色分配弹窗 | 6 |
 | [10-services-page.md](./10-services-page.md) | 服务管理、密钥显示适配、Actions/Branding Tab 布局 | 6 |
-| [11-settings-page.md](./11-settings-page.md) | 系统设置、子导航体验 | 5 |
+| [11-settings-page.md](./11-settings-page.md) | 系统设置、子导航体验、品牌页底部操作栏、密码策略选择器/开关布局 | 5 |
 | [12-i18n-localization.md](./12-i18n-localization.md) | 国际化切换、首屏协商、格式化一致性 | 5 |
 | [13-landing-page-interactions.md](./13-landing-page-interactions.md) | Landing 页卡片悬停效果、Navbar 控件可点击性、入场动画 | 4 |
 | [14-global-controls-placement.md](./14-global-controls-placement.md) | 主题/语言切换控件在 Landing 和 Dashboard 中的无重叠布局 | 5 |

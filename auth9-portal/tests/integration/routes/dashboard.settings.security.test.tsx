@@ -43,6 +43,11 @@ function buildEnglishRequest(url: string, init?: RequestInit) {
   return new Request(url, { ...init, headers });
 }
 
+async function selectTenant(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(screen.getByRole("combobox", { name: "Select Tenant" }));
+  await user.click(await screen.findByRole("option", { name }));
+}
+
 const mockTenants = [
   { id: "tenant-1", name: "Acme Corp", slug: "acme" },
   { id: "tenant-2", name: "Beta Inc", slug: "beta" },
@@ -68,6 +73,18 @@ const mockBlacklist = [
     updated_at: new Date().toISOString(),
   },
 ];
+
+if (!HTMLElement.prototype.hasPointerCapture) {
+  HTMLElement.prototype.hasPointerCapture = () => false;
+}
+
+if (!HTMLElement.prototype.setPointerCapture) {
+  HTMLElement.prototype.setPointerCapture = () => {};
+}
+
+if (!HTMLElement.prototype.releasePointerCapture) {
+  HTMLElement.prototype.releasePointerCapture = () => {};
+}
 
 describe("Security Settings Page", () => {
   function WrappedPage() {
@@ -213,11 +230,9 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
     expect(screen.getByText("Select a tenant...")).toBeInTheDocument();
-    expect(screen.getByText("Acme Corp")).toBeInTheDocument();
-    expect(screen.getByText("Beta Inc")).toBeInTheDocument();
   });
 
   // ============================================================================
@@ -269,12 +284,10 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    // Select a tenant from the dropdown
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     // Wait for the policy form to appear
     await waitFor(() => {
@@ -300,6 +313,34 @@ describe("Security Settings Page", () => {
     expect(passwordApi.getPasswordPolicy).toHaveBeenCalledWith("tenant-1", undefined);
   });
 
+  it("uses justify-between rows for character requirement switches", async () => {
+    const user = userEvent.setup();
+
+    const RoutesStub = createRoutesStub([
+      {
+        path: "/dashboard/settings/security",
+        Component: WrappedPage,
+        loader,
+      },
+    ]);
+
+    render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
+
+    await waitFor(() => {
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
+    });
+
+    await selectTenant(user, "Acme Corp");
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Require uppercase")).toBeInTheDocument();
+    });
+
+    const uppercaseRow = screen.getByText("Require uppercase").closest("div");
+    expect(uppercaseRow).toHaveClass("justify-between");
+    expect(uppercaseRow).toHaveClass("min-h-[48px]");
+  });
+
   it("displays policy form fields with correct default values from loaded policy", async () => {
     const user = userEvent.setup();
 
@@ -314,11 +355,10 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
@@ -354,19 +394,16 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    // Select a tenant first
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
     });
 
-    // Clear the selection
-    await user.selectOptions(select, "");
+    await selectTenant(user, "Select a tenant...");
 
     await waitFor(() => {
       expect(screen.queryByLabelText("Minimum length")).not.toBeInTheDocument();
@@ -395,11 +432,10 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     // Wait for the API call to complete (and fail)
     await waitFor(() => {
@@ -437,11 +473,10 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     // Should show loading text while policy is being fetched
     await waitFor(() => {
@@ -472,20 +507,16 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-
-    // Select first tenant
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
     });
     expect(passwordApi.getPasswordPolicy).toHaveBeenCalledWith("tenant-1", undefined);
 
-    // Switch to second tenant - this triggers useEffect again
-    await user.selectOptions(select, "tenant-2");
+    await selectTenant(user, "Beta Inc");
     await waitFor(() => {
       expect(passwordApi.getPasswordPolicy).toHaveBeenCalledWith("tenant-2", undefined);
     });
@@ -511,11 +542,10 @@ describe("Security Settings Page", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
@@ -574,11 +604,10 @@ describe("Security Settings Page", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
@@ -627,11 +656,10 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
@@ -664,11 +692,10 @@ describe("Security Settings Page", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
@@ -702,11 +729,10 @@ describe("Security Settings Page", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
@@ -739,11 +765,10 @@ describe("Security Settings Page", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
@@ -776,11 +801,10 @@ describe("Security Settings Page", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    const select = screen.getByLabelText("Select Tenant");
-    await user.selectOptions(select, "tenant-1");
+    await selectTenant(user, "Acme Corp");
 
     await waitFor(() => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
@@ -811,12 +835,16 @@ describe("Security Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/security"]} />);
 
     await waitFor(() => {
-      expect(screen.getByLabelText("Select Tenant")).toBeInTheDocument();
+      expect(screen.getByRole("combobox", { name: "Select Tenant" })).toBeInTheDocument();
     });
 
-    // Only the default option should be present
-    const select = screen.getByLabelText("Select Tenant") as HTMLSelectElement;
-    expect(select.options.length).toBe(1);
-    expect(select.options[0].textContent).toBe("Select a tenant...");
+    const trigger = screen.getByRole("combobox", { name: "Select Tenant" });
+    expect(trigger).toHaveTextContent("Select a tenant...");
+
+    await userEvent.setup().click(trigger);
+
+    const options = await screen.findAllByRole("option");
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveTextContent("Select a tenant...");
   });
 });
