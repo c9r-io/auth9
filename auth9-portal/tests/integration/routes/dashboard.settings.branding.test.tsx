@@ -57,13 +57,17 @@ describe("Branding Settings Page", () => {
     vi.clearAllMocks();
   });
 
-  function WrappedPage() {
-    return (
-      <I18nProvider locale="en-US">
-        <BrandingSettingsPage />
-      </I18nProvider>
-    );
-  }
+function WrappedPage() {
+  return (
+    <I18nProvider locale="en-US">
+      <BrandingSettingsPage />
+    </I18nProvider>
+  );
+}
+
+function getActionButtons(name: string) {
+  return screen.getAllByRole("button", { name });
+}
 
   it("renders branding settings page with default values", async () => {
     vi.mocked(brandingApi.get).mockResolvedValue(mockDefaultBranding);
@@ -309,7 +313,7 @@ describe("Branding Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/branding"]} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      expect(getActionButtons("Save Changes").length).toBeGreaterThan(0);
     });
   });
 
@@ -327,7 +331,7 @@ describe("Branding Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/branding"]} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Reset to Defaults")).toBeInTheDocument();
+      expect(getActionButtons("Reset to Defaults").length).toBeGreaterThan(0);
     });
   });
 
@@ -345,8 +349,9 @@ describe("Branding Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/branding"]} />);
 
     await waitFor(() => {
-      const resetButton = screen.getByText("Reset to Defaults").closest("button");
-      expect(resetButton).toBeDisabled();
+      for (const resetButton of getActionButtons("Reset to Defaults")) {
+        expect(resetButton).toBeDisabled();
+      }
     });
   });
 
@@ -364,8 +369,9 @@ describe("Branding Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/branding"]} />);
 
     await waitFor(() => {
-      const resetButton = screen.getByText("Reset to Defaults").closest("button");
-      expect(resetButton).not.toBeDisabled();
+      for (const resetButton of getActionButtons("Reset to Defaults")) {
+        expect(resetButton).not.toBeDisabled();
+      }
     });
   });
 
@@ -644,7 +650,7 @@ describe("Branding Settings Page", () => {
     });
 
     // Click the Reset to Defaults button
-    const resetButton = screen.getByText("Reset to Defaults").closest("button")!;
+    const resetButton = getActionButtons("Reset to Defaults")[0]!;
     await user.click(resetButton);
 
     // After reset, fields should be reset to defaults
@@ -669,10 +675,10 @@ describe("Branding Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/branding"]} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      expect(getActionButtons("Save Changes").length).toBeGreaterThan(0);
     });
 
-    const saveButton = screen.getByText("Save Changes").closest("button")!;
+    const saveButton = getActionButtons("Save Changes")[0]!;
     await user.click(saveButton);
 
     await waitFor(() => {
@@ -696,10 +702,10 @@ describe("Branding Settings Page", () => {
     render(<RoutesStub initialEntries={["/dashboard/settings/branding"]} />);
 
     await waitFor(() => {
-      expect(screen.getByText("Save Changes")).toBeInTheDocument();
+      expect(getActionButtons("Save Changes").length).toBeGreaterThan(0);
     });
 
-    const saveButton = screen.getByText("Save Changes").closest("button")!;
+    const saveButton = getActionButtons("Save Changes")[0]!;
     await user.click(saveButton);
 
     await waitFor(() => {
