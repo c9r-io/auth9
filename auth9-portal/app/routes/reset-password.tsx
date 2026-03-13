@@ -1,8 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation, Link } from "react-router";
 import { useState } from "react";
-import { LanguageSwitcher } from "~/components/LanguageSwitcher";
-import { ThemeToggle } from "~/components/ThemeToggle";
+import { AuthPageShell } from "~/components/AuthPageShell";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -71,15 +70,12 @@ export default function ResetPasswordPage() {
   // Show error if no token
   if ("error" in loaderData) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative">
-        <div className="fixed top-6 right-6 z-20 flex items-center gap-3">
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
-        <Card className="w-full max-w-md">
+      <AuthPageShell>
+        <Card className="auth-form-card w-full max-w-md animate-fade-in-up">
           <CardHeader className="text-center">
-            <CardTitle>{t("auth.resetPassword.invalidTitle")}</CardTitle>
-            <CardDescription>{loaderData.error}</CardDescription>
+            <div className="logo-icon mx-auto mb-4">A9</div>
+            <CardTitle className="text-2xl">{t("auth.resetPassword.invalidTitle")}</CardTitle>
+            <CardDescription className="auth-form-description">{loaderData.error}</CardDescription>
           </CardHeader>
           <CardContent className="text-center">
             <Link to="/forgot-password">
@@ -87,22 +83,19 @@ export default function ResetPasswordPage() {
             </Link>
           </CardContent>
         </Card>
-      </div>
+      </AuthPageShell>
     );
   }
 
   // Show success message
   if (actionData?.success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative">
-        <div className="fixed top-6 right-6 z-20 flex items-center gap-3">
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
-        <Card className="w-full max-w-md">
+      <AuthPageShell>
+        <Card className="auth-form-card w-full max-w-md animate-fade-in-up">
           <CardHeader className="text-center">
-            <CardTitle>{t("auth.resetPassword.successTitle")}</CardTitle>
-            <CardDescription>
+            <div className="logo-icon mx-auto mb-4">A9</div>
+            <CardTitle className="text-2xl">{t("auth.resetPassword.successTitle")}</CardTitle>
+            <CardDescription className="auth-form-description">
               {t("auth.resetPassword.successDescription")}
             </CardDescription>
           </CardHeader>
@@ -112,20 +105,17 @@ export default function ResetPasswordPage() {
             </Link>
           </CardContent>
         </Card>
-      </div>
+      </AuthPageShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative">
-      <div className="fixed top-6 right-6 z-20 flex items-center gap-3">
-        <LanguageSwitcher />
-        <ThemeToggle />
-      </div>
-      <Card className="w-full max-w-md">
+    <AuthPageShell>
+      <Card className="auth-form-card w-full max-w-md animate-fade-in-up">
         <CardHeader className="text-center">
-          <CardTitle>{t("auth.resetPassword.title")}</CardTitle>
-          <CardDescription>{t("auth.resetPassword.description")}</CardDescription>
+          <div className="logo-icon mx-auto mb-4">A9</div>
+          <CardTitle className="text-2xl">{t("auth.resetPassword.title")}</CardTitle>
+          <CardDescription className="auth-form-description">{t("auth.resetPassword.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form method="post" className="space-y-4">
@@ -143,7 +133,7 @@ export default function ResetPasswordPage() {
                 required
                 autoFocus
               />
-              <p className="text-xs text-gray-500">{t("auth.resetPassword.passwordHint")}</p>
+              <p className="text-xs leading-5 text-[var(--text-secondary)]">{t("auth.resetPassword.passwordHint")}</p>
             </div>
 
             <div className="space-y-2">
@@ -160,7 +150,7 @@ export default function ResetPasswordPage() {
             </div>
 
             {actionData?.error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+              <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
                 {actionData.error}
               </div>
             )}
@@ -170,13 +160,13 @@ export default function ResetPasswordPage() {
             </Button>
 
             <div className="text-center text-sm">
-              <Link to="/login" className="text-blue-600 hover:underline">
+              <Link to="/login" className="font-medium text-[var(--accent-blue)] hover:underline">
                 {t("common.buttons.backToLogin")}
               </Link>
             </div>
           </Form>
         </CardContent>
       </Card>
-    </div>
+    </AuthPageShell>
   );
 }

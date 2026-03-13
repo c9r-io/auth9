@@ -250,6 +250,7 @@ box-shadow: 0 8px 32px var(--glass-shadow),
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-13 | 2.2.0 | Dark Mode 认证页对比度修正同步：更新 `02`（主题切换）中的 Input token 与独立认证页对比度说明，更新 `20`（Onboarding/Auth Flow）中忘记密码页成功态与 Dark Mode 层级预期；与 `docs/qa/auth/15-dark-mode-auth-contrast.md` 对齐 |
 | 2026-03-11 | 2.1.0 | 设计系统对齐审计：交叉比对全部组件实现与文档约束值，修正 10 处漂移。`--text-secondary` Light 色值 `#86868B`→`#6E6E73`（`01`/`02`/`06`/`design-system`）；Button padding `px-4 py-2`→`px-5 py-2.5` + 尺寸变体表（`01`）；Select/Textarea 圆角 12px→10px（`03`/`design-system`）；Label 颜色 `--text-primary`→`--text-secondary`（`03`）；表头颜色 `--text-secondary`→`--text-tertiary`（`03`）；Input 背景从硬编码改为 `var(--sidebar-item-hover)`（`02`）；触摸目标尺寸对齐实际值（`05`）；Dialog vs AlertDialog max-width 区分（`03`）；Outline Button 文字/边框从蓝色修正为 `--text-primary`/`--glass-border-subtle`（`01`）；README 新增组件尺寸速查表和圆角细分 |
 | 2026-03-11 | 2.0.0 | 覆盖缺口补全：新增 6 个文档 35 个场景。页面专项新增 Account 账户管理（`17`）、Roles/ABAC 角色与策略（`18`）、Analytics/Audit/Alerts 数据页面（`19`）、Onboarding/Auth 引导与认证流程（`20`）、Tenant Detail 租户详情子页面（`21`）；交互体验新增 Dialog/Empty State 跨页面一致性（`22`）。总计 22 个文档 112 个场景 |
 | 2026-03-08 | 1.5.0 | 错误消息映射重构：重写 `15`（错误消息 UX）反映 `mapApiError` 两层映射架构、16 种 error code 三语覆盖表、内联错误展示（非 Toast）；Cross-doc 更新 `12` 场景 5 引用新映射架构 |

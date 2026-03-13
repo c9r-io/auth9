@@ -1,8 +1,7 @@
 import type { ActionFunctionArgs, MetaFunction } from "react-router";
 import { Form, useActionData, useNavigation, Link } from "react-router";
 import { useState } from "react";
-import { LanguageSwitcher } from "~/components/LanguageSwitcher";
-import { ThemeToggle } from "~/components/ThemeToggle";
+import { AuthPageShell } from "~/components/AuthPageShell";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -45,22 +44,19 @@ export default function ForgotPasswordPage() {
 
   if (actionData?.success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative">
-        <div className="fixed top-6 right-6 z-20 flex items-center gap-3">
-          <LanguageSwitcher />
-          <ThemeToggle />
-        </div>
-        <Card className="w-full max-w-md">
+      <AuthPageShell>
+        <Card className="auth-form-card w-full max-w-md animate-fade-in-up">
           <CardHeader className="text-center">
-            <CardTitle>{t("auth.forgotPassword.successTitle")}</CardTitle>
-            <CardDescription>
+            <div className="logo-icon mx-auto mb-4">A9</div>
+            <CardTitle className="text-2xl">{t("auth.forgotPassword.successTitle")}</CardTitle>
+            <CardDescription className="auth-form-description">
               {t("auth.forgotPassword.successDescription", { email })}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-gray-600 text-center">
+            <p className="text-center text-sm text-[var(--text-secondary)]">
               {t("auth.forgotPassword.successHint")}{" "}
-              <Link to="/forgot-password" className="text-blue-600 hover:underline">
+              <Link to="/forgot-password" className="font-medium text-[var(--accent-blue)] hover:underline">
                 {t("auth.forgotPassword.tryAgain")}
               </Link>
               .
@@ -72,20 +68,17 @@ export default function ForgotPasswordPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </AuthPageShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 relative">
-      <div className="fixed top-6 right-6 z-20 flex items-center gap-3">
-        <LanguageSwitcher />
-        <ThemeToggle />
-      </div>
-      <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-          <CardTitle>{t("auth.forgotPassword.title")}</CardTitle>
-          <CardDescription>{t("auth.forgotPassword.description")}</CardDescription>
+    <AuthPageShell>
+      <Card className="auth-form-card w-full max-w-md animate-fade-in-up">
+        <CardHeader className="text-center">
+          <div className="logo-icon mx-auto mb-4">A9</div>
+          <CardTitle className="text-2xl">{t("auth.forgotPassword.title")}</CardTitle>
+          <CardDescription className="auth-form-description">{t("auth.forgotPassword.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form method="post" className="space-y-4">
@@ -104,7 +97,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             {actionData?.error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+              <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
                 {actionData.error}
               </div>
             )}
@@ -114,13 +107,13 @@ export default function ForgotPasswordPage() {
             </Button>
 
             <div className="text-center text-sm">
-              <Link to="/login" className="text-blue-600 hover:underline">
+              <Link to="/login" className="font-medium text-[var(--accent-blue)] hover:underline">
                 {t("common.buttons.backToLogin")}
               </Link>
             </div>
           </Form>
         </CardContent>
       </Card>
-    </div>
+    </AuthPageShell>
   );
 }

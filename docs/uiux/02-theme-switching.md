@@ -22,6 +22,10 @@
 | `--glass-bg` | `rgba(255,255,255,0.72)` | `rgba(44,44,46,0.65)` |
 | `--text-primary` | `#1D1D1F` | `#FFFFFF` |
 | `--text-secondary` | `#6E6E73` | `#98989D` |
+| `--input-bg` | `rgba(255,255,255,0.9)` | `rgba(255,255,255,0.09)` |
+| `--input-border` | `rgba(0,0,0,0.08)` | `rgba(255,255,255,0.16)` |
+
+> 说明：独立认证页（如 `/forgot-password`、`/reset-password`）额外使用 `--auth-surface-*` token 提升 Dark Mode 下卡片与背景的分层；Dashboard 主区不应因认证页修正出现明显风格漂移。
 
 ---
 
@@ -130,18 +134,18 @@ console.log('Body transition:', transition);
 
 #### 表单输入框
 **Light 模式**：
-- 背景：`var(--sidebar-item-hover)` — `rgba(0, 0, 0, 0.04)`
-- 边框：`var(--glass-border-subtle)` — `rgba(0, 0, 0, 0.06)`
+- 背景：`var(--input-bg)` — `rgba(255, 255, 255, 0.9)`
+- 边框：`var(--input-border)` — `rgba(0, 0, 0, 0.08)`
 - Placeholder：`var(--text-tertiary)` — `#AEAEB2`
 - 圆角：`12px`（`rounded-[12px]`）
 
 **Dark 模式**：
-- 背景：`var(--sidebar-item-hover)` — `rgba(255, 255, 255, 0.06)`
-- 边框：`var(--glass-border-subtle)` — `rgba(255, 255, 255, 0.05)`
+- 背景：`var(--input-bg)` — `rgba(255, 255, 255, 0.09)`
+- 边框：`var(--input-border)` — `rgba(255, 255, 255, 0.16)`
 - Placeholder：`var(--text-tertiary)` — `#636366`
 - 圆角：`12px`（不变）
 
-> **注意**: Input 使用 `var(--sidebar-item-hover)` 作为背景色（而非 `--bg-secondary`），这是设计系统约定，确保输入框在 Glass Card 内有微弱对比。
+> **注意**: Input 现统一使用 `--input-bg` / `--input-border`，以保证 Dashboard 与独立认证页都具备稳定的明暗对比；独立认证页在 Dark Mode 下会进一步叠加更强的卡片边界，不应再出现“灰底套灰底”。
 
 #### Badge 状态
 **颜色不变**：

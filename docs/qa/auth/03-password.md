@@ -18,7 +18,7 @@ Auth9 采用 Headless Keycloak 架构，密码能力应优先通过 Auth9 自身
 > **实现说明**：当前托管认证页（由 `auth9-keycloak-theme` 承载）仍可能承载部分历史密码流程入口，但 QA 主路径应以 Auth9 代理页为准，不应把 Keycloak UI 当作标准验收入口。
 
 **推荐测试入口**：
-- 未登录用户：从 `/login` 点击 `Forgot password?`，并验证跳转到 `/forgot-password`
+- 未登录用户：从 `/login` 点击「Forgot Password」，并验证跳转到 `/forgot-password`
 - 收到邮件后：直接访问 `/reset-password?token={token}`
 - 已登录用户：进入 `Account -> Security` 修改密码
 
@@ -26,6 +26,7 @@ Auth9 采用 Headless Keycloak 架构，密码能力应优先通过 Auth9 自身
 - 默认从 Auth9 Portal 或直接访问 Auth9 代理页触发密码相关流程
 - 不要求必须手工直接访问底层登录页面 URL
 - 如需排障，可额外核对托管认证页或后台同步状态，但不作为主验收路径
+- Dark Mode 视觉层级与对比度回归由 [15-dark-mode-auth-contrast.md](./15-dark-mode-auth-contrast.md) 单独覆盖
 
 ---
 
@@ -212,7 +213,7 @@ ORDER BY created_at DESC LIMIT 1;
 | 症状 | 原因 | 解决方法 |
 |------|------|----------|
 | `passwordPolicy` 为 `null` | Seeder 未完成或 auth9-core 未正常启动 | 检查 `docker logs auth9-core` 确认启动完成 |
-| `/login` 页面未直接暴露找回密码入口 | 登录页入口整合尚未完成 | 直接访问 `/forgot-password` 或 `/reset-password` 进行验证 |
+| `/login` 页面未显示找回密码入口 | Portal 登录页渲染异常或入口回归缺失 | 转测 [15-dark-mode-auth-contrast.md](./15-dark-mode-auth-contrast.md) 场景 1，并检查 `/login` 底部链接区 |
 | 弱密码被接受 | 密码策略未同步到底层 realm | 重启 auth9-core 或手动运行 `./scripts/reset-docker.sh` |
 
 ---

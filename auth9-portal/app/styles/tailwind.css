@@ -42,6 +42,12 @@
   --accent-purple-light: rgba(175, 82, 222, 0.12);
   --accent-cyan: #32ADE6;
   --accent-cyan-light: rgba(50, 173, 230, 0.12);
+  --auth-surface-bg: rgba(255, 255, 255, 0.82);
+  --auth-surface-border: rgba(255, 255, 255, 0.55);
+  --auth-surface-shadow: rgba(0, 0, 0, 0.12);
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --input-bg-hover: rgba(255, 255, 255, 0.98);
+  --input-border: rgba(0, 0, 0, 0.08);
 
   /* Sidebar - Light mode uses subtle glass */
   --sidebar-bg: rgba(255, 255, 255, 0.7);
@@ -96,6 +102,12 @@
   --accent-red-light: rgba(255, 59, 48, 0.2);
   --accent-purple-light: rgba(175, 82, 222, 0.2);
   --accent-cyan-light: rgba(50, 173, 230, 0.2);
+  --auth-surface-bg: rgba(24, 24, 28, 0.78);
+  --auth-surface-border: rgba(255, 255, 255, 0.14);
+  --auth-surface-shadow: rgba(0, 0, 0, 0.58);
+  --input-bg: rgba(255, 255, 255, 0.09);
+  --input-bg-hover: rgba(255, 255, 255, 0.13);
+  --input-border: rgba(255, 255, 255, 0.16);
 
   /* Sidebar - Dark mode */
   --sidebar-bg: rgba(28, 28, 30, 0.75);
@@ -277,6 +289,33 @@
       inset 0 -1px 0 rgba(0, 0, 0, 0.05);
     transform: translateY(-2px) !important;
     opacity: 1;
+  }
+
+  .auth-page-shell {
+    padding-top: 5rem;
+    padding-bottom: 2rem;
+  }
+
+  .auth-form-card {
+    background: var(--auth-surface-bg);
+    border-color: var(--auth-surface-border);
+    box-shadow:
+      0 14px 40px var(--auth-surface-shadow),
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+  }
+
+  .auth-form-card:hover {
+    background: var(--auth-surface-bg);
+    border-color: var(--auth-surface-border);
+    transform: translateY(0) !important;
+  }
+
+  .auth-form-description {
+    max-width: 30ch;
+    margin-inline: auto;
+    color: var(--text-secondary);
+    line-height: 1.55;
   }
 
   /* Liquid Glass Pill (for buttons, badges) */

@@ -48,6 +48,9 @@
   --input-bg: rgba(0, 0, 0, 0.04);
   --input-bg-hover: rgba(0, 0, 0, 0.06);
   --input-border: rgba(0, 0, 0, 0.08);
+  --auth-surface-bg: rgba(255, 255, 255, 0.82);
+  --auth-surface-border: rgba(255, 255, 255, 0.56);
+  --auth-surface-shadow: rgba(0, 0, 0, 0.12);
 
   /* Backdrop for dynamic wallpaper effect */
   --backdrop-gradient: linear-gradient(135deg,
@@ -87,19 +90,19 @@
   --bg-tertiary: #2C2C2E;
 
   /* Glass colors - Dark mode */
-  --glass-bg: rgba(44, 44, 46, 0.65);
-  --glass-bg-hover: rgba(58, 58, 60, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-border-subtle: rgba(255, 255, 255, 0.05);
+  --glass-bg: rgba(30, 30, 34, 0.72);
+  --glass-bg-hover: rgba(42, 42, 48, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-border-subtle: rgba(255, 255, 255, 0.08);
   --glass-shadow: rgba(0, 0, 0, 0.4);
   --glass-shadow-strong: rgba(0, 0, 0, 0.6);
-  --glass-highlight: rgba(255, 255, 255, 0.15);
-  --glass-illumination: rgba(255, 255, 255, 0.05);
+  --glass-highlight: rgba(255, 255, 255, 0.18);
+  --glass-illumination: rgba(255, 255, 255, 0.06);
 
   /* Text colors */
   --text-primary: #FFFFFF;
-  --text-secondary: #98989D;
-  --text-tertiary: #636366;
+  --text-secondary: #B6B6BE;
+  --text-tertiary: #8A8A94;
   --text-inverse: #000000;
 
   /* Accent colors remain vibrant, but light versions are stronger */
@@ -111,9 +114,12 @@
   --accent-cyan-light: rgba(50, 173, 230, 0.2);
 
   /* Input colors - Dark mode */
-  --input-bg: rgba(255, 255, 255, 0.08);
-  --input-bg-hover: rgba(255, 255, 255, 0.12);
-  --input-border: rgba(255, 255, 255, 0.1);
+  --input-bg: rgba(255, 255, 255, 0.1);
+  --input-bg-hover: rgba(255, 255, 255, 0.14);
+  --input-border: rgba(255, 255, 255, 0.16);
+  --auth-surface-bg: rgba(20, 20, 24, 0.82);
+  --auth-surface-border: rgba(255, 255, 255, 0.16);
+  --auth-surface-shadow: rgba(0, 0, 0, 0.62);
 
   /* Dark backdrop */
   --backdrop-gradient: linear-gradient(135deg,
@@ -221,6 +227,12 @@
   max-width: 400px;
   padding: 40px;
   animation: fadeInUp 0.5s var(--ease-spring) forwards;
+  background: var(--auth-surface-bg);
+  border-color: var(--auth-surface-border);
+  box-shadow:
+    0 16px 44px var(--auth-surface-shadow),
+    inset 0 1px 0 var(--glass-highlight),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.08);
 }
 
 /* ================================================
@@ -298,6 +310,7 @@
 
 .glass-input::placeholder {
   color: var(--text-tertiary);
+  opacity: 1;
 }
 
 .glass-input:focus {
@@ -310,6 +323,11 @@
 .glass-input:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.glass-input[aria-invalid="true"] {
+  border-color: var(--accent-red);
+  box-shadow: 0 0 0 3px rgba(255, 59, 48, 0.18);
 }
 
 .glass-input--otp {
@@ -361,18 +379,18 @@
 }
 
 .glass-button--secondary {
-  background: var(--glass-bg);
+  background: var(--input-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   color: var(--text-primary);
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--input-border);
   box-shadow:
     0 4px 12px var(--glass-shadow),
     inset 0 1px 0 var(--glass-highlight);
 }
 
 .glass-button--secondary:hover:not(:disabled) {
-  background: var(--glass-bg-hover);
+  background: var(--input-bg-hover);
   transform: translateY(-1px);
 }
 
@@ -432,26 +450,26 @@
 }
 
 .glass-alert--error {
-  background: var(--accent-red-light);
-  border: 1px solid rgba(255, 59, 48, 0.2);
+  background: rgba(255, 59, 48, 0.16);
+  border: 1px solid rgba(255, 59, 48, 0.28);
   color: var(--accent-red);
 }
 
 .glass-alert--success {
-  background: var(--accent-green-light);
-  border: 1px solid rgba(52, 199, 89, 0.2);
+  background: rgba(52, 199, 89, 0.16);
+  border: 1px solid rgba(52, 199, 89, 0.26);
   color: var(--accent-green);
 }
 
 .glass-alert--warning {
-  background: var(--accent-orange-light);
-  border: 1px solid rgba(255, 149, 0, 0.2);
+  background: rgba(255, 149, 0, 0.16);
+  border: 1px solid rgba(255, 149, 0, 0.28);
   color: var(--accent-orange);
 }
 
 .glass-alert--info {
-  background: var(--accent-blue-light);
-  border: 1px solid rgba(0, 122, 255, 0.2);
+  background: rgba(0, 122, 255, 0.16);
+  border: 1px solid rgba(0, 122, 255, 0.28);
   color: var(--accent-blue);
 }
 
@@ -493,7 +511,7 @@
   background: var(--glass-bg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--glass-border-subtle);
+  border: 1px solid var(--glass-border);
   border-radius: 8px;
   z-index: 10;
 }
@@ -514,12 +532,12 @@
 
 .theme-toggle-btn:hover {
   color: var(--text-primary);
-  background: var(--input-bg);
+  background: var(--input-bg-hover);
 }
 
 .theme-toggle-btn.active {
-  background: var(--accent-blue-light);
-  color: var(--accent-blue);
+  background: rgba(0, 122, 255, 0.22);
+  color: #d9ebff;
 }
 
 .theme-toggle-btn svg {
