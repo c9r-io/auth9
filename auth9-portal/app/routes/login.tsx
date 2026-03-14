@@ -337,13 +337,10 @@ export default function Login() {
               )}
 
               {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-[var(--card-bg)] px-2 text-[var(--text-tertiary)]">{t("auth.login.or")}</span>
-                </div>
+              <div className="flex items-center gap-4 my-1">
+                <span className="flex-1 h-px bg-[var(--glass-border-subtle)]" />
+                <span className="text-xs uppercase text-[var(--text-tertiary)] tracking-wide">{t("auth.login.or")}</span>
+                <span className="flex-1 h-px bg-[var(--glass-border-subtle)]" />
               </div>
 
               {/* Password Login Button */}
