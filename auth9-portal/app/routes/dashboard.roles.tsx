@@ -1,6 +1,6 @@
 import type { MetaFunction, LoaderFunctionArgs, ActionFunctionArgs } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation, useSubmit, useRevalidator } from "react-router";
-import { PlusIcon, DotsHorizontalIcon, Pencil2Icon, TrashIcon, CheckIcon, GearIcon } from "@radix-ui/react-icons";
+import { PlusIcon, DotsHorizontalIcon, Pencil2Icon, TrashIcon, CheckIcon, GearIcon, LockClosedIcon } from "@radix-ui/react-icons";
 import { useEffect, useRef, useState } from "react";
 import { useConfirm } from "~/hooks/useConfirm";
 import { Card, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -563,8 +563,25 @@ export default function RolesPage() {
                       {rootRoles.length > 0 ? (
                         rootRoles.map(role => renderRoleTree(role))
                       ) : (
-                        <div className="py-4 text-center text-xs text-[var(--text-secondary)]">
-                          {t("rolesPage.noRolesDefined")}
+                        <div className="py-12 text-center">
+                          <LockClosedIcon className="mx-auto h-12 w-12 text-[var(--text-tertiary)]" />
+                          <h3 className="mt-2 text-base font-semibold text-[var(--text-primary)]">
+                            {t("rolesPage.noRolesDefined")}
+                          </h3>
+                          <p className="mt-2 text-sm text-[var(--text-secondary)]">
+                            {t("rolesPage.createRoleDescription")}
+                          </p>
+                          <Button
+                            type="button"
+                            className="mt-4"
+                            onClick={() => {
+                              setCreateRoleServiceId(entry.service.id);
+                              setCreateParentRoleId(NO_PARENT_ROLE_VALUE);
+                            }}
+                          >
+                            <PlusIcon className="mr-2 h-4 w-4" />
+                            {t("rolesPage.addRole")}
+                          </Button>
                         </div>
                       )}
                     </div>

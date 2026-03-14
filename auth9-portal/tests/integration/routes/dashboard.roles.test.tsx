@@ -280,6 +280,7 @@ describe("Roles Page", () => {
 
             await waitFor(() => {
                 expect(screen.getByText("No roles created yet for this service")).toBeInTheDocument();
+                expect(screen.getAllByRole("button", { name: "Add Role" }).length).toBeGreaterThan(1);
             });
         });
 

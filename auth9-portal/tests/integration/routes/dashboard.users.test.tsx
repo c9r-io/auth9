@@ -795,6 +795,40 @@ describe("Users Page", () => {
             });
         });
 
+        it("returns focus to the trigger button when Escape closes the dialog", async () => {
+            vi.mocked(userApi.list).mockResolvedValue(mockUsers);
+            vi.mocked(tenantApi.list).mockResolvedValue(mockTenants);
+            vi.mocked(serviceApi.list).mockResolvedValue(mockServices);
+
+            const RoutesStub = createRoutesStub([
+            {
+                path: "/dashboard",
+                Component: DashboardLayout,
+                children: [{
+                    path: "users",
+                    Component: WrappedPage,
+                    HydrateFallback: () => null,
+                    loader,
+                }],
+            },
+            ]);
+
+            const user = userEvent.setup();
+            render(<RoutesStub initialEntries={["/dashboard/users"]} />);
+
+            const triggerButton = await screen.findByRole("button", { name: /\+ Create User/i });
+            await user.click(triggerButton);
+
+            await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
+
+            await user.keyboard("{Escape}");
+
+            await waitFor(() => {
+                expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+                expect(triggerButton).toHaveFocus();
+            });
+        });
+
         it("shows validation error for empty email on blur", async () => {
             vi.mocked(userApi.list).mockResolvedValue(mockUsers);
             vi.mocked(tenantApi.list).mockResolvedValue(mockTenants);

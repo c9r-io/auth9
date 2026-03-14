@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { Form } from "react-router";
 import type { Tenant } from "~/services/api";
 import { useI18n } from "~/i18n";
@@ -20,6 +20,7 @@ interface CreateUserDialogProps {
   error?: string | null;
   isSubmitting: boolean;
   open: boolean;
+  restoreFocusRef?: RefObject<HTMLButtonElement | null>;
   tenants: Tenant[];
   onOpenChange: (open: boolean) => void;
 }
@@ -29,6 +30,7 @@ export function CreateUserDialog({
   error,
   isSubmitting,
   open,
+  restoreFocusRef,
   tenants,
   onOpenChange,
 }: CreateUserDialogProps) {
@@ -70,7 +72,15 @@ export function CreateUserDialog({
         onOpenChange(nextOpen);
       }}
     >
-      <DialogContent aria-modal="true">
+      <DialogContent
+        aria-modal="true"
+        onCloseAutoFocus={(event) => {
+          if (restoreFocusRef?.current) {
+            event.preventDefault();
+            restoreFocusRef.current.focus();
+          }
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{t("usersPage.createUserTitle")}</DialogTitle>
           <DialogDescription>{t("usersPage.createUserDescription")}</DialogDescription>

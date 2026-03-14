@@ -9,7 +9,7 @@ import {
   useSearchParams,
   useSubmit,
 } from "react-router";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { CreateUserDialog } from "~/components/users/create-user-dialog";
@@ -230,6 +230,7 @@ export default function UsersPage() {
   const [userTenants, setUserTenants] = useState<UserTenant[]>([]);
   const [loadingTenants, setLoadingTenants] = useState(false);
   const [tenantsError, setTenantsError] = useState<string | null>(null);
+  const createUserButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setSearchInput(currentSearch);
@@ -421,7 +422,11 @@ export default function UsersPage() {
           </h1>
           <p className="text-sm text-[var(--text-secondary)]">{t("usersPage.description")}</p>
         </div>
-        <Button onClick={() => setCreatingUser(true)} className="min-h-11 w-full sm:min-h-10 sm:w-auto">
+        <Button
+          ref={createUserButtonRef}
+          onClick={() => setCreatingUser(true)}
+          className="min-h-11 w-full sm:min-h-10 sm:w-auto"
+        >
           + {t("usersPage.createUser")}
         </Button>
       </div>
@@ -462,6 +467,7 @@ export default function UsersPage() {
         error={createUserError}
         isSubmitting={isSubmitting}
         open={creatingUser}
+        restoreFocusRef={createUserButtonRef}
         tenants={tenants.data}
         onOpenChange={setCreatingUser}
       />
