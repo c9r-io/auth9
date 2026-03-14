@@ -221,3 +221,12 @@ SELECT display_name FROM users WHERE id = '{other_user_id}';
 | 3 | 通过 Profile 页面编辑显示名称和头像 | ☐ | | | |
 | 4 | 自更新不需要管理员权限 | ☐ | | | |
 | 5 | Profile 页面 API 失败处理 | ☐ | | | |
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Normal user can update other users via PUT /api/v1/users/{id} (returns 200 instead of 403) | `gen_tenant_access_token.js` defaults to `role='admin'` and `permissions='rbac:*,user:*,...'`. The generated token has admin privileges regardless of the user's actual DB roles. | Pass explicit role and permissions: `node gen_tenant_access_token.js "$USER_ID" "$TENANT_ID" "member" ""` to simulate a non-admin user. |
+| Self-update returns 403 | Token type is Identity Token instead of Tenant Access Token. The `PUT /api/v1/users/{id}` endpoint requires a Tenant Access Token for self-update (where `auth.user_id == id`). | Use `gen_tenant_access_token.js` to generate a Tenant Access Token with the correct user ID. |

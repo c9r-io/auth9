@@ -196,3 +196,12 @@ console.log(document.documentElement.lang);
 3. Dashboard 侧边栏、弹窗、表单在日语下无未翻译 key
 4. 语言切换器选择日语后 cookie `auth9_locale=ja` 写入正确，刷新保持
 5. 日语下 CJK 字体渲染与布局无溢出
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Dialog "Close" button shows English text | The `<span className="sr-only">Close</span>` in `dialog.tsx` is **screen-reader-only** text (invisible to visual users). The actual close button displays an X icon (`Cross2Icon`). This is standard accessibility practice. | Do not report sr-only text as untranslated UI. Visual users see only the X icon. For screen reader accessibility audits, this is a known limitation of the base UI component. |
+| Some UI text appears in English after switching to Japanese | Ensure the language cookie `auth9_locale=ja` is set before navigating. Playwright's default `Accept-Language` may override cookie resolution. | Configure Playwright's `locale` option: `use: { locale: 'ja' }` in playwright.config.ts, or set the cookie before each test. |

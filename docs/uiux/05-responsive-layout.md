@@ -499,3 +499,12 @@ elements.forEach(el => {
 2. **场景 2**：统计卡片网格在 3 种断点下的布局（4 列、2 列、1 列）
 3. **场景 3**：表格在移动端的处理（横向滚动 vs 卡片式）
 4. **场景 4**：触摸目标尺寸标注（用尺规或高亮）+ Lighthouse 审计结果
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Sidebar always visible at mobile viewport (375px) | The sidebar uses CSS `translate: -100% 0` (hidden by default) and `translate: 0 0` when `.open` class is added. If the QA test observes sidebar content, it may be checking computed styles before CSS finishes applying, or the sidebar has `.open` class from a previous interaction. | Verify the sidebar element does NOT have the `open` class at initial load. Check `translate` computed style: should be `-100% 0` at < 1024px without `.open`. |
+| Mobile sidebar shows but cannot be closed | The hamburger button toggles `isSidebarOpen` React state, which adds/removes `.open` class. If Playwright clicks the hamburger too fast, the state may not have updated. | Add `await page.waitForTimeout(300)` after clicking the hamburger to allow CSS transition to complete. |

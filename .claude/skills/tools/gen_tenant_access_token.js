@@ -19,8 +19,8 @@ const privateKey = fs.readFileSync(keyPath, 'utf8');
 
 const userId = process.argv[2] || '16daa93d-06e8-479c-867d-f9b6184e06c7';
 const tenantId = process.argv[3] || 'be469362-ee7f-480d-910d-75fbb8730bc4'; // auth9-platform
-const role = process.argv[4] || 'admin';
-const permissionList = process.argv[5] || 'rbac:*,user:*,service:*,action:*';
+const role = process.argv[4] !== undefined ? process.argv[4] : 'admin';
+const permissionList = process.argv[5] !== undefined ? process.argv[5] : 'rbac:*,user:*,service:*,action:*';
 
 const now = Math.floor(Date.now() / 1000);
 const payload = {
@@ -30,8 +30,8 @@ const payload = {
   aud: "auth9-portal",
   token_type: "access",
   tenant_id: tenantId,
-  roles: [role],
-  permissions: permissionList.split(','),
+  roles: role ? [role] : [],
+  permissions: permissionList ? permissionList.split(',') : [],
   iat: now,
   exp: now + 3600
 };

@@ -94,3 +94,12 @@
 ### 验证要点
 - 检查 `<table>` 元素应同时包含 `w-full` 和 `min-w-[600px]` 类。
 - 容器与表格之间的微小像素差（1-2px）通常由边框宽度引起，属正常现象。
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Mobile view (320px) still shows table instead of card layout | The responsive breakpoint is `md` (768px). Below 768px, users see `md:hidden` card layout; above 768px, they see `hidden md:block` table layout. At 320px, the card layout SHOULD display. | Verify viewport is actually < 768px. Check that `md:hidden` div is visible and `hidden md:block` div is hidden using Playwright's `isVisible()`. |
+| Mobile card buttons not showing "Manage Tenants" and "Edit" | The mobile card layout includes a `grid grid-cols-2 gap-2` section with Manage Tenants and Edit buttons. These are rendered from the `users-directory.tsx` component. | Check that the `usersDirectory` component receives the `onManageTenants` and `onEditUser` callbacks. Buttons are rendered within each user card's footer area. |

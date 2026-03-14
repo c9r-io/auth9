@@ -324,3 +324,13 @@ console.log('Error text:', document.querySelector('[class*="error"], [class*="no
 - **i18n 翻译**: `auth9-portal/app/i18n/locales/{en-US,zh-CN,ja}.ts` — `apiErrors.*` 命名空间
 - **API 客户端**: `auth9-portal/app/services/api/client.ts` — `ApiResponseError` 类
 - **后端错误定义**: `auth9-core/src/error/mod.rs` — `AppError` + `ErrorResponse`
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Keycloak login error shows "Invalid username or password." in English | This is Keycloak's native login page, not Portal. Login errors are rendered by the Keycloak theme, not Portal's `mapApiError()`. | Keycloak theme i18n is a separate concern. The `ui_locales` parameter controls Keycloak's display language. See `docs/keycloak-theme.md` for theme customization. |
+| 404 page shows English text despite Chinese locale | Playwright browser defaults to `Accept-Language: en`. During client-side navigation, the root loader resolves locale from Accept-Language. SSR renders correctly (verified via `curl`). | Set `auth9_locale` cookie before testing, or configure Playwright's `locale` option in the test config. Verify SSR with `curl -s http://localhost:3000/nonexistent \| rg 'lang='`. |
+| Language switch on 404 page not working | The ErrorBoundary 404 page is minimal and does not include a language switcher. | Navigate away from the 404 page, switch language on a normal page, then return to the nonexistent URL. |

@@ -306,3 +306,12 @@ console.log('Data theme:', document.documentElement.getAttribute('data-theme'));
 3. **场景 3**：Dashboard Sidemenu + 控件区特写（证明无重叠）
 4. **场景 4**：各断点全页截图（标注宽度）
 5. **场景 5**：切换前后 localStorage/cookie 截图
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Language and theme toggle appear at the same bounding box coordinates | QA automation may be measuring the wrong element. Both controls use `className="theme-btn"` (44×44px). Querying by class name returns multiple matches. | Use specific selectors: `[aria-label="Switch language"]` for language switcher, `[data-testid="theme-toggle"]` for theme toggle. Verify with `browser_get_bounding_box` on each ref separately. |
+| Gap between controls and Sign In button is ~100px instead of 12-16px | The 12-16px specification refers to **direct sibling spacing** in a tight button group. The actual layout uses `flex gap-4` (16px) between language/theme controls, and the Sign In button is a separate navigation element with additional margin. This is by design. | Verify that controls are visually distinct and independently clickable. The exact pixel spacing depends on viewport width and container layout. |

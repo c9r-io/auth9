@@ -218,3 +218,12 @@ JOIN permissions p ON p.id = rp.permission_id;
 | 4 | 移除用户角色 | ☐ | | | |
 | 5 | 查询有效权限 | ☐ | | | |
 | 6 | 认证状态检查 | ☐ | | | |
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Checkbox appears to not respond when unchecking a role | The `handleRoleCheckedChange` function calls `submit()` (React Router form submission) which triggers loader revalidation. The checkbox state updates immediately via `setAssignedRoleIds`, but the subsequent re-fetch (`get_user_assigned_roles`) may briefly flash the old state if the API response is slow. | Wait for the form submission to complete (check `navigation.state === "idle"`) before asserting checkbox state. The final state is determined by the re-fetched data from the API. |
+| Role dialog shows only 1 checkbox | The available roles depend on which service is selected. "Auth9 Admin Portal" only has 1 role (`admin`). | Select a service with multiple roles (e.g., "Invitation Test Service" which has Editor, Viewer roles) to test multi-role scenarios. |

@@ -177,3 +177,12 @@ if (main) {
 | 3 | 内容区域居中与最大宽度约束 | ☐ | | | 多断点测试 |
 | 4 | Docs 页面卡片网格布局 | ☐ | | | 含悬停效果与响应式 |
 | 5 | 公共页面 Footer 一致性 | ☐ | | | 含跨页面链接验证 |
+
+---
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Docs cards show single-column layout at 1440px | The grid uses `sm:grid-cols-2` (Tailwind `sm` = 640px). At 1440px this MUST produce 2 columns. If testing shows single column at 1440px, the Playwright viewport may not be set correctly. | Verify viewport width with `page.viewportSize()`. Ensure `browser_resize(1440, 900)` is called and confirmed. Check that CSS is fully loaded before measuring layout. |
+| GitHub card has no hover effect | The `ShowcaseCard` uses `liquid-glass` class which provides hover effects (`transform: translateY(-2px)`, `border-color` change). The GitHub card also has `hover:border-[var(--accent-blue)]`. Hover effects only appear on actual pointer interaction. | Use Playwright's `hover()` method and wait for CSS transition (300ms). Compare screenshots before/after hover rather than checking computed styles at a single point. |
