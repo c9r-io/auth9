@@ -165,6 +165,21 @@ echo "$SECRET"
 # 预期: 输出非空；若为空，先补齐 auth9-core 的 webhook 签名配置
 ```
 
+```sql
+-- userId 必须使用 Keycloak user_id，而不是 auth9 users.id
+SELECT u.id AS auth9_user_id,
+       u.keycloak_id,
+       u.email,
+       COUNT(tu.tenant_id) AS tenant_count
+FROM users u
+LEFT JOIN tenant_users tu ON tu.user_id = u.id
+WHERE u.email = 'tenant-a@example.com'
+GROUP BY u.id, u.keycloak_id, u.email;
+-- 预期:
+-- 1. keycloak_id 非空，后续 webhook BODY 使用该值
+-- 2. tenant_count = 1；若 > 1，本场景不成立，需要先准备单租户测试用户
+```
+
 ### 测试操作流程
 1. 向租户 A 用户发送一条登录失败事件
 2. 向租户 B 用户发送同一 IP 的登录失败事件
@@ -198,6 +213,14 @@ ORDER BY created_at DESC
 LIMIT 5;
 -- 预期: 租户 A 存在 blacklist_scope = "tenant" 的记录；租户 B 不存在同类记录
 ```
+
+### 常见误报排查
+
+| 现象 | 原因 | 解决 |
+|------|------|------|
+| webhook 返回 204，但没有生成 `suspicious_ip` 告警 | BODY 里的 `userId` 填了 auth9 `users.id`，不是 Keycloak `keycloak_id` | 先执行「步骤 0」查询 `keycloak_id`，并在 webhook 请求中使用它 |
+| 登录事件写入了错误租户或 `tenant_id` 为空 | 测试用户属于多个 tenant，本场景“仅属于租户 A/B”的前提不成立 | 重新准备单租户用户，再验证租户级黑名单 |
+| 租户黑名单已保存，但命中的是平台级规则或没有任何规则 | 平台级黑名单中也存在同一 IP，或测试前未清理旧规则 | 先确认平台级 `malicious_ip_blacklist` 不包含该 IP，再发事件 |
 
 ---
 

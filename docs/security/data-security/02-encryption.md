@@ -67,6 +67,12 @@ openssl s_client -connect auth9.example.com:443 </dev/null 2>/dev/null | \
 # https://www.ssllabs.com/ssltest/
 ```
 
+### 常见误报
+| 症状 | 原因 | 解决方法 |
+|------|------|---------|
+| `openssl s_client -tls1_1` 输出 `CONNECTED` 或显示 `Protocol : TLSv1.1`，就判定“TLS 1.1 可用” | `s_client` 在真正握手失败前也会打印底层连接信息；如果后续出现 `alert protocol version`、`handshake failure`、`unexpected eof while reading`，说明服务端已拒绝 TLS 1.1 | 以握手是否成功为准，不要只看 `CONNECTED`。建议同时检查退出码和最终错误，并在本地 gRPC TLS 场景使用实际端口（如 `localhost:50051`） |
+| 用 HTTP 端口或错误服务端口测试 TLS | 本地开发环境同时暴露 HTTP、gRPC、Keycloak，多端口混用容易误判 | 先确认目标服务与端口，再执行 TLS 探测 |
+
 ### 修复建议
 - 禁用 TLS 1.0/1.1
 - 移除弱加密套件 (RC4, DES, 3DES)
@@ -114,6 +120,12 @@ SELECT credential_data FROM credential WHERE user_id = 'xxx';
 # 检查 Keycloak 配置
 # Realm Settings -> Security Defenses -> Password Policy
 ```
+
+### 常见误报
+| 症状 | 原因 | 解决方法 |
+|------|------|---------|
+| 直接查询 `auth9.clients.client_secret_hash` 后，按密码哈希场景报错 | `clients.client_secret_hash` 是服务端生成的随机客户端密钥哈希，不是用户密码存储；该表不属于本场景的验证对象 | 场景 2 只校验用户密码存储，优先检查 Keycloak `credential` 表或 Realm Password Policy |
+| 以 “Argon2id 推荐参数” 直接要求所有哈希字段完全一致 | 不同秘密材料的威胁模型不同；随机生成的 client secret 与用户自选密码不是同一类资产 | 对用户密码使用密码策略标准；对客户端 secret 另开专项评估，不要混入本场景 |
 
 ### 修复建议
 - Argon2id: memory=65536KB, iterations=3, parallelism=4

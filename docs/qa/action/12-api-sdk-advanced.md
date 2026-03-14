@@ -7,6 +7,28 @@
 ---
 ## 场景 6：SDK - 日志查询
 
+### 步骤 0：验证 Token 类型
+
+Action / Service 相关 API 需要 **Tenant Access Token**。不要直接把 `.claude/skills/tools/gen-admin-token.sh` 生成的 Identity Token 用于这些场景，否则会得到：
+
+```json
+{"error":"forbidden","message":"Identity token is only allowed for tenant selection and exchange"}
+```
+
+推荐先完成一次 tenant token exchange：
+
+```bash
+IDENTITY_TOKEN=$(.claude/skills/tools/gen-admin-token.sh)
+TENANT_TOKEN=$(curl -s http://localhost:8080/api/v1/auth/tenant-token \
+  -H "Authorization: Bearer ${IDENTITY_TOKEN}" \
+  -H "Content-Type: application/json" \
+  -d '{"tenant_id":"demo","service_id":"auth9-portal"}' | jq -r '.access_token')
+
+test -n "$TENANT_TOKEN"
+```
+
+后续 `create / test / logs / stats` 请求都应使用 `Authorization: Bearer ${TENANT_TOKEN}`。
+
 ### 测试代码
 ```typescript
 import { Auth9Client } from '@auth9/core';
@@ -114,6 +136,14 @@ Success rate: 100.0
 Avg duration: 15
 Last 24h: 10
 ```
+
+### 常见误报排查
+
+| 现象 | 原因 | 解决 |
+|------|------|------|
+| `/services/{id}/actions`、`/test`、`/logs`、`/stats` 返回 403，随后误报“没有日志/没有统计” | 使用了 Identity Token，没有先做 tenant token exchange | 先执行「步骤 0」，确认 Bearer token 含 `tenant_id`，再重跑场景 |
+| `action_executions` 为 0，但 `curl` / SDK 调用本身就失败了 | 只检查数据库，忽略了 HTTP 响应不是 2xx | 先确认 create/test 请求成功，再校验日志和统计 |
+| 统计结果混入历史数据 | 复用了旧 Action | 使用本场景新建的 action，或先删除旧数据 |
 
 ---
 
