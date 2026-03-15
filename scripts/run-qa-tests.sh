@@ -232,7 +232,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     echo "Docs with pre-built scripts in scripts/qa/auto/ run directly (FAST PATH)."
     echo "Docs without scripts are tested via an AI agent (AGENT PATH)."
     echo ""
-    echo "  --agent <mode>       Agent mode: 'minicode' (default), 'opencode', 'gemini', 'glm-5'"
+    echo "  --agent <mode>       Agent mode: 'minicode' (default), 'minimax', 'opencode', 'gemini', 'glm-5'"
     echo "  --only-security      Run only security test documents (docs/security/)"
     echo "  --only-uiux          Run only UI/UX test documents (docs/uiux/)"
     echo "  --no-scripts         Disable FAST PATH (always use agent)"
@@ -365,6 +365,9 @@ run_agent() {
             ;;
         minicode)
             run_cmd "${t[@]}" minicode -p --dangerously-skip-permissions "读取文档：${rel_path}，执行QA测试"
+            ;;
+        minimax)
+            run_cmd "${t[@]}" opencode run "读取文档：${rel_path}，执行QA测试" -m "minimax-coding-plan/MiniMax-M2.5-highspeed"
             ;;
         glm-5)
             run_cmd "${t[@]}" kilocode run "读取文档：${rel_path}，执行QA测试" -m "kilo/z-ai/glm-5:free"
