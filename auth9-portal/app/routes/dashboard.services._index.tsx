@@ -247,7 +247,13 @@ export default function ServicesPage() {
                         onClick={async () => {
                           const ok = await confirm({
                             title: t("services.deleteTitle"),
-                            description: t("services.deleteDescription"),
+                            description: (
+                              <>
+                                {t("services.deleteDescriptionLead")}{" "}
+                                <strong className="font-semibold text-[var(--text-primary)]">{service.name}</strong>
+                                {t("services.deleteDescriptionTail")}
+                              </>
+                            ),
                             variant: "destructive",
                           });
                           if (ok) {

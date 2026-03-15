@@ -328,8 +328,14 @@ export default function TenantsIndexPage() {
               </div>
             ))}
             {data.data.length === 0 && (
-              <div className="rounded-xl border border-[var(--glass-border-subtle)] bg-[var(--glass-bg)] px-4 py-6 text-center text-[var(--text-tertiary)]">
-                {t("tenants.empty")}
+              <div className="rounded-xl border border-[var(--glass-border-subtle)] bg-[var(--glass-bg)] px-6 py-10 text-center">
+                <MagnifyingGlassIcon className="mx-auto h-8 w-8 text-[var(--text-tertiary)]" />
+                <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">
+                  {data.search ? t("tenants.emptySearchTitle") : t("tenants.empty")}
+                </p>
+                {data.search && (
+                  <p className="mt-1 text-sm text-[var(--text-tertiary)]">{t("tenants.emptySearchDescription")}</p>
+                )}
               </div>
             )}
           </div>
@@ -416,8 +422,14 @@ export default function TenantsIndexPage() {
                 ))}
                 {data.data.length === 0 && (
                   <tr>
-                    <td className="px-4 py-6 text-center text-[var(--text-tertiary)]" colSpan={5}>
-                      {t("tenants.empty")}
+                    <td className="px-4 py-12 text-center" colSpan={5}>
+                      <MagnifyingGlassIcon className="mx-auto h-8 w-8 text-[var(--text-tertiary)]" />
+                      <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">
+                        {data.search ? t("tenants.emptySearchTitle") : t("tenants.empty")}
+                      </p>
+                      {data.search && (
+                        <p className="mt-1 text-sm text-[var(--text-tertiary)]">{t("tenants.emptySearchDescription")}</p>
+                      )}
                     </td>
                   </tr>
                 )}

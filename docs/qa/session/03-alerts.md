@@ -143,8 +143,8 @@ WHERE user_id = '{user_id}' AND alert_type = 'new_device' ORDER BY created_at DE
 ### 前置条件说明
 异地登录检测要求：(1) 上一次登录有 location 数据，(2) 当前登录有不同的 location，(3) 两次登录间隔 < 1 小时。
 seed.sql 预置了一条 10 分钟前来自公网 IP (203.0.113.10) 的登录记录（location = "IP:203.0.113.10"）。
-本地 Docker 环境中 Keycloak 事件的 IP 为私网地址（如 192.168.65.1），映射为 "Local Network"，
-与预置的 "IP:203.0.113.10" 不同，因此会触发 impossible_travel 告警。
+
+> **本地 Docker 环境限制**: Keycloak webhook 事件的 IP 通常为私网地址（如 172.x.x.x、192.168.x.x），这些 IP 会被 `derive_location_from_ip()` 映射为 `"Local Network"`。如果 seed.sql 中的历史记录 location 也是 `"Local Network"`（而非公网 IP），两次登录 location 相同，将不会触发 impossible_travel 告警。**要在本地环境中可靠测试此场景**，需确保 seed.sql 中的历史登录 location 为公网 IP 格式（如 `"IP:203.0.113.10"`），并通过 webhook API 直接发送带公网 IP 的登录事件（而非通过浏览器登录）。
 
 ### 测试操作流程
 1. 确认 seed.sql 已执行（包含 10 分钟前的登录记录）

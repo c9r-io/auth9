@@ -404,7 +404,13 @@ export default function UsersPage() {
   const handleDeleteUser = async (user: User) => {
     const ok = await confirm({
       title: t("usersPage.deleteUserTitle"),
-      description: t("usersPage.deleteUserDescription"),
+      description: (
+        <>
+          {t("usersPage.deleteUserDescriptionLead")}{" "}
+          <strong className="font-semibold text-[var(--text-primary)]">{user.email}</strong>
+          {t("usersPage.deleteUserDescriptionTail")}
+        </>
+      ),
       variant: "destructive",
     });
 

@@ -151,11 +151,10 @@ export default function EmailTemplateEditorPage() {
     }
   }, [actionData]);
 
-  useEffect(() => {
-    if (actionData && "testEmailSuccess" in actionData && actionData.testEmailSuccess) {
-      setSendTestDialogOpen(false);
-    }
-  }, [actionData]);
+  const testEmailSuccess = actionData && "testEmailSuccess" in actionData && actionData.testEmailSuccess;
+  const testEmailError = actionData && "testEmailSuccess" in actionData && !actionData.testEmailSuccess && "testEmailError" in actionData
+    ? String(actionData.testEmailError)
+    : null;
 
   useEffect(() => {
     setSubject(template.content.subject);
@@ -344,14 +343,27 @@ export default function EmailTemplateEditorPage() {
                           </div>
                         )}
 
+                        {sendTestDialogOpen && testEmailSuccess && (
+                          <div className="rounded-lg border border-[var(--accent-green)]/20 bg-[var(--accent-green)]/10 p-3 text-sm text-[var(--accent-green)]">
+                            {actionData && "testEmailMessage" in actionData ? String(actionData.testEmailMessage) : t("settings.emailTemplateEditor.testEmailSent")}
+                          </div>
+                        )}
+                        {sendTestDialogOpen && testEmailError && (
+                          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            {testEmailError}
+                          </div>
+                        )}
+
                         <DialogFooter>
                           <Button type="button" variant="outline" onClick={() => setSendTestDialogOpen(false)}>
-                            {t("common.buttons.cancel")}
+                            {testEmailSuccess ? t("common.buttons.close") : t("common.buttons.cancel")}
                           </Button>
-                          <Button type="submit" disabled={isSubmitting && currentIntent === "sendTest"}>
-                            <PaperPlaneIcon className="mr-1 h-4 w-4" />
-                            {isSubmitting && currentIntent === "sendTest" ? t("settings.emailTemplateEditor.sending") : t("settings.emailTemplateEditor.sendTestEmail")}
-                          </Button>
+                          {!testEmailSuccess && (
+                            <Button type="submit" disabled={isSubmitting && currentIntent === "sendTest"}>
+                              <PaperPlaneIcon className="mr-1 h-4 w-4" />
+                              {isSubmitting && currentIntent === "sendTest" ? t("settings.emailTemplateEditor.sending") : t("settings.emailTemplateEditor.sendTestEmail")}
+                            </Button>
+                          )}
                         </DialogFooter>
                       </Form>
                     </DialogContent>

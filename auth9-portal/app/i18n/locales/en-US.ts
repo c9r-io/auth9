@@ -20,6 +20,7 @@ export default {
       copyField: "Copy {{field}}",
       back: "Back",
       edit: "Edit",
+      close: "Close",
     },
     labels: {
       email: "Email",
@@ -415,6 +416,7 @@ export default {
       recipientPlaceholder: "recipient@example.com",
       templateVariables: "Template Variables",
       sending: "Sending...",
+      testEmailSent: "Test email sent successfully!",
       availableVariables: "Available Variables",
       example: "Example: {{value}}",
       previewTitle: "Preview",
@@ -630,6 +632,8 @@ export default {
       descriptionTail: "?",
     },
     empty: "No tenants found",
+    emptySearchTitle: "No matching tenants",
+    emptySearchDescription: "No tenants match your search. Try a different keyword.",
     pagination: {
       page: "Page {{page}} of {{totalPages}}",
       previous: "Previous",
@@ -862,6 +866,8 @@ export default {
     menuActions: "Actions",
     deleteTitle: "Delete Service",
     deleteDescription: "Are you sure you want to delete this service?",
+    deleteDescriptionLead: "Are you sure you want to delete",
+    deleteDescriptionTail: "? This action cannot be undone.",
     noServices: "No services found",
     initialSecretTitle: "Initial Client Secret Generated", // pragma: allowlist secret
     initialSecretDescription: "Please copy this value. It will not be shown again.", // pragma: allowlist secret
@@ -1479,6 +1485,8 @@ export default {
     forceLogout: "Force Logout",
     deleteUserTitle: "Delete User",
     deleteUserDescription: "Are you sure you want to delete this user? This action cannot be undone.",
+    deleteUserDescriptionLead: "Are you sure you want to delete",
+    deleteUserDescriptionTail: "? This action cannot be undone.",
     editUserTitle: "Edit User",
     editUserDescription: "Update the user's profile details.",
     saveChanges: "Save Changes",

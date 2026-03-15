@@ -32,7 +32,7 @@
    {
      "email": "concurrent@example.com",
      "display_name": "concurrent-user-${VU_ID}",
-     "password": "Test123!",
+     "password": "Test123!", // pragma: allowlist secret
      "tenant_id": "{tenant_id}"
    }
    ```
@@ -90,6 +90,8 @@ WHERE resource_type = 'user' AND action = 'create'
 - 数据库中只有 1 个有效令牌（`used_at` 为 NULL）
 - 其他令牌要么不存在，要么已被标记为失效
 - 只有最新的令牌可以成功重置密码
+
+> **实现说明**: 系统使用 `replace_for_user` 在事务内先删除旧令牌再创建新令牌，并在事务提交后执行 post-commit 清理以处理 TiDB 并发场景下的瞬态重复。验证有效令牌数量时，应在所有并发请求完成后等待约 1 秒再查询，以确保 post-commit 清理已执行完毕。
 
 ### 预期数据状态
 ```sql
@@ -228,7 +230,7 @@ export default function() {
   let payload = JSON.stringify({
     email: 'concurrent@example.com',
     username: `user-${__VU}-${__ITER}`,
-    password: 'Test123!',
+    password: 'Test123!', // pragma: allowlist secret
   });
 
   let params = {
