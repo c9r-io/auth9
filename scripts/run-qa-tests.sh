@@ -232,8 +232,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
     echo "Docs with pre-built scripts in scripts/qa/auto/ run directly (FAST PATH)."
     echo "Docs without scripts are tested via an AI agent (AGENT PATH)."
     echo ""
-    echo "  --agent <mode>       Agent mode: 'minimax' (default), 'opencode', 'gemini', 'kimi',"
-    echo "                       'big-pickle', 'glm-air', 'glm-5', 'gpt-oss', 'kilo-minimax', 'qwen3-coder'"
+    echo "  --agent <mode>       Agent mode: 'minicode' (default), 'opencode', 'gemini', 'glm-5'"
     echo "  --only-security      Run only security test documents (docs/security/)"
     echo "  --only-uiux          Run only UI/UX test documents (docs/uiux/)"
     echo "  --no-scripts         Disable FAST PATH (always use agent)"
@@ -242,14 +241,14 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
 fi
 
 # Parse flags
-AGENT_MODE="minimax"
+AGENT_MODE="minicode"
 ONLY_MODE=""  # empty = all, 'security' = only security, 'uiux' = only uiux
 RESUME=false
 USE_SCRIPTS=true
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --agent)
-            AGENT_MODE="${2:-minimax}"
+            AGENT_MODE="${2:-minicode}"
             shift 2
             ;;
         --only-security)
@@ -364,32 +363,11 @@ run_agent() {
         gemini)
             run_cmd "${t[@]}" gemini -m gemini-3-flash-preview -p "读取文档：${rel_path}，执行QA测试" --yolo
             ;;
-        kimi)
-            run_cmd "${t[@]}" opencode run "读取文档：${rel_path}，执行QA测试" -m "opencode/kimi-k2.5-free"
-            ;;
-        minimax)
-            run_cmd "${t[@]}" opencode run "读取文档：${rel_path}，执行QA测试" -m "minimax-coding-plan/MiniMax-M2.5-highspeed"
-            ;;
-        free-minimax)
-            run_cmd "${t[@]}" opencode run "读取文档：${rel_path}，执行QA测试" -m "opencode/minimax-m2.5-free"
-            ;;
-        big-pickle)
-            run_cmd "${t[@]}" opencode run "读取文档：${rel_path}，执行QA测试" -m "opencode/big-pickle"
-            ;;
-        glm-air)
-            run_cmd "${t[@]}" kilocode run "读取文档：${rel_path}，执行QA测试" -m "kilo/z-ai/glm-4.5-air:free"
+        minicode)
+            run_cmd "${t[@]}" minicode -p --dangerously-skip-permissions "读取文档：${rel_path}，执行QA测试"
             ;;
         glm-5)
             run_cmd "${t[@]}" kilocode run "读取文档：${rel_path}，执行QA测试" -m "kilo/z-ai/glm-5:free"
-            ;;
-        gpt-oss)
-            run_cmd "${t[@]}" kilocode run "读取文档：${rel_path}，执行QA测试" -m "kilo/openai/gpt-oss-120b:free"
-            ;;
-        kilo-minimax)
-            run_cmd "${t[@]}" kilocode run "读取文档：${rel_path}，执行QA测试" -m "kilo/minimax/minimax-m2.5:free"
-            ;;
-        qwen3-coder)
-            run_cmd "${t[@]}" kilocode run "读取文档：${rel_path}，执行QA测试" -m "kilo/qwen/qwen3-coder:free"
             ;;
         *)
             echo -e "${RED}Unknown agent mode: ${AGENT_MODE}${NC}"
