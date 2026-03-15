@@ -55,10 +55,26 @@ curl -X POST http://localhost:8080/api/v1/auth/token \
 # 预期响应: {"error": "invalid_grant", "error_description": "Code has expired or already been used"}
 ```
 
-### 修复建议
-- 确保 Code 一次性使用 (RFC 6749 Section 4.1.2)
-- 实现 PKCE (RFC 7636)
-- Code 有效期不超过 10 分钟
+### 安全加固状态
+- ✅ Code 一次性使用 (RFC 6749 Section 4.1.2) — Keycloak 默认实现
+- ✅ **PKCE (RFC 7636) 已实现** — Portal 在每次授权请求时生成 `code_verifier`/`code_challenge`（S256），通过 auth9-core 透传到 Keycloak；token exchange 时发送 `code_verifier`。Public client（如 auth9-demo）在 Keycloak 中强制要求 PKCE（`pkce.code.challenge.method=S256`）
+- ✅ Code 有效期不超过 10 分钟 — Keycloak 默认实现
+
+### PKCE 验证方法
+```bash
+# 验证授权 URL 包含 PKCE 参数
+curl -v "http://localhost:8080/api/v1/auth/authorize?\
+response_type=code&client_id=auth9-portal&\
+redirect_uri=http://localhost:3000/auth/callback&\
+scope=openid&state=test&\
+code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&\
+code_challenge_method=S256" 2>&1 | grep -i "location:"
+# 预期: Location 中包含 code_challenge 和 code_challenge_method 参数
+
+# 验证 public client 必须提供 PKCE（不提供时应失败）
+# 使用 auth9-demo (public client) 不带 PKCE 进行授权
+# 预期: Keycloak 拒绝或 token exchange 阶段失败
+```
 
 ---
 

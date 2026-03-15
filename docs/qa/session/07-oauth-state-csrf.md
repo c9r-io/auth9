@@ -12,16 +12,18 @@
 OAuth 2.0 规范要求客户端在授权请求中附带 `state` 参数，并在回调时校验一致性，防止 Login CSRF 攻击。
 
 Auth9 Portal 的实现方式：
-1. 用户点击「SSO 登录」时，Portal 生成 `state` 并存入 `oauth_state` httpOnly cookie（5 分钟有效）
-2. 重定向到底层授权端点，携带 `state` 参数
-3. 托管认证链路回调时，Portal 从 cookie 读取存储的 state，与 URL 中的 `state` 参数比对
-4. 匹配成功 → 继续 token exchange；不匹配 → 拒绝，重定向到 `/login?error=state_mismatch`
+1. 用户点击「SSO 登录」或「Sign in with password」时，Portal 生成 `state` 和 PKCE `code_verifier`/`code_challenge`，将 `{ state, codeVerifier }` 存入 `oauth_state` httpOnly cookie（5 分钟有效）
+2. 重定向到底层授权端点，携带 `state`、`code_challenge`、`code_challenge_method=S256` 参数
+3. 托管认证链路回调时，Portal 从 cookie 读取 `OAuthStateData`，将 `state` 与 URL 中的 `state` 参数比对
+4. 匹配成功 → 继续 token exchange（附带 `code_verifier`）；不匹配 → 拒绝，重定向到 `/login?error=state_mismatch`
 5. 成功登录后清除 `oauth_state` cookie
 
+> **Cookie 格式变更**：`oauth_state` cookie 从存储纯 `state` 字符串变更为存储 `{ state, codeVerifier }` 对象。`getOAuthState()` 向后兼容旧格式（纯字符串），返回 `OAuthStateData` 接口。
+
 涉及文件：
-- `auth9-portal/app/services/session.server.ts` — `oauthStateCookie`、`serializeOAuthState()`、`getOAuthState()`、`clearOAuthStateCookie()`
-- `auth9-portal/app/routes/login.tsx` — SSO 登录 action，设置 state cookie
-- `auth9-portal/app/routes/auth.callback.tsx` — 回调 loader，校验并清除 state cookie
+- `auth9-portal/app/services/session.server.ts` — `oauthStateCookie`、`OAuthStateData`、`serializeOAuthState(state, codeVerifier?)`、`getOAuthState()`、`clearOAuthStateCookie()`
+- `auth9-portal/app/routes/login.tsx` — SSO/密码登录 action，生成 PKCE 参数，设置 state + codeVerifier cookie
+- `auth9-portal/app/routes/auth.callback.tsx` — 回调 loader，校验 state、发送 `code_verifier`、清除 cookie
 
 ---
 

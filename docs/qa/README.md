@@ -88,7 +88,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (15 个文档, 70 个场景)
+### 认证流程 (16 个文档, 75 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 5 |
@@ -106,6 +106,7 @@
 | [auth/13-keycloak-ui-visibility-regression.md](./auth/13-keycloak-ui-visibility-regression.md) | 社交登录/关联异常路径下的 Keycloak UI 可视性回归（仅检查是否有原生 UI 泄漏） | 5 |
 | [auth/14-landing-public-pages.md](./auth/14-landing-public-pages.md) | Landing 公共页面（Privacy / Terms / Docs）入口、内容、三语翻译 | 5 |
 | [auth/15-dark-mode-auth-contrast.md](./auth/15-dark-mode-auth-contrast.md) | 独立认证页与 Auth9 品牌认证页的 Dark Mode 对比度回归（Portal + Keycloak Theme） | 5 |
+| [auth/16-pkce-flow.md](./auth/16-pkce-flow.md) | PKCE (RFC 7636) 参数透传、Cookie 存储、Public Client 强制验证 | 5 | 🆕
 
 ### 系统设置 (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
@@ -374,6 +375,7 @@ cargo run --bin seed-data -- --dataset=qa-basic --reset
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-15 | 5.6.0 | **PKCE (RFC 7636) 安全增强文档**：新增 `auth/16-pkce-flow.md`（5 场景），覆盖 Portal 密码/SSO 登录 PKCE 参数透传、cookie 存储生命周期、authorize 端点透传验证、向后兼容、public client 强制 PKCE；跨文档影响：更新 `session/07-oauth-state-csrf.md` cookie 格式说明（`state` → `{ state, codeVerifier }`）、`auth/08-demo-auth-flow.md` 补充 PKCE 强制说明、`security/authentication/01-oidc-security.md` 标记 PKCE 已实现；共 98 个文档 464 个场景 |
 | 2026-03-14 | 5.5.2 | **Portal Selector 组件替换文档同步**：更新 `rbac/02-role.md` 与 `identity-provider/03-tenant-enterprise-sso-connectors.md`，补充 Roles 父角色选择器与 Tenant SSO `Provider Type` 已切换为项目统一 Select 组件的验证要点；同步更新 UI/UX 文档 `18-roles-abac-pages.md`、`21-tenant-detail-pages.md` 的下拉控件样式与条件字段说明；QA 文档总数与场景数不变（97/459） |
 | 2026-03-14 | 5.5.1 | **租户级恶意 IP 黑名单文档同步**：新增 `tenant/05-security-malicious-ip-blacklist.md`，覆盖租户详情页入口可见性、租户级黑名单配置、非法 IP 拒绝、跨租户隔离、平台级优先；同步更新 `session/04-boundary.md` 对可疑 IP 告警来源的说明，并为 `security/authorization/01-tenant-isolation.md` 补充租户级黑名单隔离场景；共 97 个文档 459 个场景 |
 | 2026-03-12 | 5.5.0 | **Landing 公共页面 + 语言切换器 DropdownMenu 重构**：新增 `auth/14-landing-public-pages.md`（5 场景），覆盖 `/privacy`、`/terms`、`/docs` 页面入口可见性、内容完整性、三语翻译；跨文档影响：更新 UIUX `12-i18n-localization.md`（语言切换器从 `<select>` 改为 DropdownMenu 描述）、`13-landing-page-interactions.md`（补充 Footer 链接说明）、`14-global-controls-placement.md`（更新 LanguageSwitcher 实现描述）；新增 UIUX `23-public-pages-layout.md`（5 场景）覆盖 PublicPageLayout 布局、prose-glass 排版、Docs 卡片网格；共 96 个文档 454 个场景 |

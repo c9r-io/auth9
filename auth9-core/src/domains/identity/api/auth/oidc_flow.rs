@@ -133,6 +133,8 @@ pub async fn authorize<S: HasServices + HasCache + crate::state::HasDbPool>(
         connector_alias: kc_idp_hint.as_deref(),
         kc_action: params.kc_action.as_deref(),
         ui_locales: params.ui_locales.as_deref(),
+        code_challenge: params.code_challenge.as_deref(),
+        code_challenge_method: params.code_challenge_method.as_deref(),
     })?;
 
     Ok(Redirect::temporary(&auth_url).into_response())
@@ -196,6 +198,8 @@ pub async fn enterprise_sso_discovery<S: HasServices + HasCache + crate::state::
         connector_alias: Some(&discovery.keycloak_alias),
         kc_action: None,
         ui_locales: params.ui_locales.as_deref(),
+        code_challenge: params.code_challenge.as_deref(),
+        code_challenge_method: params.code_challenge_method.as_deref(),
     })?;
 
     Ok(Json(SuccessResponse::new(EnterpriseSsoDiscoveryResponse {
@@ -285,13 +289,17 @@ pub async fn token<
                 .redirect_uri
                 .ok_or_else(|| AppError::BadRequest("Missing redirect_uri".to_string()))?;
 
+            let code_verifier = params.code_verifier;
+
             let state_payload = CallbackState {
                 redirect_uri,
                 client_id,
                 original_state: None,
             };
 
-            let token_response = exchange_code_for_tokens(&state, &state_payload, &code).await?;
+            let token_response =
+                exchange_code_for_tokens(&state, &state_payload, &code, code_verifier.as_deref())
+                    .await?;
             let userinfo = fetch_userinfo(&state, &token_response.access_token).await?;
             let ip_address = extract_client_ip(&headers);
             let user_agent = headers
@@ -981,5 +989,70 @@ mod tests {
     fn test_filter_scopes_empty_string() {
         let result = filter_scopes("");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_authorize_request_with_pkce() {
+        let json = r#"{
+            "response_type": "code",
+            "client_id": "my-app",
+            "redirect_uri": "https://app.example.com/callback",
+            "scope": "openid",
+            "state": "csrf-state",
+            "code_challenge": "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
+            "code_challenge_method": "S256"
+        }"#; // pragma: allowlist secret
+
+        let request: AuthorizeRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            request.code_challenge,
+            Some("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM".to_string())
+        );
+        assert_eq!(request.code_challenge_method, Some("S256".to_string()));
+    }
+
+    #[test]
+    fn test_authorize_request_without_pkce() {
+        let json = r#"{
+            "response_type": "code",
+            "client_id": "my-app",
+            "redirect_uri": "https://app.example.com/callback",
+            "scope": "openid",
+            "state": "csrf-state"
+        }"#;
+
+        let request: AuthorizeRequest = serde_json::from_str(json).unwrap();
+        assert!(request.code_challenge.is_none());
+        assert!(request.code_challenge_method.is_none());
+    }
+
+    #[test]
+    fn test_token_request_with_code_verifier() {
+        let json = r#"{
+            "grant_type": "authorization_code",
+            "client_id": "my-app",
+            "code": "auth-code",
+            "redirect_uri": "https://app.com/cb",
+            "code_verifier": "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+        }"#; // pragma: allowlist secret
+
+        let request: TokenRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            request.code_verifier,
+            Some("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk".to_string())
+        );
+    }
+
+    #[test]
+    fn test_token_request_without_code_verifier() {
+        let json = r#"{
+            "grant_type": "authorization_code",
+            "client_id": "my-app",
+            "code": "auth-code",
+            "redirect_uri": "https://app.com/cb"
+        }"#;
+
+        let request: TokenRequest = serde_json::from_str(json).unwrap();
+        assert!(request.code_verifier.is_none());
     }
 }

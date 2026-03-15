@@ -1286,7 +1286,14 @@ impl KeycloakSeeder {
                 "http://localhost:3002".to_string(),
                 "http://127.0.0.1:3002".to_string(),
             ],
-            attributes: existing_client.attributes,
+            attributes: {
+                let mut attrs = existing_client.attributes.unwrap_or_default();
+                attrs.insert(
+                    "pkce.code.challenge.method".to_string(),
+                    "S256".to_string(),
+                );
+                Some(attrs)
+            },
             public_client: true, // Public client for demo app
             secret: existing_client.secret,
         };
@@ -1345,7 +1352,14 @@ impl KeycloakSeeder {
                 "http://localhost:3002".to_string(),
                 "http://127.0.0.1:3002".to_string(),
             ],
-            attributes: None,
+            attributes: {
+                let mut attrs = HashMap::new();
+                attrs.insert(
+                    "pkce.code.challenge.method".to_string(),
+                    "S256".to_string(),
+                );
+                Some(attrs)
+            },
             public_client: true, // Public client for demo app
             secret: None,
         };

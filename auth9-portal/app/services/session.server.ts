@@ -61,14 +61,32 @@ export const oauthStateCookie = createCookie("oauth_state", {
   maxAge: 5 * 60,
 });
 
-export async function serializeOAuthState(state: string): Promise<string> {
-  return oauthStateCookie.serialize(state);
+export interface OAuthStateData {
+  state: string;
+  codeVerifier?: string;
 }
 
-export async function getOAuthState(request: Request): Promise<string | null> {
+export async function serializeOAuthState(
+  state: string,
+  codeVerifier?: string
+): Promise<string> {
+  return oauthStateCookie.serialize({ state, codeVerifier });
+}
+
+export async function getOAuthState(
+  request: Request
+): Promise<OAuthStateData | null> {
   const cookieHeader = request.headers.get("Cookie");
   const value = await oauthStateCookie.parse(cookieHeader);
-  return typeof value === "string" && value.length > 0 ? value : null;
+
+  // Backward compatibility: old cookies may be plain strings
+  if (typeof value === "string" && value.length > 0) {
+    return { state: value };
+  }
+  if (value && typeof value === "object" && typeof value.state === "string") {
+    return value as OAuthStateData;
+  }
+  return null;
 }
 
 export async function clearOAuthStateCookie(): Promise<string> {

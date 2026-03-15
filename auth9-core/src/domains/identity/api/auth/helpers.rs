@@ -42,6 +42,8 @@ pub struct KeycloakAuthUrlParams<'a> {
     pub connector_alias: Option<&'a str>,
     pub kc_action: Option<&'a str>,
     pub ui_locales: Option<&'a str>,
+    pub code_challenge: Option<&'a str>,
+    pub code_challenge_method: Option<&'a str>,
 }
 
 /// Build Keycloak authorization URL
@@ -70,6 +72,12 @@ pub fn build_keycloak_auth_url(params: &KeycloakAuthUrlParams) -> Result<String>
         }
         if let Some(locales) = params.ui_locales {
             pairs.append_pair("ui_locales", locales);
+        }
+        if let Some(challenge) = params.code_challenge {
+            pairs.append_pair("code_challenge", challenge);
+        }
+        if let Some(method) = params.code_challenge_method {
+            pairs.append_pair("code_challenge_method", method);
         }
     }
 
@@ -310,6 +318,8 @@ mod tests {
             connector_alias: None,
             kc_action: None,
             ui_locales: None,
+            code_challenge: None,
+            code_challenge_method: None,
         })
         .unwrap();
 
@@ -334,6 +344,8 @@ mod tests {
             connector_alias: None,
             kc_action: None,
             ui_locales: None,
+            code_challenge: None,
+            code_challenge_method: None,
         })
         .unwrap();
 
@@ -354,6 +366,8 @@ mod tests {
             connector_alias: Some("github"),
             kc_action: Some("idp_link:github"),
             ui_locales: None,
+            code_challenge: None,
+            code_challenge_method: None,
         })
         .unwrap();
 
@@ -375,6 +389,8 @@ mod tests {
             connector_alias: None,
             kc_action: None,
             ui_locales: Some("zh-CN"),
+            code_challenge: None,
+            code_challenge_method: None,
         })
         .unwrap();
 
@@ -395,6 +411,8 @@ mod tests {
             connector_alias: None,
             kc_action: None,
             ui_locales: None,
+            code_challenge: None,
+            code_challenge_method: None,
         })
         .unwrap();
 
@@ -515,6 +533,8 @@ mod tests {
             connector_alias: None,
             kc_action: None,
             ui_locales: None,
+            code_challenge: None,
+            code_challenge_method: None,
         })
         .unwrap();
 
@@ -626,5 +646,51 @@ mod tests {
         let mut headers = HeaderMap::new();
         headers.insert("x-forwarded-for", "::1".parse().unwrap());
         assert_eq!(extract_client_ip(&headers), Some("::1".to_string()));
+    }
+
+    #[test]
+    fn test_build_keycloak_auth_url_with_pkce() {
+        let url = build_keycloak_auth_url(&KeycloakAuthUrlParams {
+            keycloak_public_url: "https://keycloak.example.com",
+            realm: "test",
+            response_type: "code",
+            client_id: "client",
+            callback_url: "https://app.com/cb",
+            scope: "openid",
+            encoded_state: "state",
+            nonce: None,
+            connector_alias: None,
+            kc_action: None,
+            ui_locales: None,
+            code_challenge: Some("E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"),
+            code_challenge_method: Some("S256"),
+        })
+        .unwrap();
+
+        assert!(url.contains("code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM")); // pragma: allowlist secret
+        assert!(url.contains("code_challenge_method=S256"));
+    }
+
+    #[test]
+    fn test_build_keycloak_auth_url_without_pkce() {
+        let url = build_keycloak_auth_url(&KeycloakAuthUrlParams {
+            keycloak_public_url: "https://keycloak.example.com",
+            realm: "test",
+            response_type: "code",
+            client_id: "client",
+            callback_url: "https://app.com/cb",
+            scope: "openid",
+            encoded_state: "state",
+            nonce: None,
+            connector_alias: None,
+            kc_action: None,
+            ui_locales: None,
+            code_challenge: None,
+            code_challenge_method: None,
+        })
+        .unwrap();
+
+        assert!(!url.contains("code_challenge"));
+        assert!(!url.contains("code_challenge_method"));
     }
 }

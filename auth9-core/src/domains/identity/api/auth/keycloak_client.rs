@@ -23,6 +23,7 @@ pub(super) async fn exchange_code_for_tokens<S: HasServices>(
     state: &S,
     callback_state: &CallbackState,
     code: &str,
+    code_verifier: Option<&str>,
 ) -> Result<KeycloakTokenResponse> {
     let kc_client = state
         .keycloak_client()
@@ -60,6 +61,10 @@ pub(super) async fn exchange_code_for_tokens<S: HasServices>(
             .get_client_secret(&client_uuid)
             .await?;
         params.push(("client_secret", client_secret));
+    }
+
+    if let Some(verifier) = code_verifier {
+        params.push(("code_verifier", verifier.to_string()));
     }
 
     let response = reqwest::Client::new()

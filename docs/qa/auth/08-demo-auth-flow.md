@@ -32,6 +32,7 @@ Auth9 Core gRPC → Tenant Access Token (with roles/permissions)
 
 关键点：
 - auth9-demo 是 **public client**（无 client_secret），token exchange 不传 secret
+- auth9-demo 在 Keycloak 中配置了 `pkce.code.challenge.method=S256`，**强制要求 PKCE**
 - Auth9 Core 的 callback URL 必须在 Keycloak 的 redirect_uris 中注册
 - gRPC exchangeToken 的 `tenantId` 支持 UUID 和 slug 两种格式
 - Demo 使用 Auth9-signed `access_token`（非 Keycloak 的 `id_token`）进行 gRPC 调用

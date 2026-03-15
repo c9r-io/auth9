@@ -25,7 +25,18 @@ function mapLocaleToKeycloak(locale: AppLocale): string {
   return locale;
 }
 
-function buildAuthorizeParams(requestUrl: URL, locale: AppLocale) {
+async function generatePkce() {
+  const verifierBytes = crypto.getRandomValues(new Uint8Array(32));
+  const codeVerifier = Buffer.from(verifierBytes).toString("base64url");
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(codeVerifier)
+  );
+  const codeChallenge = Buffer.from(digest).toString("base64url");
+  return { codeVerifier, codeChallenge };
+}
+
+async function buildAuthorizeParams(requestUrl: URL, locale: AppLocale) {
   const corePublicUrl = process.env.AUTH9_CORE_PUBLIC_URL || process.env.AUTH9_CORE_URL || "http://localhost:8080";
   const portalUrl = process.env.AUTH9_PORTAL_URL || requestUrl.origin;
   const clientId = process.env.AUTH9_PORTAL_CLIENT_ID || "auth9-portal";
@@ -37,6 +48,8 @@ function buildAuthorizeParams(requestUrl: URL, locale: AppLocale) {
     : crypto.randomUUID();
   const state = Buffer.from(typeof statePayload === "string" ? statePayload : statePayload).toString("base64url");
 
+  const { codeVerifier, codeChallenge } = await generatePkce();
+
   return {
     corePublicUrl,
     response_type: "code",
@@ -46,6 +59,9 @@ function buildAuthorizeParams(requestUrl: URL, locale: AppLocale) {
     state,
     nonce: crypto.randomUUID(),
     ui_locales: mapLocaleToKeycloak(locale),
+    code_challenge: codeChallenge,
+    code_challenge_method: "S256" as const,
+    codeVerifier,
   };
 }
 
@@ -104,10 +120,10 @@ export async function action({ request }: ActionFunctionArgs) {
       return { error: translate(locale, "auth.login.ssoEmailRequired") };
     }
 
-    const auth = buildAuthorizeParams(url, locale);
+    const auth = await buildAuthorizeParams(url, locale);
     try {
       const result = await enterpriseSsoApi.discover({ email }, auth);
-      const oauthCookie = await serializeOAuthState(auth.state);
+      const oauthCookie = await serializeOAuthState(auth.state, auth.codeVerifier);
       return redirect(result.data.authorize_url, {
         headers: { "Set-Cookie": oauthCookie },
       });
@@ -118,7 +134,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   if (intent === "password-login") {
-    const auth = buildAuthorizeParams(url, locale);
+    const auth = await buildAuthorizeParams(url, locale);
     const corePublicUrl = auth.corePublicUrl;
     const authorizeUrl = new URL(`${corePublicUrl}/api/v1/auth/authorize`);
     authorizeUrl.searchParams.set("response_type", auth.response_type);
@@ -128,8 +144,10 @@ export async function action({ request }: ActionFunctionArgs) {
     authorizeUrl.searchParams.set("state", auth.state);
     authorizeUrl.searchParams.set("nonce", auth.nonce);
     authorizeUrl.searchParams.set("ui_locales", auth.ui_locales);
+    authorizeUrl.searchParams.set("code_challenge", auth.code_challenge);
+    authorizeUrl.searchParams.set("code_challenge_method", auth.code_challenge_method);
 
-    const oauthCookie = await serializeOAuthState(auth.state);
+    const oauthCookie = await serializeOAuthState(auth.state, auth.codeVerifier);
     return redirect(authorizeUrl.toString(), {
       headers: { "Set-Cookie": oauthCookie },
     });

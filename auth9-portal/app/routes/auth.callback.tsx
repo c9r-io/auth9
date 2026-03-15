@@ -41,9 +41,9 @@ export async function loader({ request }: LoaderFunctionArgs) {
     }
 
     // Validate OAuth state to prevent Login CSRF
-    const storedState = await getOAuthState(request);
-    if (!storedState || storedState !== state) {
-        console.error("OAuth state mismatch", { hasStored: !!storedState, hasReceived: !!state });
+    const oauthData = await getOAuthState(request);
+    if (!oauthData || oauthData.state !== state) {
+        console.error("OAuth state mismatch", { hasStored: !!oauthData, hasReceived: !!state });
         return redirect("/login?error=state_mismatch");
     }
 
@@ -61,6 +61,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
                 client_id: process.env.AUTH9_PORTAL_CLIENT_ID || "auth9-portal",
                 code,
                 redirect_uri: `${portalOrigin}/auth/callback`,
+                code_verifier: oauthData.codeVerifier,
             }),
         });
 

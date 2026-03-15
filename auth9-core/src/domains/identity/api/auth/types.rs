@@ -17,6 +17,10 @@ pub struct AuthorizeRequest {
     pub connector_alias: Option<String>,
     pub kc_action: Option<String>,
     pub ui_locales: Option<String>,
+    /// PKCE code challenge (RFC 7636)
+    pub code_challenge: Option<String>,
+    /// PKCE code challenge method (e.g. "S256")
+    pub code_challenge_method: Option<String>,
 }
 
 /// OIDC callback handler
@@ -35,6 +39,8 @@ pub struct TokenRequest {
     pub code: Option<String>,
     pub redirect_uri: Option<String>,
     pub refresh_token: Option<String>,
+    /// PKCE code verifier (RFC 7636)
+    pub code_verifier: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]

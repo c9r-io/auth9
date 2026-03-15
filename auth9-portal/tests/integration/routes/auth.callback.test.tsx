@@ -20,7 +20,7 @@ describe("Auth Callback", () => {
     vi.clearAllMocks();
     mockFetch.mockClear();
     vi.mocked(commitSession).mockResolvedValue("mocked-cookie");
-    vi.mocked(getOAuthState).mockResolvedValue("test-state");
+    vi.mocked(getOAuthState).mockResolvedValue({ state: "test-state" });
     vi.mocked(clearOAuthStateCookie).mockResolvedValue("oauth_state=; Max-Age=0");
   });
 
@@ -123,7 +123,7 @@ describe("Auth Callback", () => {
           redirect_to: "/dashboard/account/identities",
         })
       ).toString("base64url");
-      vi.mocked(getOAuthState).mockResolvedValueOnce(encodedState);
+      vi.mocked(getOAuthState).mockResolvedValueOnce({ state: encodedState });
 
       const request = new Request(
         `http://localhost/auth/callback?code=auth-code-123&state=${encodedState}`
