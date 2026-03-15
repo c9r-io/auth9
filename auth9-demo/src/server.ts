@@ -13,6 +13,18 @@ import {
     requireRole,
 } from "@auth9/node/middleware/express";
 
+function base64url(buffer: Buffer): string {
+    return buffer.toString("base64url");
+}
+
+async function generatePkce() {
+    const verifierBytes = crypto.randomBytes(32);
+    const codeVerifier = base64url(verifierBytes);
+    const digest = crypto.createHash("sha256").update(codeVerifier).digest();
+    const codeChallenge = base64url(digest);
+    return { codeVerifier, codeChallenge };
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -125,7 +137,8 @@ app.get("/health", (_req, res) => {
 });
 
 // 2. Login - Redirect to Auth9 Core Authorize Endpoint
-app.get("/login", (req, res) => {
+app.get("/login", async (req, res) => {
+    const { codeVerifier, codeChallenge } = await generatePkce();
     const authUrl = new URL(`${config.auth9PublicUrl}/api/v1/auth/authorize`);
     authUrl.searchParams.append("client_id", config.clientId);
     authUrl.searchParams.append(
@@ -136,6 +149,11 @@ app.get("/login", (req, res) => {
     authUrl.searchParams.append("scope", "openid profile email");
     authUrl.searchParams.append("state", "random-state-string"); // Should be random
     authUrl.searchParams.append("nonce", "random-nonce-string");
+    authUrl.searchParams.append("code_challenge", codeChallenge);
+    authUrl.searchParams.append("code_challenge_method", "S256");
+
+    // Store code_verifier in session for token exchange
+    (req.session as any).codeVerifier = codeVerifier;
 
     res.redirect(authUrl.toString());
 });
@@ -206,19 +224,27 @@ app.get("/auth/callback", async (req, res) => {
         return;
     }
 
+    const codeVerifier = (req.session as any).codeVerifier;
+
     try {
         // Exchange code for tokens via Auth9 Core
+        const tokenRequest: Record<string, string> = {
+            grant_type: "authorization_code",
+            client_id: config.clientId,
+            code: code.toString(),
+            redirect_uri: `http://localhost:${config.port}/auth/callback`,
+        };
+        
+        if (codeVerifier) {
+            tokenRequest.code_verifier = codeVerifier;
+        }
+
         const tokenResponse = await fetch(
             `${config.auth9Domain}/api/v1/auth/token`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    grant_type: "authorization_code",
-                    client_id: config.clientId,
-                    code: code.toString(),
-                    redirect_uri: `http://localhost:${config.port}/auth/callback`,
-                }),
+                body: JSON.stringify(tokenRequest),
             }
         );
 

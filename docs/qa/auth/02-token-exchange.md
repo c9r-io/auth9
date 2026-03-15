@@ -84,9 +84,11 @@ SELECT COUNT(*) FROM tenant_users WHERE user_id = '{user_id}' AND tenant_id = '{
 1. 调用 gRPC TokenExchange.ValidateToken
    ```protobuf
    ValidateTokenRequest {
-     token: "<Tenant Access Token>"
+     access_token: "<Tenant Access Token>"
+     audience: "<service_id used in ExchangeToken>"
    }
    ```
+   **注意**：`audience` 在生产环境（`ENVIRONMENT=production`）中为**必填**字段，须与 Token Exchange 时使用的 `service_id` 一致（如 `auth9-portal`）。
 
 ### 预期结果
 - 返回 Token 有效
@@ -103,7 +105,14 @@ SELECT COUNT(*) FROM tenant_users WHERE user_id = '{user_id}' AND tenant_id = '{
 验证过期 Token 被正确拒绝
 
 ### 测试操作流程
-1. 使用过期 Token 调用 ValidateToken
+1. 使用过期 Token 调用 ValidateToken，须包含 `audience` 参数
+   ```protobuf
+   ValidateTokenRequest {
+     access_token: "<expired Token>"
+     audience: "<service_id>"
+   }
+   ```
+   **注意**：`audience` 在生产环境中为**必填**字段，否则会返回 `FailedPrecondition: audience is required in production`，掩盖真正的过期错误。
 
 ### 预期结果
 - 返回错误：「Token 已过期」
@@ -125,6 +134,16 @@ SELECT COUNT(*) FROM tenant_users WHERE user_id = '{user_id}' AND tenant_id = '{
 ### 预期结果
 - 返回 Token 的详细信息
 - 包含：用户信息、租户信息、角色、权限、过期时间
+
+---
+
+## Troubleshooting
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| ValidateToken 返回 `FailedPrecondition: audience is required in production` | Docker 环境为 `ENVIRONMENT=production`，`audience` 字段必填 | ValidateToken 请求中加入 `audience` 字段，值与 ExchangeToken 的 `service_id` 一致 |
+| 场景 2 非成员测试通过了（应该失败） | `audit-test-tenant` 中 admin 用户已有 `tenant_users` 记录 | 测试前执行 `DELETE FROM tenant_users WHERE user_id='{admin_id}' AND tenant_id='{tenant_id}'` |
+| ExchangeToken 返回 `PermissionDenied` 但预期成功 | 用户不在目标 tenant 中 | 检查 `tenant_users` 表确认用户-租户关系 |
 
 ---
 

@@ -43,16 +43,24 @@ function mysqlScalar(sql) {
 
 function ensureNonMemberTenant() {
   let tenantId = mysqlScalar("SELECT id FROM tenants WHERE slug = 'audit-test-tenant';");
-  if (tenantId) return tenantId;
-
-  execSync(
-    `${MYSQL} "INSERT INTO tenants (id, name, slug, settings, status) VALUES (UUID(), 'Audit Test Tenant', 'audit-test-tenant', '{}', 'active');"`
-  );
-  tenantId = mysqlScalar("SELECT id FROM tenants WHERE slug = 'audit-test-tenant';");
-
   if (!tenantId) {
-    throw new Error("Failed to create audit-test-tenant");
+    execSync(
+      `${MYSQL} "INSERT INTO tenants (id, name, slug, settings, status) VALUES (UUID(), 'Audit Test Tenant', 'audit-test-tenant', '{}', 'active');"`
+    );
+    tenantId = mysqlScalar("SELECT id FROM tenants WHERE slug = 'audit-test-tenant';");
+    if (!tenantId) {
+      throw new Error("Failed to create audit-test-tenant");
+    }
   }
+
+  // Remove any existing membership so the admin user is truly a non-member
+  const adminId = mysqlScalar("SELECT id FROM users WHERE email = 'admin@auth9.local';");
+  if (adminId) {
+    execSync(
+      `${MYSQL} "DELETE FROM tenant_users WHERE user_id = '${adminId}' AND tenant_id = '${tenantId}';"`
+    );
+  }
+
   return tenantId;
 }
 
@@ -115,7 +123,8 @@ async function runTests() {
   section("场景 3: Token 验证");
   try {
     const res = JSON.parse(grpcurl("ValidateToken", {
-      access_token: tenantAccessToken
+      access_token: tenantAccessToken,
+      audience: "auth9-portal"
     }));
     
     if (res.valid === true) {
@@ -148,7 +157,8 @@ async function runTests() {
 
     try {
       const res = JSON.parse(grpcurl("ValidateToken", {
-        access_token: expiredToken
+        access_token: expiredToken,
+        audience: "auth9-portal"
       }));
       
       // Protobuf JSON mapping might omit 'valid: false' as it's the default
