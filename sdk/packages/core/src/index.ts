@@ -109,7 +109,37 @@ export type {
   LoginEvent,
   AuditLog,
   SecurityAlert,
+  AuditLogQuery,
+  AuditLogPage,
+  LoginStatsQuery,
+  LoginEventsQuery,
+  DailyTrendQuery,
+  DailyTrendPoint,
+  SecurityAlertsQuery,
 } from "./types/analytics.js";
+export type {
+  EmailProviderConfig,
+  SmtpConfig,
+  SesConfig,
+  OracleConfig,
+  NoneConfig,
+  EmailSettings,
+  UpdateEmailSettingsInput,
+  TestEmailResponse,
+  SendTestEmailInput,
+} from "./types/system.js";
+export type {
+  EmailTemplateWithContent,
+  EmailTemplateMetadata,
+  TemplateVariable,
+  EmailTemplateContent,
+  UpdateEmailTemplateInput,
+  PreviewEmailTemplateInput,
+  SendTestEmailTemplateInput,
+  RenderedEmailPreview,
+  SendTestEmailResponse,
+} from "./types/email-template.js";
+export type { BrandingConfig, UpdateBrandingInput } from "./types/branding.js";
 export type {
   Action,
   CreateActionInput,
@@ -188,6 +218,12 @@ export { PasskeysClient } from "./clients/passkeys.js";
 export { EmailOtpClient } from "./clients/email-otp.js";
 export { AuthClient } from "./clients/auth.js";
 export { OrganizationsClient } from "./clients/organizations.js";
+export { AuditLogsClient } from "./clients/audit-logs.js";
+export { AnalyticsClient } from "./clients/analytics.js";
+export { SecurityAlertsClient } from "./clients/security-alerts.js";
+export { SystemClient } from "./clients/system.js";
+export { EmailTemplatesClient } from "./clients/email-templates.js";
+export { BrandingClient } from "./clients/branding.js";
 
 // Errors
 export {

@@ -158,7 +158,7 @@
 | [action/11-security-attack-defense.md](./action/11-security-attack-defense.md) | 攻击防护（命令注入、提权、伪造、脚本注入） | 4 |
 | [action/12-api-sdk-advanced.md](./action/12-api-sdk-advanced.md) | API/SDK 进阶（日志、统计、错误、并发、AI Agent） | 5 |
 
-### SDK (@auth9/core + @auth9/node) (9 个文档, 45 个场景)
+### SDK (@auth9/core + @auth9/node) (10 个文档, 50 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [sdk/01-core-types-utils.md](./sdk/01-core-types-utils.md) | 类型导出、snake/camel 转换、错误体系、Claims 辨别 | 5 |
@@ -170,6 +170,7 @@
 | [sdk/07-core-management-clients.md](./sdk/07-core-management-clients.md) | 核心管理 API 子客户端（Tenants/Users/Services/Roles/Invitations） | 5 |
 | [sdk/08-security-enterprise-clients.md](./sdk/08-security-enterprise-clients.md) | 安全与企业功能子客户端（IdP/SSO/SAML/ABAC/Sessions/Webhooks/SCIM/TenantServices） | 5 |
 | [sdk/09-auth-password-passkey-clients.md](./sdk/09-auth-password-passkey-clients.md) | 认证流程与凭证管理子客户端（Password/Passkeys/EmailOtp/Auth/Organizations） | 5 |
+| [sdk/10-observability-config-clients.md](./sdk/10-observability-config-clients.md) | 可观测性与系统配置子客户端（AuditLogs/Analytics/SecurityAlerts/System/EmailTemplates/Branding） | 5 |
 
 ### 集成测试 (12 个文档, 59 个场景)
 | 文档 | 描述 | 场景数 |

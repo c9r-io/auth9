@@ -123,7 +123,7 @@ export class Auth9HttpClient {
     return this.request<T>("PATCH", path, body);
   }
 
-  async delete(path: string): Promise<void> {
-    await this.request<void>("DELETE", path);
+  async delete<T = void>(path: string): Promise<T> {
+    return this.request<T>("DELETE", path);
   }
 }

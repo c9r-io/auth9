@@ -19,6 +19,12 @@ import { PasskeysClient } from "./clients/passkeys.js";
 import { EmailOtpClient } from "./clients/email-otp.js";
 import { AuthClient } from "./clients/auth.js";
 import { OrganizationsClient } from "./clients/organizations.js";
+import { AuditLogsClient } from "./clients/audit-logs.js";
+import { AnalyticsClient } from "./clients/analytics.js";
+import { SecurityAlertsClient } from "./clients/security-alerts.js";
+import { SystemClient } from "./clients/system.js";
+import { EmailTemplatesClient } from "./clients/email-templates.js";
+import { BrandingClient } from "./clients/branding.js";
 import type {
   Action,
   CreateActionInput,
@@ -63,6 +69,12 @@ export class Auth9Client {
   private _emailOtp?: EmailOtpClient;
   private _auth?: AuthClient;
   private _organizations?: OrganizationsClient;
+  private _auditLogs?: AuditLogsClient;
+  private _analytics?: AnalyticsClient;
+  private _securityAlerts?: SecurityAlertsClient;
+  private _system?: SystemClient;
+  private _emailTemplates?: EmailTemplatesClient;
+  private _branding?: BrandingClient;
 
   constructor(config: Auth9ClientConfig) {
     this.http = new Auth9HttpClient({
@@ -166,6 +178,30 @@ export class Auth9Client {
 
   get organizations(): OrganizationsClient {
     return (this._organizations ??= new OrganizationsClient(this.http));
+  }
+
+  get auditLogs(): AuditLogsClient {
+    return (this._auditLogs ??= new AuditLogsClient(this.http));
+  }
+
+  get analytics(): AnalyticsClient {
+    return (this._analytics ??= new AnalyticsClient(this.http));
+  }
+
+  get securityAlerts(): SecurityAlertsClient {
+    return (this._securityAlerts ??= new SecurityAlertsClient(this.http));
+  }
+
+  get system(): SystemClient {
+    return (this._system ??= new SystemClient(this.http));
+  }
+
+  get emailTemplates(): EmailTemplatesClient {
+    return (this._emailTemplates ??= new EmailTemplatesClient(this.http));
+  }
+
+  get branding(): BrandingClient {
+    return (this._branding ??= new BrandingClient(this.http));
   }
 
   get actions() {

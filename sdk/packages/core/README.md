@@ -16,6 +16,7 @@ pnpm add @auth9/core
 - ✅ HTTP client with automatic snake_case/camelCase conversion
 - ✅ Error handling with typed exceptions
 - ✅ **Actions API** - Manage Auth9 Actions (TypeScript scripts in authentication flow)
+- ✅ **26 domain sub-clients** - Tenants, Users, Services, Roles, Permissions, RBAC, Sessions, Invitations, Webhooks, Identity Providers, SSO, SAML, ABAC, SCIM, Organizations, Password, Passkeys, Email OTP, Auth, Tenant Services, Audit Logs, Analytics, Security Alerts, System Settings, Email Templates, Branding
 - ✅ Claims validation and token type detection
 - ✅ Full type safety
 
