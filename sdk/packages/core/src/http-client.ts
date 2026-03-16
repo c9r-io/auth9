@@ -25,6 +25,10 @@ export class Auth9HttpClient {
     this.retries = config.retries ?? 0;
   }
 
+  getBaseUrl(): string {
+    return this.baseUrl;
+  }
+
   private async getToken(): Promise<string | undefined> {
     if (!this.accessToken) return undefined;
     if (typeof this.accessToken === "function") {

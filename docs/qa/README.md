@@ -158,7 +158,7 @@
 | [action/11-security-attack-defense.md](./action/11-security-attack-defense.md) | 攻击防护（命令注入、提权、伪造、脚本注入） | 4 |
 | [action/12-api-sdk-advanced.md](./action/12-api-sdk-advanced.md) | API/SDK 进阶（日志、统计、错误、并发、AI Agent） | 5 |
 
-### SDK (@auth9/core + @auth9/node) (8 个文档, 40 个场景)
+### SDK (@auth9/core + @auth9/node) (9 个文档, 45 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [sdk/01-core-types-utils.md](./sdk/01-core-types-utils.md) | 类型导出、snake/camel 转换、错误体系、Claims 辨别 | 5 |
@@ -169,6 +169,7 @@
 | [sdk/06-middleware-testing.md](./sdk/06-middleware-testing.md) | Next.js/Fastify 中间件、Mock Token、构建输出 | 5 |
 | [sdk/07-core-management-clients.md](./sdk/07-core-management-clients.md) | 核心管理 API 子客户端（Tenants/Users/Services/Roles/Invitations） | 5 |
 | [sdk/08-security-enterprise-clients.md](./sdk/08-security-enterprise-clients.md) | 安全与企业功能子客户端（IdP/SSO/SAML/ABAC/Sessions/Webhooks/SCIM/TenantServices） | 5 |
+| [sdk/09-auth-password-passkey-clients.md](./sdk/09-auth-password-passkey-clients.md) | 认证流程与凭证管理子客户端（Password/Passkeys/EmailOtp/Auth/Organizations） | 5 |
 
 ### 集成测试 (12 个文档, 59 个场景)
 | 文档 | 描述 | 场景数 |
@@ -223,16 +224,17 @@
 | 分析与统计 | 2 | 10 |
 | 审计日志 | 1 | 5 |
 | Action | 12 | 49 |
-| SDK | 6 | 30 |
+| SDK | 9 | 45 |
 | 集成测试 | 11 | 54 |
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
-| **总计** | **103** | **489** |
+| **总计** | **104** | **494** |
 
 ### 文档对齐记录
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-03-17 | 5.12.0 | **SDK Phase 3 认证流程与凭证管理**：新增 `sdk/09-auth-password-passkey-clients.md`（5 场景），覆盖 Password/Passkeys/EmailOtp/Auth/Organizations 5 个子客户端 21 个方法；同步修正 SDK 统计（8→9 文档、40→45 场景）；共 104 个文档 494 个场景 |
 | 2026-03-14 | 4.3.0 | 新增平台级恶意 IP 黑名单 QA 文档（`settings/04`），并同步修正 `session/04` 对可疑 IP 告警来源的说明，覆盖黑名单配置、输入校验、`suspicious_ip`/`critical` 告警联动 |
 | 2026-03-16 | 5.11.0 | **SAML IdP 出站 Phase 3（证书/加密/SLO）**：新增 `saml-application/04-certificate-encryption.md`（5 场景），覆盖 IdP 签名证书下载公开端点、证书过期信息受保护端点、Assertion 加密缺少 SP 证书校验、SLO POST Binding 验证、Portal 证书下载链接与过期告警 badge；跨文档更新 `01-crud.md` 端点列表、`02-metadata-validation.md` 公开端点列表、`03-portal-ui.md` 列表展示项；共 103 个文档 489 个场景 |
 | 2026-03-16 | 5.10.0 | **SAML IdP 出站 Phase 2 Portal UI**：新增 `saml-application/03-portal-ui.md`（5 场景），覆盖 Tenant 详情页入口可见性、创建表单完整提交、列表展示与 Metadata URL 复制、启停切换、删除；更新 `01-crud.md` Phase 说明；跨文档更新 `uiux/21-tenant-detail-pages.md` Quick Links 与导航路径补充 SAML Applications；共 102 个文档 484 个场景 |

@@ -127,6 +127,39 @@ export type {
   LogQueryFilter,
 } from "./types/action.js";
 export { ActionTrigger } from "./types/action.js";
+export type {
+  PasswordPolicy,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+  ChangePasswordInput,
+  AdminSetPasswordInput,
+  UpdatePasswordPolicyInput,
+} from "./types/password.js";
+export type {
+  Passkey,
+  PasskeyRegistrationOptions,
+  PasskeyRegistrationResult,
+  PasskeyAuthStartInput,
+  PasskeyAuthenticationOptions,
+  PasskeyAuthenticationResult,
+} from "./types/passkey.js";
+export type {
+  SendEmailOtpInput,
+  VerifyEmailOtpInput,
+} from "./types/email-otp.js";
+export type {
+  AuthorizeOptions,
+  LogoutOptions,
+  TenantTokenInput,
+  AuthTokenResponse,
+  UserInfo,
+  SsoDiscoveryInput,
+  SsoDiscoveryResult,
+} from "./types/auth.js";
+export type {
+  Organization,
+  CreateOrganizationInput,
+} from "./types/organization.js";
 
 // HTTP Client
 export { Auth9HttpClient } from "./http-client.js";
@@ -150,6 +183,11 @@ export { SessionsClient } from "./clients/sessions.js";
 export { WebhooksClient } from "./clients/webhooks.js";
 export { ScimClient } from "./clients/scim.js";
 export { TenantServicesClient } from "./clients/tenant-services.js";
+export { PasswordClient } from "./clients/password.js";
+export { PasskeysClient } from "./clients/passkeys.js";
+export { EmailOtpClient } from "./clients/email-otp.js";
+export { AuthClient } from "./clients/auth.js";
+export { OrganizationsClient } from "./clients/organizations.js";
 
 // Errors
 export {

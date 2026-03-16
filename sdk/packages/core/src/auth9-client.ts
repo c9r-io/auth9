@@ -14,6 +14,11 @@ import { SessionsClient } from "./clients/sessions.js";
 import { WebhooksClient } from "./clients/webhooks.js";
 import { ScimClient } from "./clients/scim.js";
 import { TenantServicesClient } from "./clients/tenant-services.js";
+import { PasswordClient } from "./clients/password.js";
+import { PasskeysClient } from "./clients/passkeys.js";
+import { EmailOtpClient } from "./clients/email-otp.js";
+import { AuthClient } from "./clients/auth.js";
+import { OrganizationsClient } from "./clients/organizations.js";
 import type {
   Action,
   CreateActionInput,
@@ -53,6 +58,11 @@ export class Auth9Client {
   private _webhooks?: WebhooksClient;
   private _scim?: ScimClient;
   private _tenantServices?: TenantServicesClient;
+  private _password?: PasswordClient;
+  private _passkeys?: PasskeysClient;
+  private _emailOtp?: EmailOtpClient;
+  private _auth?: AuthClient;
+  private _organizations?: OrganizationsClient;
 
   constructor(config: Auth9ClientConfig) {
     this.http = new Auth9HttpClient({
@@ -136,6 +146,26 @@ export class Auth9Client {
 
   get tenantServices(): TenantServicesClient {
     return (this._tenantServices ??= new TenantServicesClient(this.http));
+  }
+
+  get password(): PasswordClient {
+    return (this._password ??= new PasswordClient(this.http));
+  }
+
+  get passkeys(): PasskeysClient {
+    return (this._passkeys ??= new PasskeysClient(this.http));
+  }
+
+  get emailOtp(): EmailOtpClient {
+    return (this._emailOtp ??= new EmailOtpClient(this.http));
+  }
+
+  get auth(): AuthClient {
+    return (this._auth ??= new AuthClient(this.http, this.http.getBaseUrl()));
+  }
+
+  get organizations(): OrganizationsClient {
+    return (this._organizations ??= new OrganizationsClient(this.http));
   }
 
   get actions() {

@@ -522,6 +522,30 @@ documents:
     has_checklist: true
     last_reviewed: 2026-02-21
     test_script: scripts/qa/auto/sdk-06-middleware-testing.sh
+  - id: sdk/07-core-management-clients
+    path: docs/qa/sdk/07-core-management-clients.md
+    module: sdk
+    scenarios: 5
+    has_ui_flow: false
+    has_entry_visibility: false
+    has_checklist: true
+    last_reviewed: 2026-03-16
+  - id: sdk/08-security-enterprise-clients
+    path: docs/qa/sdk/08-security-enterprise-clients.md
+    module: sdk
+    scenarios: 5
+    has_ui_flow: false
+    has_entry_visibility: false
+    has_checklist: true
+    last_reviewed: 2026-03-16
+  - id: sdk/09-auth-password-passkey-clients
+    path: docs/qa/sdk/09-auth-password-passkey-clients.md
+    module: sdk
+    scenarios: 5
+    has_ui_flow: false
+    has_entry_visibility: false
+    has_checklist: true
+    last_reviewed: 2026-03-17
   - id: service/01-service-crud
     path: docs/qa/service/01-service-crud.md
     module: service
