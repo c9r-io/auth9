@@ -21,11 +21,12 @@ const userId = process.argv[2] || '16daa93d-06e8-479c-867d-f9b6184e06c7';
 const tenantId = process.argv[3] || 'be469362-ee7f-480d-910d-75fbb8730bc4'; // auth9-platform
 const role = process.argv[4] !== undefined ? process.argv[4] : 'admin';
 const permissionList = process.argv[5] !== undefined ? process.argv[5] : 'rbac:*,user:*,service:*,action:*';
+const email = process.argv[6] || 'regular-user@example.com';
 
 const now = Math.floor(Date.now() / 1000);
 const payload = {
   sub: userId,
-  email: "regular-user@example.com",
+  email: email,
   iss: "http://localhost:8080",
   aud: "auth9-portal",
   token_type: "access",

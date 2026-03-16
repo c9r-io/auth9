@@ -110,20 +110,30 @@ grpcurl -plaintext -d '{"access_token":"dummy"}' \
 ## 场景 2：mTLS 证书验证绕过
 
 ### 前置条件
+- 已执行 `./scripts/reset-docker.sh` 完成环境初始化（该脚本会自动生成 CA + server + client 证书到 `deploy/dev-certs/grpc/`）
 - Docker 服务运行中（`docker compose up -d`）
 - gRPC 服务通过 nginx mTLS 代理暴露在 `localhost:50051`
 - **重要：必须从宿主机连接 `localhost:50051`（nginx mTLS 代理），不要从 Docker 容器内直接连接 `auth9-core:50051`（明文 gRPC，无 TLS）**
+- **证书文件验证**：测试前确认以下文件存在且 CA 链正确：
+  ```bash
+  ls deploy/dev-certs/grpc/{ca.crt,ca.key,server.crt,server.key,client.crt,client.key}
+  openssl verify -CAfile deploy/dev-certs/grpc/ca.crt deploy/dev-certs/grpc/client.crt  # 应输出 OK
+  ```
 
 ### 攻击目标
 验证证书链验证的正确性
 
 ### 攻击步骤
+
+> **重要**: 测试时不要使用 `-import-path` 和 `-proto` 参数。grpcurl 在有本地 proto 文件时会从文件中读取 service/method 列表，不会发起网络请求，导致误判 mTLS 被绕过。应使用实际 RPC 调用（如 `ValidateToken`）或不带 proto 的 `list` 命令来验证。
+
 1. 尝试使用自签名证书连接：
    ```bash
    # 生成自签名证书
    openssl req -x509 -newkey rsa:2048 -keyout /tmp/test-key.pem -out /tmp/test-cert.pem -days 1 -nodes -subj "/CN=test"
 
    # 从宿主机尝试连接（必须使用 localhost:50051，即 nginx mTLS 代理）
+   # 注意：不要加 -import-path/-proto 参数，否则 grpcurl 会用本地文件回答 list 而不发网络请求
    grpcurl -cert /tmp/test-cert.pem -key /tmp/test-key.pem \
      -cacert deploy/dev-certs/grpc/ca.crt localhost:50051 list
    # 预期：400 Bad Request（nginx 拒绝未受信任的客户端证书）

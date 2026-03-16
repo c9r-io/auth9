@@ -82,8 +82,8 @@ console.log('Email placeholder:', document.querySelector('[type="email"]')?.plac
 1. 设置 Portal 语言为中文，跳转到 Keycloak 认证页
 2. 逐一检查以下区域的文案：
    - 页面标题区域
-   - 邮箱/用户名输入框 placeholder
-   - 密码输入框 placeholder
+   - 邮箱/用户名输入框 label（GlassInput 使用独立 label 元素）
+   - 密码输入框 label（GlassInput 使用独立 label 元素）
    - 「登录」提交按钮
    - 「忘记密码」链接
    - 「注册」链接（如有）
@@ -101,8 +101,8 @@ console.log('Email placeholder:', document.querySelector('[type="email"]')?.plac
 | 区域 | 预期中文内容 |
 |------|------------|
 | 页面标题 | 「登录到 {应用名}」或「欢迎回来」 |
-| 邮箱输入框 | placeholder: 「请输入邮箱地址」 |
-| 密码输入框 | placeholder: 「请输入密码」 |
+| 邮箱输入框 | label: 「用户名 或 电子邮箱地址」（GlassInput 使用独立 label 元素，非 placeholder） |
+| 密码输入框 | label: 「密码」（GlassInput 使用独立 label 元素，非 placeholder） |
 | 提交按钮 | 「登录」 |
 | 忘记密码 | 「忘记密码？」 |
 | 登录失败提示 | 「用户名或密码错误」 |
@@ -142,6 +142,8 @@ if (matches) {
 ### 初始状态
 - Portal 分别设置为中文、英文和日语
 - 可触发 MFA（如账号已启用 TOTP）
+
+> **前置准备**: 当前环境没有预配置 MFA 测试账号。需要在 Portal 中手动为测试用户启用 MFA 并完成 TOTP 配置流程后，才能测试此场景。`reset-docker.sh` 会清除 admin 用户的 TOTP 凭据。
 
 ### 目的
 验证 Keycloak 主题的所有页面（不只是登录页）均完成 i18n，包括 MFA 验证页、TOTP 配置页、认证器选择页、密码重置页、错误提示页。

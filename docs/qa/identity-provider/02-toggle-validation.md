@@ -37,6 +37,11 @@
 - 检查社交登录按钮是否根据启用状态显示/隐藏
 - 如需排障，可通过后台同步校验或受控请求确认底层配置是否一致
 
+> **故障排除**: Keycloak 可能缓存 realm 配置。禁用 IdP 后，如果登录页仍显示该提供商按钮：
+> 1. 确认 Keycloak Admin API 返回 `enabled: false`
+> 2. 使用无痕窗口或清除浏览器缓存后重新访问登录页
+> 3. 如仍显示，可能是 Keycloak realm 缓存未失效，等待几分钟或重启 Keycloak 容器
+
 ---
 
 ## 场景 2：创建重复别名的提供商
@@ -56,8 +61,11 @@
 5. 点击「Add provider」
 
 ### 预期结果
-- 显示错误提示：「Identity provider with this alias already exists」
+- 提交按钮被禁用（`isDuplicateAlias` 前端校验）
+- 如果绕过前端校验，后端返回 Keycloak 409 错误：「Identity provider already exists」
 - 提供商未被创建
+
+> **注意**: 前端重复别名校验依赖 loader 返回的 `providers` 列表。如果在快速连续操作中（如刚创建完一个 IdP 后立即创建另一个），`providers` 列表可能尚未更新，导致前端校验遗漏。此时后端 Keycloak 409 作为最终保障。
 
 ### 预期数据状态
 ```sql

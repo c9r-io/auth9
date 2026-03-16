@@ -50,8 +50,8 @@ Passkeys 已从 Keycloak 代理模式迁移到原生 WebAuthn 实现。注册流
 1. 进入「Account」→「Passkeys」
 
 ### 预期结果
-- 显示空状态提示「No passkeys yet」
-- 显示说明文字「Add a passkey to sign in faster and more securely.」
+- 显示空状态标题「Your Passkeys」
+- 显示说明文字「Passkeys are a secure, passwordless way to sign in using your device's biometrics (fingerprint, face) or screen lock.」
 - 显示「Add your first passkey」按钮
 - 显示「About Passkeys」信息卡片，包含「More secure」「Fast & easy」「Works everywhere」
 - 顶部显示「Add passkey」按钮
@@ -238,7 +238,7 @@ async (page) => {
 2. 调用 **`browser_snapshot`** 查看页面，找到「Sign in with password」按钮
 3. 调用 **`browser_click`** 点击「Sign in with password」
 4. 页面进入 Auth9 品牌认证页，调用 **`browser_snapshot`** 查看登录表单
-5. 调用 **`browser_fill_form`** 填写 username=`e2e-test-user`, password=`Test123!`
+5. 调用 **`browser_fill_form`** 填写 username=`e2e-test-user`, password=`<test-password>`
 6. 调用 **`browser_click`** 点击认证页的「Sign In」按钮
 7. 调用 **`browser_snapshot`** 确认跳转到 Dashboard
 

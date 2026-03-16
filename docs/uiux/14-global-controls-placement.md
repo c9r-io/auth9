@@ -143,7 +143,7 @@ console.log('Theme & Lang overlap:', checkOverlap(themeToggle, langToggle));   /
 ### 目的
 验证主题/语言切换控件在 Dashboard 中不与侧边栏导航按钮重叠，布局清晰、合理。
 
-> ⚠️ **回归验证**: 此场景对应已知 Bug — 控件与 Sidemenu 按钮重叠。
+> **实现说明**: 当前侧边栏使用 `display: flex; flex-direction: column` 布局，导航区域 (`sidebar-nav`) 设置了 `flex: 1; min-height: 0; overflow-y: auto`，底部控件区域 (`sidebar-footer`) 设置了 `flex-shrink: 0; border-top`。这种 flex 布局确保导航区域和控件区域物理隔离，不会发生真实重叠。验证时请注意：`getBoundingClientRect()` 对 scrollable 容器内的元素可能返回其滚动位置，需检查元素是否在可见视口内。
 
 ### 测试操作流程
 1. 登录后进入 `/dashboard`

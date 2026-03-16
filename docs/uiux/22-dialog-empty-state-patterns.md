@@ -53,7 +53,7 @@
 - **焦点指示器**: `outline: 2px solid var(--accent-blue)`，`outline-offset: 2px`。
 - **焦点陷阱**: Tab 键在 Dialog 内循环，Shift+Tab 反向循环。
 - **首次焦点**: Dialog 打开后焦点移至第一个 Input（或 Close 按钮）。
-- **Escape 关闭**: Dialog 关闭，焦点返回到打开 Dialog 的按钮。
+- **Escape 关闭**: Dialog 关闭，焦点返回到打开 Dialog 的按钮。Radix UI Dialog 默认处理焦点恢复（`onCloseAutoFocus`），无需额外代码。验证时注意在 Escape 后等待 DOM 更新（约 200ms 动画时间）再检查 `document.activeElement`。
 - **AlertDialog 特殊**:
   - 焦点移至 "Cancel" 按钮（而非 "Confirm"），防止意外确认。
   - 点击遮罩层不关闭 AlertDialog（需明确点击 Cancel 或按 Escape）。

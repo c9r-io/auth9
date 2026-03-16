@@ -134,19 +134,40 @@ echo "[0/7] Dev certificates..."
 # JWT signing key (extracted from docker-compose.yml)
 "$SCRIPT_DIR/gen-dev-keys.sh"
 
-# gRPC TLS certificate
+# gRPC TLS certificates (CA + server + client for mTLS)
 CERT_DIR="$PROJECT_DIR/deploy/dev-certs/grpc"
 mkdir -p "$CERT_DIR"
-if [ ! -f "$CERT_DIR/server.crt" ] || [ ! -f "$CERT_DIR/server.key" ]; then
+if [ ! -f "$CERT_DIR/ca.crt" ] || [ ! -f "$CERT_DIR/server.crt" ] || [ ! -f "$CERT_DIR/client.crt" ]; then
+  # 1. Generate CA
   openssl req -x509 -newkey rsa:2048 \
-    -keyout "$CERT_DIR/server.key" \
-    -out "$CERT_DIR/server.crt" \
+    -keyout "$CERT_DIR/ca.key" \
+    -out "$CERT_DIR/ca.crt" \
     -days 3650 -nodes \
+    -subj "/CN=auth9-dev-ca" >/dev/null 2>&1
+
+  # 2. Generate server cert signed by CA
+  openssl req -newkey rsa:2048 -nodes \
+    -keyout "$CERT_DIR/server.key" \
+    -out "$CERT_DIR/server.csr" \
     -subj "/CN=localhost" >/dev/null 2>&1
-  chmod 600 "$CERT_DIR/server.key" || true
-  echo "  Generated new certificate"
+  openssl x509 -req -in "$CERT_DIR/server.csr" \
+    -CA "$CERT_DIR/ca.crt" -CAkey "$CERT_DIR/ca.key" -CAcreateserial \
+    -out "$CERT_DIR/server.crt" -days 3650 >/dev/null 2>&1
+
+  # 3. Generate client cert signed by CA (for mTLS)
+  openssl req -newkey rsa:2048 -nodes \
+    -keyout "$CERT_DIR/client.key" \
+    -out "$CERT_DIR/client.csr" \
+    -subj "/CN=auth9-client" >/dev/null 2>&1
+  openssl x509 -req -in "$CERT_DIR/client.csr" \
+    -CA "$CERT_DIR/ca.crt" -CAkey "$CERT_DIR/ca.key" -CAcreateserial \
+    -out "$CERT_DIR/client.crt" -days 3650 >/dev/null 2>&1
+
+  rm -f "$CERT_DIR"/*.csr "$CERT_DIR"/*.srl
+  chmod 600 "$CERT_DIR"/*.key || true
+  echo "  Generated CA + server + client certificates (mTLS)"
 else
-  echo "  Found existing certificate"
+  echo "  Found existing certificates"
 fi
 
 # Step 1: Stop and remove all containers and volumes

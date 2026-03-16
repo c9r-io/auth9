@@ -301,10 +301,13 @@ inputs.forEach(input => {
 ### 预期视觉效果
 
 #### 网格布局
+
+> **注意**：Services 页面使用响应式网格 `grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4`。测试时请确认浏览器视口宽度 >= 1024px 才能看到 3 列布局。
+
 **Desktop（>= 1024px）**：
-- 3 列：`grid-cols-3`
+- 3 列：`lg:grid-cols-3`
 - 间隙：16px（`gap-4`）
-- 卡片宽度：自动填充（`auto-fit`）
+- 卡片宽度：自动填充
 
 **Tablet（768px - 1023px）**：
 - 2 列：`md:grid-cols-2`
@@ -312,7 +315,7 @@ inputs.forEach(input => {
 
 **Mobile（< 768px）**：
 - 1 列：`grid-cols-1`
-- 间隙：12px（可选缩小）
+- 间隙：16px
 
 #### 卡片内部布局
 **统一规范**：

@@ -76,9 +76,10 @@ TableRow.displayName = "TableRow";
 const TableHead = forwardRef<
   HTMLTableCellElement,
   ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
+>(({ className, scope = "col", ...props }, ref) => (
   <th
     ref={ref}
+    scope={scope}
     className={cn(
       "h-10 px-4 text-left align-middle",
       "text-[11px] font-semibold uppercase tracking-[0.04em]",

@@ -64,7 +64,7 @@ async function runTests() {
   const app1 = express();
   app1.use(auth9Middleware({
     domain: "http://localhost:8080",
-    audience: "auth9",
+    audience: "auth9-portal",
   }));
   
   app1.get("/test", (req, res) => {
@@ -253,9 +253,6 @@ async function runTests() {
 
   if (failed > 0) process.exit(1);
 }
-
-// 设置环境变量
-process.env.ADMIN_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3YTYxZGJiOC1mOTM3LTQ5YjktYTlkMy1iMWMzNWZiNTI4ZmUiLCJlbWFpbCI6ImFkbWluQGF1dGg5LmxvY2FsIiwibmFtZSI6IkFkbWluIFVzZXIiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjgwODAiLCJhdWQiOiJhdXRoOSIsImlhdCI6MTc3MTEwNTU3MiwiZXhwIjoxNzcxMTA5MTcyfQ.ocY19B5RXHY0gwF2Em9JiRVJs7f1Zi-bxu45YtDp3jKVIDo3uuXAP-QBRW0J9_0nGVo4MdQgtjVIqhjroXU-PKLkMhmw9grIM8nPv5Clq0HJTnwIGTTPSMkMRkJ9oKGZydWcJPwHKd6NWafhl2Qm-nwFf0d6W9Efn17xSe1-UiKhlJEBlc29tg3IGqvnJmLuCLN_nx0W82LcXVWRPNdHKKEtAx7Ooy1Rtf_AZ2n0NGqQJ6hJr1HZKRiarr-V_x0CM1J4oB6qq9PCm90rKlz-IeyIN5053yJDnUHCOXk7G7w7nXdbAktc_Mr-9uvEjkEWYOkiQKzq3Whd7p_0EgvjPg";
 
 runTests().catch((err) => {
   console.error("测试套件失败:", err);

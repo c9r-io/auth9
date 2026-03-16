@@ -109,11 +109,11 @@ export function UsersDirectory({
           <table className="min-w-[600px] w-full divide-y divide-[var(--glass-border-subtle)] text-sm">
             <thead className="border-b border-[var(--glass-border-subtle)] bg-[var(--sidebar-item-hover)] text-left text-[11px] uppercase tracking-[0.04em] text-[var(--text-tertiary)]">
               <tr>
-                <th className="px-4 py-3 font-semibold">{t("usersPage.email")}</th>
-                <th className="px-4 py-3 font-semibold">{t("usersPage.displayName")}</th>
-                <th className="px-4 py-3 font-semibold">{t("usersPage.mfa")}</th>
-                <th className="px-4 py-3 font-semibold">{t("usersPage.updated")}</th>
-                <th className="w-10 px-4 py-3 font-semibold"></th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("usersPage.email")}</th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("usersPage.displayName")}</th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("usersPage.mfa")}</th>
+                <th scope="col" className="px-4 py-3 font-semibold">{t("usersPage.updated")}</th>
+                <th scope="col" className="w-10 px-4 py-3 font-semibold"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--glass-border-subtle)]">
