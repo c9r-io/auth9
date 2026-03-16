@@ -49,6 +49,29 @@ npm run build      # or cargo build
 npm run dev        # describe what to check manually
 ```
 
+## QA Documentation Plan
+
+Every governance plan must include a QA section that outlines post-implementation testing:
+
+```markdown
+### QA Coverage Plan
+
+**QA Module**: {module directory under docs/qa/}
+**QA Document**: docs/qa/{module}/{NN}-{feature}.md
+**Scenario Count**: {N} (max 5 per doc)
+
+| # | Scenario Type | Description |
+|---|---------------|-------------|
+| 1 | Happy path    | {description} |
+| 2 | Error case    | {description} |
+| 3 | Permission    | {description} |
+
+**Test Script**: {Yes/No — if Yes, will create scripts/qa/auto/{name}.sh}
+**Cross-Doc Impact**: {list docs likely affected, or "None expected"}
+```
+
+This section ensures QA coverage is planned alongside implementation, not as an afterthought.
+
 ## Quality Checklist
 
 Before finalizing a plan, verify:
@@ -57,3 +80,5 @@ Before finalizing a plan, verify:
 - [ ] Changes are minimal and focused on the FR scope
 - [ ] Existing patterns in the codebase are followed (not reinvented)
 - [ ] Test strategy covers happy path + error cases
+- [ ] QA coverage plan is included with scenario outline
+- [ ] QA module and document path are specified
