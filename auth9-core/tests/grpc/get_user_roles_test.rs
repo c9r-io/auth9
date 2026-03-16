@@ -57,10 +57,21 @@ async fn test_get_user_roles_with_service_filter() {
     let user_id = Uuid::new_v4();
     let tenant_id = Uuid::new_v4();
     let service_id = Uuid::new_v4();
+    let client_uuid = Uuid::new_v4();
     let role_id = Uuid::new_v4();
+    let client_id_str = "test-service-client";
 
     let builder = GrpcTestBuilder::new();
     let rbac_repo = builder.rbac_repo.clone();
+    let service_repo = builder.service_repo.clone();
+
+    // Register service + client so resolve_optional_service_scope can find it
+    service_repo
+        .add_service(create_test_service(service_id, tenant_id))
+        .await;
+    service_repo
+        .add_client(create_test_client(client_uuid, service_id, client_id_str))
+        .await;
 
     rbac_repo
         .set_user_roles_for_service(
@@ -84,7 +95,7 @@ async fn test_get_user_roles_with_service_filter() {
     let request = Request::new(GetUserRolesRequest {
         user_id: user_id.to_string(),
         tenant_id: tenant_id.to_string(),
-        service_id: service_id.to_string(),
+        service_id: client_id_str.to_string(),
     });
 
     let response = service.get_user_roles(request).await;
@@ -144,7 +155,7 @@ async fn test_get_user_roles_invalid_service_id() {
 
     let response = service.get_user_roles(request).await;
     assert!(response.is_err());
-    assert_eq!(response.unwrap_err().code(), tonic::Code::InvalidArgument);
+    assert_eq!(response.unwrap_err().code(), tonic::Code::NotFound);
 }
 
 #[tokio::test]
@@ -317,10 +328,21 @@ async fn test_get_user_roles_with_service_filter_cache_hit() {
     let user_id = Uuid::new_v4();
     let tenant_id = Uuid::new_v4();
     let service_id = Uuid::new_v4();
+    let client_uuid = Uuid::new_v4();
     let role_id = Uuid::new_v4();
+    let client_id_str = "service-cache-client";
 
     let builder = GrpcTestBuilder::new();
     let rbac_repo = builder.rbac_repo.clone();
+    let service_repo = builder.service_repo.clone();
+
+    // Register service + client so resolve_optional_service_scope can find it
+    service_repo
+        .add_service(create_test_service(service_id, tenant_id))
+        .await;
+    service_repo
+        .add_client(create_test_client(client_uuid, service_id, client_id_str))
+        .await;
 
     rbac_repo
         .add_role(create_test_role(role_id, service_id, "service-admin"))
@@ -347,7 +369,7 @@ async fn test_get_user_roles_with_service_filter_cache_hit() {
     let request = Request::new(GetUserRolesRequest {
         user_id: user_id.to_string(),
         tenant_id: tenant_id.to_string(),
-        service_id: service_id.to_string(),
+        service_id: client_id_str.to_string(),
     });
 
     let response = service.get_user_roles(request).await;
