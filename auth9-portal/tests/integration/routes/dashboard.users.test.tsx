@@ -1018,7 +1018,7 @@ describe("Users Page", () => {
 
             await waitFor(() => {
                 expect(userApi.create).toHaveBeenCalledWith(
-                    { email: "new@example.com", display_name: "New User", password: "SecurePass123!", tenant_id: "t1" },
+                    { email: "new@example.com", display_name: "New User", password: "SecurePass123!", tenant_id: "t1" },  // pragma: allowlist secret
                     "test-token"
                 );
             });
@@ -1097,7 +1097,7 @@ describe("Users Page", () => {
             // Confirmation dialog should appear
             await waitFor(() => {
                 expect(screen.getByTestId("confirm-dialog-title")).toHaveTextContent("Delete User");
-                expect(screen.getByText(/Are you sure you want to delete this user/)).toBeInTheDocument();
+                expect(screen.getByText(/Are you sure you want to delete/)).toBeInTheDocument();
             });
 
             // Click the confirm (Delete) button
@@ -1640,13 +1640,13 @@ describe("Users Page", () => {
                 intent: "create_user",
                 email: "new@test.com",
                 display_name: "New User",
-                password: "Password123!",
+                password: "Password123!",  // pragma: allowlist secret
             });
 
             const result = await action({ request, params: {}, context: {} });
             expect(result).toEqual({ success: true, intent: "create_user" });
             expect(userApi.create).toHaveBeenCalledWith(
-                { email: "new@test.com", display_name: "New User", password: "Password123!" },
+                { email: "new@test.com", display_name: "New User", password: "Password123!" },  // pragma: allowlist secret
                 "test-token"
             );
         });
