@@ -1,7 +1,7 @@
 # UI/UX 测试 - Tenant 租户详情子页面
 
 **模块**: 页面专项
-**测试范围**: 租户概览详情、Webhooks 配置、SSO 连接器管理、Invitations 邀请管理
+**测试范围**: 租户概览详情、Webhooks 配置、SSO 连接器管理、Invitations 邀请管理、SAML Applications 管理
 **场景数**: 5
 
 ---
@@ -15,7 +15,7 @@
 1. 访问 `/dashboard/tenants/:tenantId`。
 2. 检查页面顶部返回按钮（ArrowLeftIcon）和租户名标题。
 3. 验证概览统计卡片的网格排列。
-4. 检查右侧快速链接（Services / Invitations / Webhooks / SSO）的 Badge 计数。
+4. 检查右侧快速链接（Services / Invitations / Webhooks / SSO / SAML Applications）的 Badge 计数。
 5. 缩小视口至移动端，验证网格从三列变为单列。
 
 ### 预期视觉效果
@@ -28,8 +28,9 @@
   - MFA Switch 组件与标签水平排列，Switch 垂直居中。
 - **快速链接**:
   - Card 内垂直堆叠的按钮列表，`divide-y` 分隔。
-  - 每项: 图标 + 名称 + Badge（数字计数），`variant="ghost"` 样式。
+  - 每项: 图标 + 名称 + Badge（数字计数），`variant="outline"` 样式，`w-full justify-start`。
   - Badge: `variant="secondary"` pill，显示关联资源数量。
+  - 包含 5 项: Services、Invitations、Webhooks、Enterprise SSO、SAML Applications。
 - **移动端**: 三列变单列，快速链接卡片在配置卡片下方。
 - **useFetcher**: Status/MFA 更改使用 `useFetcher` 提交，不触发整页刷新。
 
@@ -127,7 +128,7 @@
 ### 测试操作流程
 1. 从 Tenant Detail 点击 "Services" 快速链接。
 2. 检查页面顶部返回按钮指向正确的 Tenant Detail 页。
-3. 依次通过快速链接访问 Invitations → Webhooks → SSO。
+3. 依次通过快速链接访问 Invitations → Webhooks → SSO → SAML Applications。
 4. 验证每个子页面的返回按钮和页面标题。
 
 ### 预期视觉效果

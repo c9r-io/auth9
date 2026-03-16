@@ -596,10 +596,13 @@ Portal 表单中使用简写，Service 层转换为完整 URN：
   - ✅ R4: REST API — 6 endpoints (list/create/get/update/delete + metadata), routes registered (metadata is public, CRUD is protected)
   - ✅ R5: No work needed (KC_HOSTNAME already configured)
   - ✅ R7: 28 unit tests (model validation, repository mock, service logic, Keycloak builder, protocol mapper conversion)
-- **Remaining (Phase 2 & 3)**:
-  - R6: Portal management UI (SAML Applications tab in tenant detail)
+- **Phase 2 Fulfilled (Portal UI)**:
+  - ✅ R6: Portal management UI — SAML Applications page with create form (all fields including dynamic attribute mappings), list with enable/disable toggle, IdP Metadata URL + SSO URL copy, delete. Quick link added to tenant detail page. i18n: en-US, zh-CN, ja.
+  - Files: `saml-application.ts` (API client), `dashboard.tenants.$tenantId.saml-apps.tsx` (route), 3 locale files, tenant detail quick link
+- **Remaining (Phase 3)**:
   - Dedicated certificate download endpoint (`/certificate`)
-  - Assertion encryption support (Phase 3)
-  - `tenant_roles`/`tenant_permissions` Script Mapper integration (Phase 3)
-  - Certificate rotation alerts (Phase 3)
-  - SP-Initiated SLO (Phase 3)
+  - Assertion encryption support
+  - `tenant_roles`/`tenant_permissions` Script Mapper integration
+  - Certificate rotation alerts
+  - SP-Initiated SLO
+  - Setup Instructions panel for common SPs (Salesforce, AWS, Google Workspace)

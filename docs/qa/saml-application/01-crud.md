@@ -19,7 +19,7 @@ Auth9 作为 SAML Identity Provider，可向外部 Service Provider 签发 SAML 
 - `DELETE /api/v1/tenants/{tenant_id}/saml-apps/{app_id}` — 删除
 - `GET    /api/v1/tenants/{tenant_id}/saml-apps/{app_id}/metadata` — 获取 IdP Metadata XML（公开）
 
-> **Phase 1 仅包含后端 API**，Portal UI（Phase 2）尚未实现，所有测试通过 curl/API 执行。
+> **Phase 1（API）+ Phase 2（Portal UI）** 已完成。API 测试通过 curl 执行，Portal UI 测试参见 [03-portal-ui.md](./03-portal-ui.md)。
 
 ---
 

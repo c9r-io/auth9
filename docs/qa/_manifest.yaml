@@ -813,3 +813,11 @@ documents:
     has_entry_visibility: false
     has_checklist: true
     last_reviewed: 2026-03-16
+  - id: saml-application/03-portal-ui
+    path: docs/qa/saml-application/03-portal-ui.md
+    module: saml-application
+    scenarios: 5
+    has_ui_flow: true
+    has_entry_visibility: true
+    has_checklist: true
+    last_reviewed: 2026-03-16

@@ -392,6 +392,12 @@ export default function TenantDetailPage() {
                   {t("tenants.actions.enterpriseSso")}
                 </Link>
               </Button>
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <Link to={`/dashboard/tenants/${tenant.id}/saml-apps`}>
+                  <Link2Icon className="mr-2 h-4 w-4" />
+                  {t("tenants.actions.samlApps")}
+                </Link>
+              </Button>
             </CardContent>
           </Card>
 

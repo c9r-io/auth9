@@ -250,6 +250,7 @@ box-shadow: 0 8px 32px var(--glass-shadow),
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-16 | 2.4.0 | SAML IdP 出站 Phase 2 Portal UI：更新 `21`（Tenant Detail Pages）Quick Links 从 4 项扩展为 5 项（新增 SAML Applications），场景 5 导航路径补充 SAML Applications 子页面 |
 | 2026-03-14 | 2.3.0 | Action 详情页脚本代码块渲染优化：更新 `10`（Services 页面）场景 5 追加 Action 详情页 CodeBlock 深色代码块验证项（背景色、等宽字体、复制按钮、溢出处理、深色模式兼容）|
 | 2026-03-13 | 2.2.0 | Dark Mode 认证页对比度修正同步：更新 `02`（主题切换）中的 Input token 与独立认证页对比度说明，更新 `20`（Onboarding/Auth Flow）中忘记密码页成功态与 Dark Mode 层级预期；与 `docs/qa/auth/15-dark-mode-auth-contrast.md` 对齐 |
 | 2026-03-11 | 2.1.0 | 设计系统对齐审计：交叉比对全部组件实现与文档约束值，修正 10 处漂移。`--text-secondary` Light 色值 `#86868B`→`#6E6E73`（`01`/`02`/`06`/`design-system`）；Button padding `px-4 py-2`→`px-5 py-2.5` + 尺寸变体表（`01`）；Select/Textarea 圆角 12px→10px（`03`/`design-system`）；Label 颜色 `--text-primary`→`--text-secondary`（`03`）；表头颜色 `--text-secondary`→`--text-tertiary`（`03`）；Input 背景从硬编码改为 `var(--sidebar-item-hover)`（`02`）；触摸目标尺寸对齐实际值（`05`）；Dialog vs AlertDialog max-width 区分（`03`）；Outline Button 文字/边框从蓝色修正为 `--text-primary`/`--glass-border-subtle`（`01`）；README 新增组件尺寸速查表和圆角细分 |
