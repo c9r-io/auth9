@@ -889,6 +889,11 @@ export default {
       appCreated: "SAML application registered",
       appDeleted: "SAML application deleted",
       appUpdated: "SAML application updated",
+      downloadCertificate: "Download IdP Certificate",
+      certExpired: "Certificate expired",
+      certExpiresSoon: "Expires in {{days}} days",
+      certValid: "Valid ({{days}} days)",
+      encryptionRequiresCert: "SP certificate is required when encryption is enabled.",
     },
     errors: {
       tenantIdRequired: "Tenant ID required",

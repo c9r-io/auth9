@@ -134,12 +134,14 @@ WHERE tenant_id = '{tenant_id}' AND entity_id = 'https://sp.example.com';
    - 启用状态开关
    - IdP Metadata URL 行（带复制按钮）
    - SSO URL 行（带复制按钮）
+   - 「Download IdP Certificate」下载链接（带下载图标）
+   - 证书状态 badge（绿色/黄色/红色，显示剩余天数）
    - 配置摘要行（NameID 格式、签名状态、映射数量）
 4. 点击 IdP Metadata URL 旁的复制按钮
 5. 在浏览器中打开复制的 URL
 
 ### 预期结果
-- 列表项显示所有信息字段
+- 列表项显示所有信息字段（含证书下载链接和过期 badge）
 - 复制按钮点击后显示 ✓ 反馈（约 2 秒后恢复）
 - IdP Metadata URL 格式：`http://localhost:8080/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/metadata`
 - 浏览器中直接访问 Metadata URL 返回有效的 SAML IdP Metadata XML（无需登录，公开端点）

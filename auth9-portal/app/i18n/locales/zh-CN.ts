@@ -886,6 +886,11 @@ export default {
       appCreated: "SAML 应用已注册",
       appDeleted: "SAML 应用已删除",
       appUpdated: "SAML 应用已更新",
+      downloadCertificate: "下载 IdP 证书",
+      certExpired: "证书已过期",
+      certExpiresSoon: "{{days}} 天后过期",
+      certValid: "有效（{{days}} 天）",
+      encryptionRequiresCert: "启用加密时必须提供 SP 证书。",
     },
     errors: {
       tenantIdRequired: "缺少租户 ID",

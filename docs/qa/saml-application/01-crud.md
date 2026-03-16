@@ -18,8 +18,10 @@ Auth9 作为 SAML Identity Provider，可向外部 Service Provider 签发 SAML 
 - `PUT    /api/v1/tenants/{tenant_id}/saml-apps/{app_id}` — 更新
 - `DELETE /api/v1/tenants/{tenant_id}/saml-apps/{app_id}` — 删除
 - `GET    /api/v1/tenants/{tenant_id}/saml-apps/{app_id}/metadata` — 获取 IdP Metadata XML（公开）
+- `GET    /api/v1/tenants/{tenant_id}/saml-apps/{app_id}/certificate` — 下载 IdP 签名证书 PEM（公开）
+- `GET    /api/v1/tenants/{tenant_id}/saml-apps/{app_id}/certificate-info` — 证书过期信息（受保护）
 
-> **Phase 1（API）+ Phase 2（Portal UI）** 已完成。API 测试通过 curl 执行，Portal UI 测试参见 [03-portal-ui.md](./03-portal-ui.md)。
+> **Phase 1（API）+ Phase 2（Portal UI）+ Phase 3（证书/加密/SLO）** 已完成。API 测试通过 curl 执行，Portal UI 测试参见 [03-portal-ui.md](./03-portal-ui.md)，证书与加密测试参见 [04-certificate-encryption.md](./04-certificate-encryption.md)。
 
 ---
 

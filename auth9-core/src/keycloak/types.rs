@@ -290,6 +290,32 @@ pub struct KeycloakProtocolMapper {
     pub config: HashMap<String, String>,
 }
 
+/// Keycloak realm keys metadata (from GET /admin/realms/{realm}/keys)
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KeysMetadataRepresentation {
+    #[serde(default)]
+    pub active: Option<HashMap<String, String>>,
+    #[serde(default)]
+    pub keys: Vec<KeyMetadataRepresentation>,
+}
+
+/// Individual key metadata within a Keycloak realm
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct KeyMetadataRepresentation {
+    pub kid: Option<String>,
+    pub provider_id: Option<String>,
+    pub status: Option<String>,
+    #[serde(rename = "type")]
+    pub key_type: Option<String>,
+    pub algorithm: Option<String>,
+    pub certificate: Option<String>,
+    pub public_key: Option<String>,
+    #[serde(rename = "use")]
+    pub key_use: Option<String>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

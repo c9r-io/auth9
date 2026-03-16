@@ -1,7 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation } from "react-router";
 import { useState } from "react";
-import { ArrowLeftIcon, Cross2Icon, PlusIcon } from "@radix-ui/react-icons";
+import { ArrowLeftIcon, Cross2Icon, DownloadIcon, PlusIcon } from "@radix-ui/react-icons";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -42,9 +42,23 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       samlApplicationApi.list(tenantId, accessToken || undefined),
     ]);
 
+    // Fetch certificate info for each app (best-effort, don't fail if unavailable)
+    const certInfoMap: Record<string, { expires_at: string; expires_soon: boolean; days_until_expiry: number } | null> = {};
+    await Promise.all(
+      appsRes.data.map(async (app: { id: string }) => {
+        try {
+          const info = await samlApplicationApi.getCertificateInfo(tenantId, app.id, accessToken || undefined);
+          certInfoMap[app.id] = info.data;
+        } catch {
+          certInfoMap[app.id] = null;
+        }
+      })
+    );
+
     return {
       tenant: tenantRes.data,
       apps: appsRes.data,
+      certInfoMap,
       apiBaseUrl: SAML_APPLICATION_API_BASE,
     };
   } catch {
@@ -114,10 +128,37 @@ export async function action({ request, params }: ActionFunctionArgs) {
   return { error: translate(locale, "tenants.errors.invalidIntent") };
 }
 
+function CertExpiryBadge({ certInfo }: { certInfo: { expires_soon: boolean; days_until_expiry: number } | null }) {
+  const { t } = useI18n();
+  if (!certInfo) return null;
+
+  const { days_until_expiry, expires_soon } = certInfo;
+  if (days_until_expiry <= 0) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--accent-red)]/15 text-[var(--accent-red)]">
+        {t("tenants.samlApps.certExpired")}
+      </span>
+    );
+  }
+  if (expires_soon) {
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--accent-amber)]/15 text-[var(--accent-amber)]">
+        {t("tenants.samlApps.certExpiresSoon", { days: days_until_expiry })}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[var(--accent-green)]/15 text-[var(--accent-green)]">
+      {t("tenants.samlApps.certValid", { days: days_until_expiry })}
+    </span>
+  );
+}
+
 function SamlAppRow({
   app,
   tenantId,
   apiBaseUrl,
+  certInfo,
 }: {
   app: {
     id: string;
@@ -133,6 +174,7 @@ function SamlAppRow({
   };
   tenantId: string;
   apiBaseUrl: string;
+  certInfo: { expires_at: string; expires_soon: boolean; days_until_expiry: number } | null;
 }) {
   const { t } = useI18n();
 
@@ -170,6 +212,17 @@ function SamlAppRow({
           <Label className="text-xs text-[var(--text-tertiary)]">{t("tenants.samlApps.ssoUrl")}</Label>
           <CopyValue value={app.sso_url} fieldId="sso-url" />
         </div>
+        <div className="flex items-center gap-3">
+          <a
+            href={`${apiBaseUrl}/api/v1/tenants/${tenantId}/saml-apps/${app.id}/certificate`}
+            download="idp-signing.crt"
+            className="inline-flex items-center gap-1 text-xs text-[var(--text-link)] hover:underline"
+          >
+            <DownloadIcon className="h-3 w-3" />
+            {t("tenants.samlApps.downloadCertificate")}
+          </a>
+          <CertExpiryBadge certInfo={certInfo} />
+        </div>
       </div>
 
       <div className="text-xs text-[var(--text-tertiary)]">
@@ -191,7 +244,7 @@ function SamlAppRow({
 
 export default function TenantSamlAppsPage() {
   const { t } = useI18n();
-  const { tenant, apps, apiBaseUrl } = useLoaderData<typeof loader>();
+  const { tenant, apps, certInfoMap, apiBaseUrl } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -304,14 +357,21 @@ export default function TenantSamlAppsPage() {
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="sp_certificate">{t("tenants.samlApps.spCertificate")}</Label>
+              <Label htmlFor="sp_certificate">
+                {t("tenants.samlApps.spCertificate")}
+                {encryptAssertions && <span className="text-[var(--accent-red)] ml-1">*</span>}
+              </Label>
               <textarea
                 id="sp_certificate"
                 name="sp_certificate"
                 rows={3}
-                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono"
+                required={encryptAssertions}
+                className={`w-full rounded-md border px-3 py-2 text-sm font-mono ${encryptAssertions ? "border-[var(--accent-amber)]" : "border-gray-300"}`}
                 placeholder={t("tenants.samlApps.spCertificatePlaceholder")}
               />
+              {encryptAssertions && (
+                <p className="text-xs text-[var(--accent-amber)]">{t("tenants.samlApps.encryptionRequiresCert")}</p>
+              )}
             </div>
 
             <div className="space-y-3 md:col-span-2">
@@ -381,6 +441,7 @@ export default function TenantSamlAppsPage() {
                 app={app}
                 tenantId={tenant.id}
                 apiBaseUrl={apiBaseUrl}
+                certInfo={certInfoMap[app.id] || null}
               />
             ))
           )}

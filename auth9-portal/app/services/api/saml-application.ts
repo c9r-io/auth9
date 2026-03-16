@@ -47,6 +47,13 @@ export interface CreateSamlApplicationInput {
   attribute_mappings?: AttributeMapping[];
 }
 
+export interface CertificateInfo {
+  certificate_pem: string;
+  expires_at: string;
+  expires_soon: boolean;
+  days_until_expiry: number;
+}
+
 export interface UpdateSamlApplicationInput {
   name?: string;
   acs_url?: string;
@@ -125,6 +132,18 @@ export const samlApplicationApi = {
         headers: getHeaders(accessToken),
         body: JSON.stringify(input),
       }
+    );
+    return handleResponse(response);
+  },
+
+  getCertificateInfo: async (
+    tenantId: string,
+    appId: string,
+    accessToken?: string
+  ): Promise<{ data: CertificateInfo }> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/tenants/${tenantId}/saml-apps/${appId}/certificate-info`,
+      { headers: getHeaders(accessToken) }
     );
     return handleResponse(response);
   },

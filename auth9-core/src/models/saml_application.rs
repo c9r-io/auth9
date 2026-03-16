@@ -130,6 +130,15 @@ pub struct SamlApplicationResponse {
     pub sso_url: String,
 }
 
+/// IdP signing certificate information with expiry details
+#[derive(Debug, Clone, Serialize, ToSchema)]
+pub struct CertificateInfo {
+    pub certificate_pem: String,
+    pub expires_at: DateTime<Utc>,
+    pub expires_soon: bool,
+    pub days_until_expiry: i64,
+}
+
 fn default_true() -> bool {
     true
 }

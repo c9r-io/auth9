@@ -5,7 +5,8 @@ use crate::http_support::{MessageResponse, SuccessResponse};
 use crate::middleware::auth::AuthUser;
 use crate::models::common::StringUuid;
 use crate::models::saml_application::{
-    CreateSamlApplicationInput, SamlApplicationResponse, UpdateSamlApplicationInput,
+    CertificateInfo, CreateSamlApplicationInput, SamlApplicationResponse,
+    UpdateSamlApplicationInput,
 };
 use crate::policy::{self, PolicyAction, PolicyInput, ResourceScope};
 use crate::state::HasServices;
@@ -155,6 +156,61 @@ pub async fn get_metadata<S: HasServices>(
         )],
         xml,
     ))
+}
+
+/// Get IdP signing certificate in PEM format (public endpoint — no auth required)
+#[utoipa::path(
+    get,
+    path = "/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/certificate",
+    tag = "SAML Applications",
+    responses(
+        (status = 200, description = "IdP signing certificate (PEM)", content_type = "application/x-pem-file")
+    )
+)]
+pub async fn get_certificate<S: HasServices>(
+    State(state): State<S>,
+    Path((tenant_id, app_id)): Path<(Uuid, Uuid)>,
+) -> Result<impl IntoResponse> {
+    let pem = state
+        .saml_application_service()
+        .get_signing_certificate(StringUuid::from(tenant_id), StringUuid::from(app_id))
+        .await?;
+    Ok((
+        [
+            (
+                axum::http::header::CONTENT_TYPE,
+                "application/x-pem-file; charset=utf-8",
+            ),
+            (
+                axum::http::header::CONTENT_DISPOSITION,
+                "attachment; filename=\"idp-signing.crt\"",
+            ),
+        ],
+        pem,
+    ))
+}
+
+/// Get IdP signing certificate info with expiry details (protected)
+#[utoipa::path(
+    get,
+    path = "/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/certificate-info",
+    tag = "SAML Applications",
+    responses(
+        (status = 200, description = "Certificate info with expiry")
+    )
+)]
+pub async fn get_certificate_info<S: HasServices>(
+    State(state): State<S>,
+    auth: AuthUser,
+    _headers: HeaderMap,
+    Path((tenant_id, app_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<SuccessResponse<CertificateInfo>>> {
+    ensure_tenant_access(&state, &auth, tenant_id).await?;
+    let info = state
+        .saml_application_service()
+        .get_certificate_info(StringUuid::from(tenant_id), StringUuid::from(app_id))
+        .await?;
+    Ok(Json(SuccessResponse::new(info)))
 }
 
 async fn ensure_tenant_access<S: HasServices>(

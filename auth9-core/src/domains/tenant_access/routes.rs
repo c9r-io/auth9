@@ -19,10 +19,14 @@ where
             post(tenant_access_api::invitation::accept::<S>),
         )
         .route("/api/v1/users", post(tenant_access_api::user::create::<S>))
-        // SAML Application public endpoints (metadata for external SPs)
+        // SAML Application public endpoints (metadata + certificate for external SPs)
         .route(
             "/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/metadata",
             get(tenant_access_api::saml_application::get_metadata::<S>),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/certificate",
+            get(tenant_access_api::saml_application::get_certificate::<S>),
         )
 }
 
@@ -127,5 +131,9 @@ where
             get(tenant_access_api::saml_application::get::<S>)
                 .put(tenant_access_api::saml_application::update::<S>)
                 .delete(tenant_access_api::saml_application::delete::<S>),
+        )
+        .route(
+            "/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/certificate-info",
+            get(tenant_access_api::saml_application::get_certificate_info::<S>),
         )
 }

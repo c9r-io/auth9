@@ -184,12 +184,13 @@
 | [integration/10-security-hardening-p2.md](./integration/10-security-hardening-p2.md) | 事务性级联删除原子性、Keycloak 事件源安全校验、外部系统同步 | 5 |
 | [integration/12-otp-service-layer.md](./integration/12-otp-service-layer.md) | OTP 通用服务层基础设施（OtpManager、OtpChannel、速率限制、CacheOperations 扩展） | 5 |
 
-### SAML Application (3 个文档, 15 个场景)
+### SAML Application (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [saml-application/01-crud.md](./saml-application/01-crud.md) | SAML Application CRUD（创建、列表、获取、更新、删除） | 5 |
 | [saml-application/02-metadata-validation.md](./saml-application/02-metadata-validation.md) | IdP Metadata XML 获取、输入校验、属性映射、跨租户隔离 | 5 |
 | [saml-application/03-portal-ui.md](./saml-application/03-portal-ui.md) | Portal UI 入口可见性、创建表单、列表、启停、删除、Metadata URL 复制 | 5 |
+| [saml-application/04-certificate-encryption.md](./saml-application/04-certificate-encryption.md) | IdP 签名证书下载、证书过期信息、加密校验、SLO POST Binding | 5 |
 
 ### SCIM Provisioning (5 个文档, 25 个场景)
 | 文档 | 描述 | 场景数 |
@@ -222,15 +223,16 @@
 | Action | 12 | 49 |
 | SDK | 6 | 30 |
 | 集成测试 | 11 | 54 |
-| SAML Application | 3 | 15 |
+| SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
-| **总计** | **102** | **484** |
+| **总计** | **103** | **489** |
 
 ### 文档对齐记录
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
 | 2026-03-14 | 4.3.0 | 新增平台级恶意 IP 黑名单 QA 文档（`settings/04`），并同步修正 `session/04` 对可疑 IP 告警来源的说明，覆盖黑名单配置、输入校验、`suspicious_ip`/`critical` 告警联动 |
+| 2026-03-16 | 5.11.0 | **SAML IdP 出站 Phase 3（证书/加密/SLO）**：新增 `saml-application/04-certificate-encryption.md`（5 场景），覆盖 IdP 签名证书下载公开端点、证书过期信息受保护端点、Assertion 加密缺少 SP 证书校验、SLO POST Binding 验证、Portal 证书下载链接与过期告警 badge；跨文档更新 `01-crud.md` 端点列表、`02-metadata-validation.md` 公开端点列表、`03-portal-ui.md` 列表展示项；共 103 个文档 489 个场景 |
 | 2026-03-16 | 5.10.0 | **SAML IdP 出站 Phase 2 Portal UI**：新增 `saml-application/03-portal-ui.md`（5 场景），覆盖 Tenant 详情页入口可见性、创建表单完整提交、列表展示与 Metadata URL 复制、启停切换、删除；更新 `01-crud.md` Phase 说明；跨文档更新 `uiux/21-tenant-detail-pages.md` Quick Links 与导航路径补充 SAML Applications；共 102 个文档 484 个场景 |
 | 2026-03-16 | 5.9.0 | **SAML IdP 出站 Phase 1**：新增 `saml-application/01-crud.md`（5 场景）、`saml-application/02-metadata-validation.md`（5 场景），覆盖 SAML Application CRUD、IdP Metadata XML 公开端点、输入校验、属性映射验证、跨租户隔离、默认值；跨文档无影响（纯新增 API，无修改现有端点）；共 101 个文档 479 个场景 |
 | 2026-03-16 | 5.8.0 | 新增 `auth/17-email-otp-login.md`（5 个场景）；更新 `auth/01-oidc-login.md` 认证方式表增加 Email OTP 行；更新 `settings/01-branding.md` BrandingConfig 字段表增加 `email_otp_enabled` |
@@ -388,6 +390,7 @@ cargo run --bin seed-data -- --dataset=qa-basic --reset
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-16 | 5.11.0 | **SAML IdP 出站 Phase 3 测试文档**：新增 `saml-application/04-certificate-encryption.md`（5 场景），覆盖证书端点、加密校验、SLO POST Binding；跨文档更新 `01-crud.md`、`02-metadata-validation.md`、`03-portal-ui.md`；共 103 个文档 489 个场景 |
 | 2026-03-16 | 5.10.0 | **SAML IdP 出站 Phase 2 Portal UI 测试文档**：新增 `saml-application/03-portal-ui.md`（5 场景），覆盖 Portal 入口可见性、表单创建、列表、启停、删除；更新 `01-crud.md`、`uiux/21-tenant-detail-pages.md`；共 102 个文档 484 个场景 |
 | 2026-03-16 | 5.9.0 | **SAML IdP 出站 Phase 1 测试文档**：新增 `saml-application/01-crud.md`（5 场景）、`saml-application/02-metadata-validation.md`（5 场景）；共 101 个文档 479 个场景 |
 | 2026-03-16 | 5.7.0 | **OTP 通用服务层基础设施测试**：新增 `integration/12-otp-service-layer.md`（5 场景），覆盖 OtpManager 单元测试验证、模块代码结构完整性、CacheOperations 扩展完整性、速率限制默认配置、编译和 Lint 检查；跨文档无影响（纯后端基础设施层，无 API/UI 变更）；共 99 个文档 469 个场景 |

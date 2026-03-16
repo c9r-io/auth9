@@ -816,6 +816,37 @@ impl KeycloakClient {
             .map_err(|e| AppError::Keycloak(format!("Failed to read SAML IdP descriptor: {}", e)))
     }
 
+    /// Get realm keys metadata (certificates, public keys, etc.)
+    pub async fn get_realm_keys(&self) -> Result<KeysMetadataRepresentation> {
+        let token = self.get_admin_token().await?;
+        let url = format!(
+            "{}/admin/realms/{}/keys",
+            self.config.url, self.config.realm
+        );
+
+        let response = self
+            .http_client
+            .get(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+            .map_err(|e| AppError::Keycloak(format!("Failed to get realm keys: {}", e)))?;
+
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(AppError::Keycloak(format!(
+                "Failed to get realm keys: {} - {}",
+                status, body
+            )));
+        }
+
+        response
+            .json::<KeysMetadataRepresentation>()
+            .await
+            .map_err(|e| AppError::Keycloak(format!("Failed to parse realm keys: {}", e)))
+    }
+
     // ============================================================================
     // Password Management
     // ============================================================================

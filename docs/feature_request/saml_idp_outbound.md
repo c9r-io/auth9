@@ -599,10 +599,12 @@ Portal 表单中使用简写，Service 层转换为完整 URN：
 - **Phase 2 Fulfilled (Portal UI)**:
   - ✅ R6: Portal management UI — SAML Applications page with create form (all fields including dynamic attribute mappings), list with enable/disable toggle, IdP Metadata URL + SSO URL copy, delete. Quick link added to tenant detail page. i18n: en-US, zh-CN, ja.
   - Files: `saml-application.ts` (API client), `dashboard.tenants.$tenantId.saml-apps.tsx` (route), 3 locale files, tenant detail quick link
-- **Remaining (Phase 3)**:
-  - Dedicated certificate download endpoint (`/certificate`)
-  - Assertion encryption support
-  - `tenant_roles`/`tenant_permissions` Script Mapper integration
-  - Certificate rotation alerts
-  - SP-Initiated SLO
-  - Setup Instructions panel for common SPs (Salesforce, AWS, Google Workspace)
+- **Phase 3 Fulfilled (Advanced Features)**:
+  - ✅ Dedicated certificate download endpoint (`/certificate`) — public endpoint returning PEM, Keycloak Realm Keys API integration
+  - ✅ Assertion encryption validation — `encrypt_assertions=true` requires `sp_certificate`; Portal form shows required indicator
+  - ✅ SP-Initiated SLO — POST binding added alongside existing Redirect binding (`saml_single_logout_service_url_post`)
+  - ✅ Certificate rotation alerts — `x509-parser` for cert expiry parsing, `/certificate-info` protected endpoint, Portal badge (green/yellow/red)
+  - ✅ 6 new unit tests (encryption validation, SLO bindings, certificate parsing)
+- **Remaining (Phase 3 — Deferred)**:
+  - `tenant_roles`/`tenant_permissions` Script Mapper integration (low priority — most SPs manage roles internally)
+  - Setup Instructions panel for common SPs (Salesforce, AWS, Google Workspace) (nice-to-have)

@@ -344,6 +344,7 @@ dependencies = [
  "webauthn-rs",
  "webauthn-rs-proto",
  "wiremock",
+ "x509-parser",
 ]
 
 [[package]]

@@ -13,6 +13,7 @@ SAML Application 提供 IdP Metadata XML 端点（公开，无需认证），外
 
 公开端点：
 - `GET /api/v1/tenants/{tenant_id}/saml-apps/{app_id}/metadata` — IdP Metadata XML（无需 Authorization）
+- `GET /api/v1/tenants/{tenant_id}/saml-apps/{app_id}/certificate` — IdP 签名证书 PEM（无需 Authorization）
 
 ---
 
