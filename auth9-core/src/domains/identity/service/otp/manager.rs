@@ -34,7 +34,12 @@ impl<C: CacheOperations> OtpManager<C> {
         ttl_secs: u64,
         rate_limit: &OtpRateLimitConfig,
     ) -> Result<()> {
-        let fail_key = format!("{}:{}:{}", crate::cache::keys::OTP_FAIL, channel, destination);
+        let fail_key = format!(
+            "{}:{}:{}",
+            crate::cache::keys::OTP_FAIL,
+            channel,
+            destination
+        );
         let cooldown_key = format!(
             "{}:{}:{}",
             crate::cache::keys::OTP_COOLDOWN,
@@ -73,9 +78,7 @@ impl<C: CacheOperations> OtpManager<C> {
         // 3. Check daily limit
         let daily_count = self.cache.increment_counter(&daily_key, 86400).await?;
         if daily_count > rate_limit.daily_max {
-            return Err(AppError::BadRequest(
-                "Daily OTP limit reached.".to_string(),
-            ));
+            return Err(AppError::BadRequest("Daily OTP limit reached.".to_string()));
         }
 
         // 4. Store OTP
@@ -92,7 +95,12 @@ impl<C: CacheOperations> OtpManager<C> {
         code: &str,
         rate_limit: &OtpRateLimitConfig,
     ) -> Result<()> {
-        let fail_key = format!("{}:{}:{}", crate::cache::keys::OTP_FAIL, channel, destination);
+        let fail_key = format!(
+            "{}:{}:{}",
+            crate::cache::keys::OTP_FAIL,
+            channel,
+            destination
+        );
         let otp_key = format!("{}:{}:{}", crate::cache::keys::OTP, channel, destination);
 
         // 1. Check failure lockout
@@ -167,7 +175,13 @@ mod tests {
         let rl = test_rate_limit();
 
         manager
-            .store(OtpChannelType::Email, "user@example.com", "123456", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "123456",
+                600,
+                &rl,
+            )
             .await
             .unwrap();
 
@@ -184,7 +198,13 @@ mod tests {
         let rl = test_rate_limit();
 
         manager
-            .store(OtpChannelType::Email, "user@example.com", "123456", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "123456",
+                600,
+                &rl,
+            )
             .await
             .unwrap();
 
@@ -204,7 +224,13 @@ mod tests {
         let rl = test_rate_limit();
 
         manager
-            .store(OtpChannelType::Email, "user@example.com", "123456", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "123456",
+                600,
+                &rl,
+            )
             .await
             .unwrap();
 
@@ -240,13 +266,25 @@ mod tests {
 
         // First store succeeds
         manager
-            .store(OtpChannelType::Email, "user@example.com", "111111", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "111111",
+                600,
+                &rl,
+            )
             .await
             .unwrap();
 
         // Second store immediately fails due to cooldown
         let result = manager
-            .store(OtpChannelType::Email, "user@example.com", "222222", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "222222",
+                600,
+                &rl,
+            )
             .await;
         assert!(result.is_err());
         if let Err(AppError::BadRequest(msg)) = result {
@@ -268,17 +306,35 @@ mod tests {
 
         // Store 1 and 2 succeed
         manager
-            .store(OtpChannelType::Email, "user@example.com", "111111", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "111111",
+                600,
+                &rl,
+            )
             .await
             .unwrap();
         manager
-            .store(OtpChannelType::Email, "user@example.com", "222222", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "222222",
+                600,
+                &rl,
+            )
             .await
             .unwrap();
 
         // Store 3 exceeds daily limit
         let result = manager
-            .store(OtpChannelType::Email, "user@example.com", "333333", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "333333",
+                600,
+                &rl,
+            )
             .await;
         assert!(result.is_err());
         if let Err(AppError::BadRequest(msg)) = result {
@@ -298,7 +354,13 @@ mod tests {
         };
 
         manager
-            .store(OtpChannelType::Email, "user@example.com", "123456", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "123456",
+                600,
+                &rl,
+            )
             .await
             .unwrap();
 
@@ -332,7 +394,13 @@ mod tests {
         };
 
         manager
-            .store(OtpChannelType::Email, "user@example.com", "111111", 600, &rl)
+            .store(
+                OtpChannelType::Email,
+                "user@example.com",
+                "111111",
+                600,
+                &rl,
+            )
             .await
             .unwrap();
 

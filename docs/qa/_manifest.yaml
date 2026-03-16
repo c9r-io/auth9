@@ -354,6 +354,14 @@ documents:
     has_entry_visibility: false
     has_checklist: true
     last_reviewed: 2026-02-21
+  - id: integration/12-otp-service-layer
+    path: docs/qa/integration/12-otp-service-layer.md
+    module: integration
+    scenarios: 5
+    has_ui_flow: false
+    has_entry_visibility: false
+    has_checklist: true
+    last_reviewed: 2026-03-16
   - id: invitation/01-create-send
     path: docs/qa/invitation/01-create-send.md
     module: invitation

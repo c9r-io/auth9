@@ -167,7 +167,7 @@
 | [sdk/05-express-middleware.md](./sdk/05-express-middleware.md) | Express 中间件、权限控制、角色控制、AuthInfo | 5 |
 | [sdk/06-middleware-testing.md](./sdk/06-middleware-testing.md) | Next.js/Fastify 中间件、Mock Token、构建输出 | 5 |
 
-### 集成测试 (11 个文档, 54 个场景)
+### 集成测试 (12 个文档, 59 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [integration/01-concurrent-operations.md](./integration/01-concurrent-operations.md) | 并发操作、竞态条件 | 4 |
@@ -181,6 +181,7 @@
 | [integration/08-observability-stack.md](./integration/08-observability-stack.md) | 可观测性栈启动、Grafana 仪表盘、业务指标、限流指标 | 5 |
 | [integration/09-security-hardening-config.md](./integration/09-security-hardening-config.md) | 生产环境安全启动校验、REST aud 严格校验、HSTS 条件下发、gRPC audience 必填 | 5 |
 | [integration/10-security-hardening-p2.md](./integration/10-security-hardening-p2.md) | 事务性级联删除原子性、Keycloak 事件源安全校验、外部系统同步 | 5 |
+| [integration/12-otp-service-layer.md](./integration/12-otp-service-layer.md) | OTP 通用服务层基础设施（OtpManager、OtpChannel、速率限制、CacheOperations 扩展） | 5 |
 
 ### SCIM Provisioning (5 个文档, 25 个场景) 🆕
 | 文档 | 描述 | 场景数 |
@@ -375,6 +376,7 @@ cargo run --bin seed-data -- --dataset=qa-basic --reset
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-16 | 5.7.0 | **OTP 通用服务层基础设施测试**：新增 `integration/12-otp-service-layer.md`（5 场景），覆盖 OtpManager 单元测试验证、模块代码结构完整性、CacheOperations 扩展完整性、速率限制默认配置、编译和 Lint 检查；跨文档无影响（纯后端基础设施层，无 API/UI 变更）；共 99 个文档 469 个场景 |
 | 2026-03-15 | 5.6.0 | **PKCE (RFC 7636) 安全增强文档**：新增 `auth/16-pkce-flow.md`（5 场景），覆盖 Portal 密码/SSO 登录 PKCE 参数透传、cookie 存储生命周期、authorize 端点透传验证、向后兼容、public client 强制 PKCE；跨文档影响：更新 `session/07-oauth-state-csrf.md` cookie 格式说明（`state` → `{ state, codeVerifier }`）、`auth/08-demo-auth-flow.md` 补充 PKCE 强制说明、`security/authentication/01-oidc-security.md` 标记 PKCE 已实现；共 98 个文档 464 个场景 |
 | 2026-03-14 | 5.5.2 | **Portal Selector 组件替换文档同步**：更新 `rbac/02-role.md` 与 `identity-provider/03-tenant-enterprise-sso-connectors.md`，补充 Roles 父角色选择器与 Tenant SSO `Provider Type` 已切换为项目统一 Select 组件的验证要点；同步更新 UI/UX 文档 `18-roles-abac-pages.md`、`21-tenant-detail-pages.md` 的下拉控件样式与条件字段说明；QA 文档总数与场景数不变（97/459） |
 | 2026-03-14 | 5.5.1 | **租户级恶意 IP 黑名单文档同步**：新增 `tenant/05-security-malicious-ip-blacklist.md`，覆盖租户详情页入口可见性、租户级黑名单配置、非法 IP 拒绝、跨租户隔离、平台级优先；同步更新 `session/04-boundary.md` 对可疑 IP 告警来源的说明，并为 `security/authorization/01-tenant-isolation.md` 补充租户级黑名单隔离场景；共 97 个文档 459 个场景 |
