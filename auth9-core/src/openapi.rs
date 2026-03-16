@@ -10,7 +10,7 @@ use utoipa::OpenApi;
 #[openapi(
     info(
         title = "Auth9 Core API",
-        version = "0.1.0",
+        version = "0.9.0",
         description = "Auth9 Identity & Access Management Service API",
         license(name = "Proprietary"),
         contact(name = "Auth9 Team")

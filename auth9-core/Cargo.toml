@@ -1,6 +1,6 @@
 [package]
 name = "auth9-core"
-version = "0.1.0"
+version = "0.9.0"
 edition = "2021"
 authors = ["Auth9 Team"]
 description = "Identity Service Backend - The Brain of Auth9"

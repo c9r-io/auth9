@@ -55,11 +55,11 @@ mod tests {
     fn test_health_response_structure() {
         let response = HealthResponse {
             status: "healthy".to_string(),
-            version: "0.1.0".to_string(),
+            version: "0.9.0".to_string(),
         };
 
         assert_eq!(response.status, "healthy");
-        assert_eq!(response.version, "0.1.0");
+        assert_eq!(response.version, "0.9.0");
     }
 
     #[test]
@@ -76,18 +76,18 @@ mod tests {
 
     #[test]
     fn test_health_response_deserialization() {
-        let json = r#"{"status": "healthy", "version": "0.1.0"}"#;
+        let json = r#"{"status": "healthy", "version": "0.9.0"}"#;
         let response: HealthResponse = serde_json::from_str(json).unwrap();
 
         assert_eq!(response.status, "healthy");
-        assert_eq!(response.version, "0.1.0");
+        assert_eq!(response.version, "0.9.0");
     }
 
     #[test]
     fn test_health_response_json_roundtrip() {
         let original = HealthResponse {
             status: "healthy".to_string(),
-            version: "0.1.0".to_string(),
+            version: "0.9.0".to_string(),
         };
 
         let json = serde_json::to_string(&original).unwrap();
