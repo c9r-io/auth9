@@ -123,7 +123,21 @@ WHERE TABLE_SCHEMA = 'auth9' AND TABLE_NAME = 'action_executions';
 
 ### 1. 空日志查询
 - **操作**: 查询从未执行过的 Action 的日志
+  ```bash
+  # 正确 URL 格式（action_id 通过 query parameter 传递）
+  curl -s "http://localhost:8080/api/v1/services/{service_id}/actions/logs?action_id={action_id}&limit=5" \
+    -H "Authorization: Bearer $TOKEN" | jq .
+  ```
 - **预期**: 返回空数组，total = 0
+  ```json
+  {
+    "data": [],
+    "pagination": { "page": 1, "per_page": 5, "total": 0, "total_pages": 0 }
+  }
+  ```
+
+> **⚠️ 常见错误**: 使用 `/actions/{action_id}/logs` 路径格式会返回 404（路由不存在）。
+> 必须使用 `/actions/logs?action_id={action_id}` query parameter 格式。
 
 ### 2. 无效筛选参数
 - **操作**: 使用无效的 user_id 或 action_id

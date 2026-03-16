@@ -246,14 +246,24 @@ pub async fn update<S: HasServices>(
     let id = StringUuid::from(id);
     let before = state.tenant_service().get(id).await?;
     let tenant = state.tenant_service().update(id, input).await?;
+
+    let old_value = serde_json::to_value(&before).unwrap_or_else(|e| {
+        tracing::warn!(tenant_id = %id, error = %e, "Failed to serialize old tenant value for audit log");
+        serde_json::Value::Null
+    });
+    let new_value = serde_json::to_value(&tenant).unwrap_or_else(|e| {
+        tracing::warn!(tenant_id = %id, error = %e, "Failed to serialize new tenant value for audit log");
+        serde_json::Value::Null
+    });
+
     let _ = write_audit_log_generic(
         &state,
         &headers,
         "tenant.update",
         "tenant",
         Some(*tenant.id),
-        serde_json::to_value(&before).ok(),
-        serde_json::to_value(&tenant).ok(),
+        Some(old_value),
+        Some(new_value),
     )
     .await;
     Ok(Json(SuccessResponse::new(tenant)))
