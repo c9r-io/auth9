@@ -13,6 +13,8 @@
 #   --skip-init         跳过 auth9-init 作业（已初始化时使用）
 #   --namespace NS      使用其他命名空间（默认: auth9）
 #   --config-file FILE  从文件加载配置（JSON 或 env 格式）
+#   --with-observability    强制部署可观测性资源
+#   --without-observability 跳过可观测性资源部署
 #
 # 前提条件:
 #   - kubectl 已配置集群访问权限
@@ -29,6 +31,7 @@ SKIP_INIT=""
 INTERACTIVE="true"
 CONFIG_FILE=""
 NEEDS_INIT_JOB="false"
+OBSERVABILITY_MODE="auto"
 
 # Associative arrays for configuration
 declare -A AUTH9_SECRETS
@@ -476,6 +479,23 @@ collect_admin_email() {
     print_success "AUTH9_ADMIN_EMAIL 已配置"
 }
 
+collect_observability_preference() {
+    print_info "可观测性资源部署"
+
+    if [ "$OBSERVABILITY_MODE" != "auto" ]; then
+        print_info "可观测性部署模式已通过命令行指定: $OBSERVABILITY_MODE"
+        return 0
+    fi
+
+    if confirm_action "  部署可观测性资源（ServiceMonitor / PrometheusRule / Grafana dashboards）？"; then
+        OBSERVABILITY_MODE="enabled"
+    else
+        OBSERVABILITY_MODE="disabled"
+    fi
+
+    print_success "可观测性部署模式: $OBSERVABILITY_MODE"
+}
+
 generate_secrets() {
     # AUTH9 admin password used by auth9-init seeder for the initial platform admin.
     # Keep existing value stable to avoid accidental credential rotation on re-deploy.
@@ -740,6 +760,7 @@ run_interactive_setup() {
     collect_portal_url
     collect_keycloak_public_url
     collect_admin_email
+    collect_observability_preference
 
     # Step 4/6: Generate secrets
     print_progress "4/6" "生成安全密钥"
@@ -777,6 +798,7 @@ print_summary() {
     echo "  Core 公网 URL: ${CONFIGMAP_VALUES[AUTH9_CORE_PUBLIC_URL]:-https://api.auth9.example.com}"
     echo "  Portal URL: ${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]:-https://auth9.example.com}"
     echo "  Keycloak 公网 URL: ${CONFIGMAP_VALUES[KEYCLOAK_PUBLIC_URL]:-https://idp.auth9.example.com}"
+    echo "  可观测性资源: $OBSERVABILITY_MODE"
     echo "  初始化作业: $([ "$NEEDS_INIT_JOB" = "true" ] && echo "将运行" || echo "将跳过（客户端密钥已存在）")"
     echo ""
 }
@@ -1108,6 +1130,29 @@ deploy_observability() {
         return
     fi
 
+    if [ "$OBSERVABILITY_MODE" = "disabled" ]; then
+        print_info "已配置跳过可观测性资源部署"
+        return
+    fi
+
+    local has_service_monitor_crd="false"
+    local has_prometheus_rule_crd="false"
+    if kubectl get crd servicemonitors.monitoring.coreos.com &>/dev/null; then
+        has_service_monitor_crd="true"
+    fi
+    if kubectl get crd prometheusrules.monitoring.coreos.com &>/dev/null; then
+        has_prometheus_rule_crd="true"
+    fi
+
+    if [ "$has_service_monitor_crd" != "true" ] || [ "$has_prometheus_rule_crd" != "true" ]; then
+        print_warning "集群未安装 Prometheus Operator CRD，跳过 ServiceMonitor / PrometheusRule 部署"
+        print_info "如需启用，请先安装 servicemonitors.monitoring.coreos.com 和 prometheusrules.monitoring.coreos.com"
+        if [ "$OBSERVABILITY_MODE" = "enabled" ]; then
+            print_warning "已显式请求部署可观测性资源，但当前集群不支持这些 CRD"
+        fi
+        return
+    fi
+
     if [ -z "$DRY_RUN" ]; then
         print_info "正在部署可观测性资源 (ServiceMonitor, PrometheusRule, Grafana dashboards)..."
         kubectl apply -f "$obs_dir/" $DRY_RUN
@@ -1239,6 +1284,14 @@ parse_arguments() {
                 CONFIG_FILE="$2"
                 shift 2
                 ;;
+            --with-observability)
+                OBSERVABILITY_MODE="enabled"
+                shift
+                ;;
+            --without-observability)
+                OBSERVABILITY_MODE="disabled"
+                shift
+                ;;
             *)
                 echo -e "${RED}未知选项: $1${NC}"
                 echo ""
@@ -1251,6 +1304,8 @@ parse_arguments() {
                 echo "  --skip-init         跳过 auth9-init 初始化作业"
                 echo "  --namespace NS      使用其他命名空间（默认: auth9）"
                 echo "  --config-file FILE  从文件加载配置"
+                echo "  --with-observability    强制部署可观测性资源"
+                echo "  --without-observability 跳过可观测性资源部署"
                 exit 1
                 ;;
         esac
