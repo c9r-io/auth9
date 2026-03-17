@@ -286,7 +286,6 @@ impl TestAppState {
         );
         let user_service = Arc::new(UserService::new(
             user_repos,
-            None,
             Some(webhook_service.clone()), // webhook event publisher
         ));
         let client_service = Arc::new(ClientService::new(
@@ -327,7 +326,7 @@ impl TestAppState {
             password_reset_repo.clone(),
             user_repo.clone(),
             email_service.clone(),
-            Arc::new(KeycloakClient::new(config.keycloak.clone())),
+            identity_engine.clone(),
             tenant_repo.clone(),
             keycloak_sync_service,
             config.password_reset.hmac_key.clone(),
@@ -357,7 +356,7 @@ impl TestAppState {
                 webauthn_instance,
                 webauthn_repo,
                 Arc::new(auth9_core::cache::NoOpCacheManager::new()),
-                Some(Arc::new(KeycloakClient::new(config.keycloak.clone()))),
+                Some(identity_engine.clone()),
                 config.webauthn.challenge_ttl_secs,
             ))
         };
@@ -383,7 +382,7 @@ impl TestAppState {
         let scim_log_repo = Arc::new(TestScimLogRepository::new());
         let saml_application_service = Arc::new(SamlApplicationService::new(
             Arc::new(TestSamlApplicationRepository::new()),
-            Arc::new(KeycloakClient::new(config.keycloak.clone())),
+            identity_engine.clone(),
         ));
 
         let scim_token_service = Arc::new(ScimTokenService::new(scim_token_repo));
@@ -391,7 +390,7 @@ impl TestAppState {
             user_repo.clone(),
             scim_group_mapping_repo.clone(),
             scim_log_repo.clone(),
-            None, // No Keycloak in tests
+            None, // No identity backend in tests
         ));
 
         Self {

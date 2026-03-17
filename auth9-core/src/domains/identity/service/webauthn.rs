@@ -5,7 +5,7 @@
 
 use crate::cache::CacheOperations;
 use crate::error::{AppError, Result};
-use crate::keycloak::KeycloakClient;
+use crate::identity_engine::IdentityEngine;
 use crate::models::webauthn::{CreatePasskeyInput, WebAuthnCredential};
 use crate::repository::webauthn::WebAuthnRepository;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
@@ -34,7 +34,7 @@ pub struct WebAuthnService {
     webauthn: Arc<Webauthn>,
     repo: Arc<dyn WebAuthnRepository>,
     cache: Arc<dyn CacheOperations>,
-    keycloak: Option<Arc<KeycloakClient>>,
+    identity_engine: Option<Arc<dyn IdentityEngine>>,
     challenge_ttl_secs: u64,
 }
 
@@ -43,14 +43,14 @@ impl WebAuthnService {
         webauthn: Arc<Webauthn>,
         repo: Arc<dyn WebAuthnRepository>,
         cache: Arc<dyn CacheOperations>,
-        keycloak: Option<Arc<KeycloakClient>>,
+        identity_engine: Option<Arc<dyn IdentityEngine>>,
         challenge_ttl_secs: u64,
     ) -> Self {
         Self {
             webauthn,
             repo,
             cache,
-            keycloak,
+            identity_engine,
             challenge_ttl_secs,
         }
     }
@@ -311,8 +311,13 @@ impl WebAuthnService {
 
         // Keycloak credentials (migration period)
         let mut all_creds = native_creds;
-        if let (Some(kc), Some(kc_user_id)) = (&self.keycloak, keycloak_user_id) {
-            if let Ok(kc_credentials) = kc.list_webauthn_credentials(kc_user_id).await {
+        if let (Some(identity_engine), Some(kc_user_id)) = (&self.identity_engine, keycloak_user_id)
+        {
+            if let Ok(kc_credentials) = identity_engine
+                .credential_store()
+                .list_webauthn_credentials(kc_user_id)
+                .await
+            {
                 let kc_creds: Vec<WebAuthnCredential> = kc_credentials
                     .into_iter()
                     .map(|c| WebAuthnCredential {
@@ -341,8 +346,13 @@ impl WebAuthnService {
     ) -> Result<()> {
         // Check if it's a Keycloak credential (prefixed with kc_)
         if let Some(kc_id) = credential_id.strip_prefix("kc_") {
-            if let (Some(kc), Some(kc_user_id)) = (&self.keycloak, keycloak_user_id) {
-                return kc.delete_user_credential(kc_user_id, kc_id).await;
+            if let (Some(identity_engine), Some(kc_user_id)) =
+                (&self.identity_engine, keycloak_user_id)
+            {
+                return identity_engine
+                    .credential_store()
+                    .delete_user_credential(kc_user_id, kc_id)
+                    .await;
             }
             return Err(AppError::BadRequest(
                 "Cannot delete Keycloak credential: Keycloak not configured".to_string(),
@@ -358,6 +368,8 @@ impl WebAuthnService {
 mod tests {
     use super::*;
     use crate::cache::NoOpCacheManager;
+    use crate::identity_engine::adapters::keycloak::KeycloakIdentityEngineAdapter;
+    use crate::keycloak::KeycloakClient;
     use crate::models::webauthn::StoredPasskey;
     use crate::repository::webauthn::MockWebAuthnRepository;
 
@@ -642,7 +654,7 @@ mod tests {
             public_url: mock_server.uri(),
             realm: "auth9".to_string(),
             admin_client_id: "admin-cli".to_string(),
-            admin_client_secret: "secret".to_string(),
+            admin_client_secret: "secret".to_string(), // pragma: allowlist secret
             ssl_required: "none".to_string(),
             core_public_url: None,
             portal_url: None,
@@ -653,7 +665,9 @@ mod tests {
             create_test_webauthn(),
             Arc::new(mock_repo),
             Arc::new(NoOpCacheManager::new()),
-            Some(Arc::new(keycloak_client)),
+            Some(Arc::new(KeycloakIdentityEngineAdapter::new(Arc::new(
+                keycloak_client,
+            )))),
             300,
         );
 
@@ -715,7 +729,7 @@ mod tests {
             public_url: mock_server.uri(),
             realm: "auth9".to_string(),
             admin_client_id: "admin-cli".to_string(),
-            admin_client_secret: "secret".to_string(),
+            admin_client_secret: "secret".to_string(), // pragma: allowlist secret
             ssl_required: "none".to_string(),
             core_public_url: None,
             portal_url: None,
@@ -726,7 +740,9 @@ mod tests {
             create_test_webauthn(),
             Arc::new(mock_repo),
             Arc::new(NoOpCacheManager::new()),
-            Some(Arc::new(keycloak_client)),
+            Some(Arc::new(KeycloakIdentityEngineAdapter::new(Arc::new(
+                keycloak_client,
+            )))),
             300,
         );
 
@@ -771,7 +787,7 @@ mod tests {
             public_url: mock_server.uri(),
             realm: "auth9".to_string(),
             admin_client_id: "admin-cli".to_string(),
-            admin_client_secret: "secret".to_string(),
+            admin_client_secret: "secret".to_string(), // pragma: allowlist secret
             ssl_required: "none".to_string(),
             core_public_url: None,
             portal_url: None,
@@ -782,7 +798,9 @@ mod tests {
             create_test_webauthn(),
             Arc::new(mock_repo),
             Arc::new(NoOpCacheManager::new()),
-            Some(Arc::new(keycloak_client)),
+            Some(Arc::new(KeycloakIdentityEngineAdapter::new(Arc::new(
+                keycloak_client,
+            )))),
             300,
         );
 
@@ -814,7 +832,9 @@ mod tests {
             create_test_webauthn(),
             Arc::new(mock_repo),
             Arc::new(NoOpCacheManager::new()),
-            Some(Arc::new(keycloak_client)),
+            Some(Arc::new(KeycloakIdentityEngineAdapter::new(Arc::new(
+                keycloak_client,
+            )))),
             300,
         );
 

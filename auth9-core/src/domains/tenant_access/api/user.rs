@@ -5,7 +5,9 @@ use crate::error::{AppError, Result};
 use crate::http_support::{
     write_audit_log_generic, MessageResponse, PaginatedResponse, PaginationQuery, SuccessResponse,
 };
-use crate::keycloak::{CreateKeycloakUserInput, KeycloakCredential, KeycloakUserUpdate};
+use crate::identity_engine::{
+    IdentityCredentialInput, IdentityUserCreateInput, IdentityUserUpdateInput,
+};
 use crate::middleware::auth::{AuthUser, TokenType};
 use crate::models::common::StringUuid;
 use crate::models::user::{AddUserToTenantInput, CreateUserInput, UpdateUserInput, User};
@@ -439,7 +441,7 @@ pub async fn create<S: HasServices + HasBranding>(
     }
 
     let credentials = input.password.map(|password| {
-        vec![KeycloakCredential {
+        vec![IdentityCredentialInput {
             credential_type: "password".to_string(),
             value: password,
             temporary: false,
@@ -449,7 +451,7 @@ pub async fn create<S: HasServices + HasBranding>(
     let keycloak_id = state
         .identity_engine()
         .user_store()
-        .create_user(&CreateKeycloakUserInput {
+        .create_user(&IdentityUserCreateInput {
             username: input.user.email.clone(),
             email: input.user.email.clone(),
             first_name: input.user.display_name.clone(),
@@ -546,7 +548,7 @@ pub async fn update_me<S: HasServices>(
         .map_err(|e| AppError::Validation(e.to_string()))?;
     let before = state.user_service().get(id).await?;
     if input.display_name.is_some() {
-        let update = KeycloakUserUpdate {
+        let update = IdentityUserUpdateInput {
             username: None,
             email: None,
             first_name: input.display_name.clone(),
@@ -608,7 +610,7 @@ pub async fn update<S: HasServices>(
         .map_err(|e| AppError::Validation(e.to_string()))?;
     let before = state.user_service().get(id).await?;
     if input.display_name.is_some() {
-        let update = KeycloakUserUpdate {
+        let update = IdentityUserUpdateInput {
             username: None,
             email: None,
             first_name: input.display_name.clone(),
@@ -930,7 +932,7 @@ pub async fn enable_mfa<S: HasServices>(
 
     let id = StringUuid::from(id);
     let user = state.user_service().get(id).await?;
-    let update = KeycloakUserUpdate {
+    let update = IdentityUserUpdateInput {
         username: None,
         email: None,
         first_name: None,
@@ -1022,7 +1024,7 @@ pub async fn disable_mfa<S: HasServices>(
         .credential_store()
         .remove_totp_credentials(&user.identity_subject)
         .await?;
-    let update = KeycloakUserUpdate {
+    let update = IdentityUserUpdateInput {
         username: None,
         email: None,
         first_name: None,

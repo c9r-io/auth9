@@ -1,6 +1,60 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Neutral identity credential input for user lifecycle operations.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct IdentityCredentialInput {
+    pub credential_type: String,
+    pub value: String,
+    pub temporary: bool,
+}
+
+/// Neutral user creation input exposed to business services.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct IdentityUserCreateInput {
+    pub username: String,
+    pub email: String,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub enabled: bool,
+    pub email_verified: bool,
+    pub credentials: Option<Vec<IdentityCredentialInput>>,
+}
+
+/// Neutral user update input exposed to business services.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
+pub struct IdentityUserUpdateInput {
+    pub username: Option<String>,
+    pub email: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub enabled: Option<bool>,
+    pub email_verified: Option<bool>,
+    pub required_actions: Option<Vec<String>>,
+}
+
+/// Neutral user representation exposed to business services.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct IdentityUserRepresentation {
+    pub id: Option<String>,
+    pub username: String,
+    pub email: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub enabled: bool,
+    pub email_verified: bool,
+    pub attributes: HashMap<String, Vec<String>>,
+}
+
+/// Neutral credential representation exposed to business services.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct IdentityCredentialRepresentation {
+    pub id: String,
+    pub credential_type: String,
+    pub user_label: Option<String>,
+    pub created_date: Option<i64>,
+}
+
 /// Neutral identity provider representation exposed to business services.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct IdentityProviderRepresentation {
@@ -23,4 +77,27 @@ pub struct FederatedIdentityRepresentation {
     pub identity_provider: String,
     pub user_id: String,
     pub user_name: Option<String>,
+}
+
+/// Neutral SAML protocol mapper representation exposed to business services.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct IdentityProtocolMapperRepresentation {
+    pub name: String,
+    pub protocol: String,
+    pub protocol_mapper: String,
+    pub config: HashMap<String, String>,
+}
+
+/// Neutral SAML client representation exposed to business services.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct IdentitySamlClientRepresentation {
+    pub id: Option<String>,
+    pub client_id: String,
+    pub name: Option<String>,
+    pub enabled: bool,
+    pub protocol: String,
+    pub base_url: Option<String>,
+    pub redirect_uris: Vec<String>,
+    pub attributes: HashMap<String, String>,
+    pub protocol_mappers: Vec<IdentityProtocolMapperRepresentation>,
 }

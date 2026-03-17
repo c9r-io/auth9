@@ -3,12 +3,10 @@ use auth9_core::identity_engine::adapters::keycloak::{
     KeycloakFederationBrokerAdapter, KeycloakIdentityEngineAdapter, KeycloakSessionStoreAdapter,
 };
 use auth9_core::identity_engine::{
-    FederationBroker, IdentityEngine, IdentityProviderRepresentation, IdentitySessionStore,
+    FederationBroker, IdentityCredentialInput, IdentityEngine, IdentityProviderRepresentation,
+    IdentitySessionStore, IdentityUserCreateInput, IdentityUserUpdateInput,
 };
-use auth9_core::keycloak::{
-    CreateKeycloakUserInput, KeycloakClient, KeycloakCredential, KeycloakOidcClient,
-    KeycloakUserUpdate,
-};
+use auth9_core::keycloak::{KeycloakClient, KeycloakOidcClient};
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -93,7 +91,9 @@ async fn keycloak_federation_broker_adapter_supports_identity_provider_crud() {
         .await;
 
     Mock::given(method("GET"))
-        .and(path("/admin/realms/test/identity-provider/instances/corp-oidc"))
+        .and(path(
+            "/admin/realms/test/identity-provider/instances/corp-oidc",
+        ))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({
             "alias": "corp-oidc",
             "displayName": "Corp OIDC",
@@ -122,8 +122,12 @@ async fn keycloak_federation_broker_adapter_supports_identity_provider_crud() {
         .await;
 
     Mock::given(method("PUT"))
-        .and(path("/admin/realms/test/identity-provider/instances/corp-oidc"))
-        .and(body_string_contains("\"displayName\":\"Corp OIDC Updated\""))
+        .and(path(
+            "/admin/realms/test/identity-provider/instances/corp-oidc",
+        ))
+        .and(body_string_contains(
+            "\"displayName\":\"Corp OIDC Updated\"",
+        ))
         .and(body_string_contains("\"internalId\":\"kc-internal-1\""))
         .respond_with(ResponseTemplate::new(204))
         .expect(1)
@@ -131,7 +135,9 @@ async fn keycloak_federation_broker_adapter_supports_identity_provider_crud() {
         .await;
 
     Mock::given(method("DELETE"))
-        .and(path("/admin/realms/test/identity-provider/instances/corp-oidc"))
+        .and(path(
+            "/admin/realms/test/identity-provider/instances/corp-oidc",
+        ))
         .respond_with(ResponseTemplate::new(204))
         .expect(1)
         .mount(&server)
@@ -148,7 +154,10 @@ async fn keycloak_federation_broker_adapter_supports_identity_provider_crud() {
     );
 
     let fetched = adapter.get_identity_provider("corp-oidc").await.unwrap();
-    assert_eq!(fetched.config.get("clientSecret"), Some(&"corp-secret".to_string()));
+    assert_eq!(
+        fetched.config.get("clientSecret"),
+        Some(&"corp-secret".to_string())
+    );
 
     let create_input = IdentityProviderRepresentation {
         alias: "corp-oidc".to_string(),
@@ -162,7 +171,10 @@ async fn keycloak_federation_broker_adapter_supports_identity_provider_crud() {
         config: HashMap::from([("clientId".to_string(), "corp-client".to_string())]),
         extra: HashMap::new(),
     };
-    adapter.create_identity_provider(&create_input).await.unwrap();
+    adapter
+        .create_identity_provider(&create_input)
+        .await
+        .unwrap();
 
     let mut update_input = fetched.clone();
     update_input.display_name = Some("Corp OIDC Updated".to_string());
@@ -193,7 +205,9 @@ async fn keycloak_federation_broker_adapter_reads_and_removes_federated_identiti
         .await;
 
     Mock::given(method("DELETE"))
-        .and(path("/admin/realms/test/users/user-123/federated-identity/google"))
+        .and(path(
+            "/admin/realms/test/users/user-123/federated-identity/google",
+        ))
         .respond_with(ResponseTemplate::new(204))
         .expect(1)
         .mount(&server)
@@ -201,7 +215,10 @@ async fn keycloak_federation_broker_adapter_reads_and_removes_federated_identiti
 
     let adapter = KeycloakFederationBrokerAdapter::new(create_test_client(&server.uri()));
 
-    let identities = adapter.get_user_federated_identities("user-123").await.unwrap();
+    let identities = adapter
+        .get_user_federated_identities("user-123")
+        .await
+        .unwrap();
     assert_eq!(identities.len(), 1);
     assert_eq!(identities[0].identity_provider, "google");
     assert_eq!(identities[0].user_id, "google-123");
@@ -289,20 +306,26 @@ async fn keycloak_identity_engine_adapter_supports_user_client_and_credential_st
     Mock::given(method("POST"))
         .and(path("/admin/realms/test/clients"))
         .and(body_string_contains("\"clientId\":\"svc-123\""))
-        .respond_with(ResponseTemplate::new(201).insert_header("location", "/clients/client-uuid-1"))
+        .respond_with(
+            ResponseTemplate::new(201).insert_header("location", "/clients/client-uuid-1"),
+        )
         .expect(1)
         .mount(&server)
         .await;
 
     Mock::given(method("GET"))
-        .and(path("/admin/realms/test/clients/client-uuid-1/client-secret"))
+        .and(path(
+            "/admin/realms/test/clients/client-uuid-1/client-secret",
+        ))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "value": "secret-1" })))
         .expect(1)
         .mount(&server)
         .await;
 
     Mock::given(method("POST"))
-        .and(path("/admin/realms/test/clients/client-uuid-1/client-secret"))
+        .and(path(
+            "/admin/realms/test/clients/client-uuid-1/client-secret",
+        ))
         .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "value": "secret-2" })))
         .expect(1)
         .mount(&server)
@@ -360,14 +383,14 @@ async fn keycloak_identity_engine_adapter_supports_user_client_and_credential_st
 
     let user_id = adapter
         .user_store()
-        .create_user(&CreateKeycloakUserInput {
+        .create_user(&IdentityUserCreateInput {
             username: "alice@example.com".to_string(),
             email: "alice@example.com".to_string(),
             first_name: Some("Alice".to_string()),
             last_name: None,
             enabled: true,
             email_verified: false,
-            credentials: Some(vec![KeycloakCredential {
+            credentials: Some(vec![IdentityCredentialInput {
                 credential_type: "password".to_string(),
                 value: "Password123!".to_string(),
                 temporary: false,
@@ -379,18 +402,16 @@ async fn keycloak_identity_engine_adapter_supports_user_client_and_credential_st
 
     let user = adapter.user_store().get_user(&user_id).await.unwrap();
     assert_eq!(user.email.as_deref(), Some("alice@example.com"));
-    assert!(
-        adapter
-            .user_store()
-            .validate_user_password(&user_id, "Password123!")
-            .await
-            .unwrap()
-    );
+    assert!(adapter
+        .user_store()
+        .validate_user_password(&user_id, "Password123!")
+        .await
+        .unwrap());
     adapter
         .user_store()
         .update_user(
             &user_id,
-            &KeycloakUserUpdate {
+            &IdentityUserUpdateInput {
                 username: None,
                 email: None,
                 first_name: Some("Alice Updated".to_string()),

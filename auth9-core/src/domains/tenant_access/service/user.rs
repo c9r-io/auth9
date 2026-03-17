@@ -2,7 +2,6 @@
 
 use crate::domains::integration::service::WebhookEventPublisher;
 use crate::error::{AppError, Result};
-use crate::keycloak::KeycloakClient;
 use crate::models::analytics::WebhookEvent;
 use crate::models::common::StringUuid;
 use crate::models::user::{
@@ -15,7 +14,6 @@ use crate::repository::{
 use chrono::Utc;
 use sqlx::MySqlPool;
 use std::sync::Arc;
-use tracing::warn;
 use validator::Validate;
 
 /// Repository bundle for UserService
@@ -92,7 +90,6 @@ pub struct UserService<
     security_alert_repo: Arc<SA>,
     audit_repo: Arc<A>,
     rbac_repo: Arc<Rbac>,
-    keycloak: Option<KeycloakClient>,
     webhook_publisher: Option<Arc<dyn WebhookEventPublisher>>,
     /// Database pool for transactional cascade deletes.
     /// When available, delete operations are wrapped in a transaction.
@@ -113,7 +110,6 @@ impl<
     /// Create a new UserService with repository bundle, keycloak client, and webhook publisher
     pub fn new(
         repos: UserRepositoryBundle<R, S, P, L, LE, SA, A, Rbac>,
-        keycloak: Option<KeycloakClient>,
         webhook_publisher: Option<Arc<dyn WebhookEventPublisher>>,
     ) -> Self {
         Self {
@@ -125,7 +121,6 @@ impl<
             security_alert_repo: repos.security_alert,
             audit_repo: repos.audit,
             rbac_repo: repos.rbac,
-            keycloak,
             webhook_publisher,
             pool: None,
         }
@@ -378,22 +373,7 @@ impl<
             self.repo.delete(id).await?;
         }
 
-        // 10. Delete from Keycloak AFTER transaction commit
-        // (external operation cannot be rolled back, so run after DB is consistent)
-        if let Some(ref keycloak) = self.keycloak {
-            match keycloak.delete_user(&user.identity_subject).await {
-                Ok(_) => {}
-                Err(AppError::NotFound(_)) => {
-                    warn!(
-                        "User {} not found in Keycloak during delete, continuing",
-                        user.identity_subject
-                    );
-                }
-                Err(e) => return Err(e),
-            }
-        }
-
-        // 11. Trigger user.deleted webhook event
+        // 10. Trigger user.deleted webhook event
         if let Some(publisher) = &self.webhook_publisher {
             if let Err(e) = publisher
                 .trigger_event(WebhookEvent {
@@ -583,7 +563,7 @@ mod tests {
             Arc::new(MockAuditRepository::new()),
             Arc::new(MockRbacRepository::new()),
         );
-        UserService::new(repos, None, None)
+        UserService::new(repos, None)
     }
 
     #[tokio::test]
@@ -955,7 +935,7 @@ mod tests {
             Arc::new(mock_audit),
             Arc::new(mock_rbac),
         );
-        let service = UserService::new(repos, None, None);
+        let service = UserService::new(repos, None);
 
         let result = service.delete(id).await;
         assert!(result.is_ok());
@@ -1066,7 +1046,7 @@ mod tests {
             Arc::new(mock_audit),
             Arc::new(mock_rbac),
         );
-        let service = UserService::new(repos, None, None);
+        let service = UserService::new(repos, None);
 
         let result = service.delete(id).await;
         assert!(result.is_ok());
@@ -1209,7 +1189,7 @@ mod tests {
             Arc::new(MockAuditRepository::new()),
             Arc::new(mock_rbac),
         );
-        let service = UserService::new(repos, None, None);
+        let service = UserService::new(repos, None);
 
         let result = service.remove_from_tenant(user_id, tenant_id).await;
         assert!(result.is_ok());
@@ -1244,7 +1224,7 @@ mod tests {
             Arc::new(MockAuditRepository::new()),
             Arc::new(mock_rbac),
         );
-        let service = UserService::new(repos, None, None);
+        let service = UserService::new(repos, None);
 
         let result = service.remove_from_tenant(user_id, tenant_id).await;
         assert!(result.is_ok());

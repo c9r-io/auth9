@@ -575,7 +575,6 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     let user_service = Arc::new(
         UserService::new(
             user_repos,
-            Some(keycloak_client.clone()),
             Some(webhook_service.clone()), // webhook event publisher
         )
         .with_pool(db_pool.clone()),
@@ -661,7 +660,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         password_reset_repo.clone(),
         user_repo.clone(),
         email_service.clone(),
-        keycloak_arc.clone(),
+        identity_engine.clone(),
         tenant_repo.clone(),
         action_engine.clone(),
         keycloak_sync_service.clone(),
@@ -695,7 +694,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         webauthn_instance,
         webauthn_repo,
         Arc::new(cache_manager.clone()),
-        Some(keycloak_arc.clone()),
+        Some(identity_engine.clone()),
         config.webauthn.challenge_ttl_secs,
     ));
 
@@ -721,7 +720,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         user_repo.clone(),
         scim_group_mapping_repo.clone(),
         scim_log_repo.clone(),
-        Some(keycloak_client.clone()),
+        Some(identity_engine.clone()),
         rbac_repo.clone(),
     ));
 
@@ -729,7 +728,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     let saml_application_repo = Arc::new(SamlApplicationRepositoryImpl::new(db_pool.clone()));
     let saml_application_service = Arc::new(SamlApplicationService::new(
         saml_application_repo,
-        Arc::new(keycloak_client.clone()),
+        identity_engine.clone(),
     ));
 
     // Create app state

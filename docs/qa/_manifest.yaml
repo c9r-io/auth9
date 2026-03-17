@@ -894,3 +894,11 @@ documents:
     has_entry_visibility: false
     has_checklist: true
     last_reviewed: 2026-03-17
+  - id: integration/18-business-layer-keycloak-decoupling
+    path: docs/qa/integration/18-business-layer-keycloak-decoupling.md
+    module: integration
+    scenarios: 5
+    has_ui_flow: false
+    has_entry_visibility: false
+    has_checklist: true
+    last_reviewed: 2026-03-17

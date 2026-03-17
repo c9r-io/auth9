@@ -154,13 +154,12 @@ mod tests {
     use crate::error::AppError;
     use crate::identity_engine::{
         FederatedIdentityRepresentation, FederationBroker, IdentityClientStore,
-        IdentityCredentialStore, IdentityEventSource, IdentityProviderRepresentation,
-        IdentitySessionStore, IdentityUserStore,
+        IdentityCredentialRepresentation, IdentityCredentialStore, IdentityEventSource,
+        IdentityProviderRepresentation, IdentitySamlClientRepresentation, IdentitySessionStore,
+        IdentityUserCreateInput, IdentityUserRepresentation, IdentityUserStore,
+        IdentityUserUpdateInput,
     };
-    use crate::keycloak::{
-        CreateKeycloakUserInput, KeycloakOidcClient, KeycloakUser, KeycloakUserCredential,
-        KeycloakUserUpdate,
-    };
+    use crate::keycloak::KeycloakOidcClient;
     use async_trait::async_trait;
     use std::collections::HashMap;
     use std::sync::Mutex;
@@ -188,12 +187,12 @@ mod tests {
 
     #[async_trait]
     impl IdentityUserStore for FakeIdentityEngine {
-        async fn create_user(&self, _input: &CreateKeycloakUserInput) -> Result<String> {
+        async fn create_user(&self, _input: &IdentityUserCreateInput) -> Result<String> {
             Ok("user-1".to_string())
         }
 
-        async fn get_user(&self, user_id: &str) -> Result<KeycloakUser> {
-            Ok(KeycloakUser {
+        async fn get_user(&self, user_id: &str) -> Result<IdentityUserRepresentation> {
+            Ok(IdentityUserRepresentation {
                 id: Some(user_id.to_string()),
                 username: user_id.to_string(),
                 email: None,
@@ -205,11 +204,33 @@ mod tests {
             })
         }
 
-        async fn update_user(&self, _user_id: &str, _input: &KeycloakUserUpdate) -> Result<()> {
+        async fn update_user(
+            &self,
+            _user_id: &str,
+            _input: &IdentityUserUpdateInput,
+        ) -> Result<()> {
             Ok(())
         }
 
         async fn delete_user(&self, _user_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn set_user_password(
+            &self,
+            _user_id: &str,
+            _password: &str,
+            _temporary: bool,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        async fn admin_set_user_password(
+            &self,
+            _user_id: &str,
+            _password: &str,
+            _temporary: bool,
+        ) -> Result<()> {
             Ok(())
         }
 
@@ -265,15 +286,60 @@ mod tests {
         async fn delete_oidc_client(&self, _client_uuid: &str) -> Result<()> {
             Ok(())
         }
+
+        async fn create_saml_client(
+            &self,
+            _client: &IdentitySamlClientRepresentation,
+        ) -> Result<String> {
+            Ok("saml-client-1".to_string())
+        }
+
+        async fn update_saml_client(
+            &self,
+            _client_uuid: &str,
+            _client: &IdentitySamlClientRepresentation,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        async fn delete_saml_client(&self, _client_uuid: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn get_saml_idp_descriptor(&self) -> Result<String> {
+            Ok("<EntityDescriptor />".to_string())
+        }
+
+        async fn get_active_signing_certificate(&self) -> Result<String> {
+            Ok("cert-base64".to_string())
+        }
+
+        fn saml_sso_url(&self) -> String {
+            "http://localhost:8080/realms/auth9/protocol/saml".to_string()
+        }
     }
 
     #[async_trait]
     impl IdentityCredentialStore for FakeIdentityEngine {
-        async fn list_user_credentials(&self, _user_id: &str) -> Result<Vec<KeycloakUserCredential>> {
+        async fn list_user_credentials(
+            &self,
+            _user_id: &str,
+        ) -> Result<Vec<IdentityCredentialRepresentation>> {
             Ok(Vec::new())
         }
 
         async fn remove_totp_credentials(&self, _user_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn list_webauthn_credentials(
+            &self,
+            _user_id: &str,
+        ) -> Result<Vec<IdentityCredentialRepresentation>> {
+            Ok(Vec::new())
+        }
+
+        async fn delete_user_credential(&self, _user_id: &str, _credential_id: &str) -> Result<()> {
             Ok(())
         }
     }

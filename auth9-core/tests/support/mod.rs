@@ -3394,7 +3394,7 @@ impl TestServicesBuilder {
             self.audit_repo.clone(),
             self.rbac_repo.clone(),
         );
-        UserService::new(repos, None, None)
+        UserService::new(repos, None)
     }
 
     pub fn build_client_service(&self) -> ClientService<TestServiceRepository, TestRbacRepository> {
