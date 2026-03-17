@@ -659,6 +659,12 @@ create_or_patch_secret() {
 apply_configmap() {
     # JWT_ISSUER must be the Core API URL (used for OAuth callback)
     local jwt_issuer="${CONFIGMAP_VALUES[JWT_ISSUER]:-${CONFIGMAP_VALUES[AUTH9_CORE_PUBLIC_URL]:-https://api.auth9.example.com}}"
+    local portal_url="${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]:-https://auth9.example.com}"
+    local keycloak_public_url="${CONFIGMAP_VALUES[KEYCLOAK_PUBLIC_URL]:-https://idp.auth9.example.com}"
+    local cors_allowed_origins="$portal_url"
+    if [ "$keycloak_public_url" != "$portal_url" ]; then
+        cors_allowed_origins="${cors_allowed_origins},${keycloak_public_url}"
+    fi
 
     cat <<EOF | kubectl apply -f -
 apiVersion: v1
@@ -682,21 +688,21 @@ data:
   KEYCLOAK_REALM: "auth9"
   KEYCLOAK_ADMIN_CLIENT_ID: "auth9-admin"
   KEYCLOAK_SSL_REQUIRED: "none"
-  KEYCLOAK_PUBLIC_URL: "${CONFIGMAP_VALUES[KEYCLOAK_PUBLIC_URL]:-https://idp.auth9.example.com}"
+  KEYCLOAK_PUBLIC_URL: "$keycloak_public_url"
   GRPC_AUTH_MODE: "api_key"
   GRPC_ENABLE_REFLECTION: "false"
   WEBAUTHN_RP_ID: "${CONFIGMAP_VALUES[WEBAUTHN_RP_ID]:-auth9.example.com}"
-  CORS_ALLOWED_ORIGINS: "${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]:-https://auth9.example.com}"
+  CORS_ALLOWED_ORIGINS: "$cors_allowed_origins"
   CORS_ALLOW_CREDENTIALS: "true"
   ACTION_ALLOWED_DOMAINS: "gitski.work,c9r.io"
   HSTS_ENABLED: "true"
   HSTS_HTTPS_ONLY: "true"
   HSTS_TRUST_X_FORWARDED_PROTO: "true"
   PLATFORM_ADMIN_EMAILS: "${CONFIGMAP_VALUES[PLATFORM_ADMIN_EMAILS]:-admin@auth9.local}"
-  APP_BASE_URL: "${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]:-https://auth9.example.com}"
+  APP_BASE_URL: "$portal_url"
   AUTH9_CORE_URL: "http://auth9-core:8080"
   AUTH9_CORE_PUBLIC_URL: "${CONFIGMAP_VALUES[AUTH9_CORE_PUBLIC_URL]:-https://api.auth9.example.com}"
-  AUTH9_PORTAL_URL: "${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]:-https://auth9.example.com}"
+  AUTH9_PORTAL_URL: "$portal_url"
   AUTH9_PORTAL_CLIENT_ID: "${CONFIGMAP_VALUES[AUTH9_PORTAL_CLIENT_ID]:-auth9-portal}"
   ENVIRONMENT: "production"
   NODE_ENV: "production"

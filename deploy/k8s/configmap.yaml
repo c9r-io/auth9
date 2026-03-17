@@ -45,7 +45,7 @@ data:
   WEBAUTHN_RP_ID: "auth9.example.com"
 
   # CORS
-  CORS_ALLOWED_ORIGINS: "https://auth9.example.com"
+  CORS_ALLOWED_ORIGINS: "https://auth9.example.com,https://idp.auth9.example.com"
   CORS_ALLOW_CREDENTIALS: "true"
   ACTION_ALLOWED_DOMAINS: "gitski.work,c9r.io"
 
