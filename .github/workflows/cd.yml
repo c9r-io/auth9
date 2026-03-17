@@ -15,6 +15,7 @@ env:
   PORTAL_IMAGE_NAME: auth9-portal
   THEME_IMAGE_NAME: auth9-keycloak-theme
   EVENTS_IMAGE_NAME: auth9-keycloak-events
+  DOCKER_PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   # ==================== Build and Push auth9-core ====================
@@ -33,6 +34,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -68,7 +72,7 @@ jobs:
           cache-to: |
             type=gha,mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.CORE_IMAGE_NAME }}:buildcache,mode=max
-          platforms: linux/amd64
+          platforms: ${{ env.DOCKER_PLATFORMS }}
 
       - name: Export image digest
         id: digest
@@ -90,6 +94,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -126,7 +133,7 @@ jobs:
           cache-to: |
             type=gha,mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.PORTAL_IMAGE_NAME }}:buildcache,mode=max
-          platforms: linux/amd64
+          platforms: ${{ env.DOCKER_PLATFORMS }}
 
       - name: Export image digest
         id: digest
@@ -147,6 +154,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -182,7 +192,7 @@ jobs:
           cache-to: |
             type=gha,mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.THEME_IMAGE_NAME }}:buildcache,mode=max
-          platforms: linux/amd64
+          platforms: ${{ env.DOCKER_PLATFORMS }}
 
   # ==================== Build and Push auth9-keycloak-events ====================
   build-events:
@@ -199,6 +209,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -234,7 +247,7 @@ jobs:
           cache-to: |
             type=gha,mode=max
             type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.EVENTS_IMAGE_NAME }}:buildcache,mode=max
-          platforms: linux/amd64
+          platforms: ${{ env.DOCKER_PLATFORMS }}
 
   # ==================== Generate Summary ====================
   summary:
