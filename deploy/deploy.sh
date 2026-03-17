@@ -1163,6 +1163,7 @@ print_deployment_complete() {
         kubectl get svc -n "$NAMESPACE"
         echo ""
         echo -e "${YELLOW}注意:${NC} 使用 cloudflared 暴露服务。详见 wiki/安装部署.md"
+        echo -e "${YELLOW}建议:${NC} 部署完成后执行 ./scripts/validate-k8s-deploy.sh --namespace $NAMESPACE"
         echo ""
         echo -e "${CYAN}╔════════════════════════════════════════════════════════════════╗${NC}"
         echo -e "${CYAN}║  Cloudflared 配置                                               ║${NC}"
