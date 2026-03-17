@@ -41,6 +41,7 @@ use auth9_core::domains::tenant_access::service::{
     InvitationService, SamlApplicationService, TenantRepositoryBundle, TenantService,
     UserRepositoryBundle, UserService,
 };
+use auth9_core::identity_engine::{FederationBroker, IdentityEngine, IdentitySessionStore};
 use auth9_core::jwt::JwtManager;
 use auth9_core::keycloak::KeycloakClient;
 use auth9_core::middleware::RateLimitState;
@@ -200,6 +201,7 @@ pub struct TestAppState {
     pub audit_repo: Arc<TestAuditRepository>,
     pub jwt_manager: auth9_core::jwt::JwtManager,
     pub keycloak_client: KeycloakClient,
+    pub identity_engine: Arc<dyn IdentityEngine>,
     #[allow(dead_code)]
     pub cache_manager: NoOpCacheManager,
     pub db_pool: sqlx::MySqlPool,
@@ -305,14 +307,14 @@ impl TestAppState {
 
         let jwt_manager = create_test_jwt_manager();
         let keycloak_client = KeycloakClient::new(config.keycloak.clone());
+        let identity_sessions: Arc<dyn IdentitySessionStore> = Arc::new(keycloak_client.clone());
+        let federation_broker: Arc<dyn FederationBroker> = Arc::new(keycloak_client.clone());
+        let identity_engine: Arc<dyn IdentityEngine> = Arc::new(keycloak_client.clone());
         let cache_manager = NoOpCacheManager::new();
         let db_pool = sqlx::MySqlPool::connect_lazy(&config.database.url).unwrap();
 
         // Create Keycloak sync service for tests
-        let keycloak_updater: Arc<
-            dyn auth9_core::domains::platform::service::keycloak_sync::KeycloakRealmUpdater,
-        > = Arc::new(KeycloakClient::new(config.keycloak.clone()));
-        let keycloak_sync_service = Arc::new(KeycloakSyncService::new(keycloak_updater));
+        let keycloak_sync_service = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
 
         // Create new services
         let password_service = Arc::new(PasswordService::with_tenant_repo(
@@ -327,13 +329,13 @@ impl TestAppState {
         let session_service = Arc::new(SessionService::new(
             session_repo.clone(),
             user_repo.clone(),
-            Arc::new(KeycloakClient::new(config.keycloak.clone())),
+            identity_sessions,
             Some(webhook_service.clone()), // webhook event publisher
         ));
         let identity_provider_service = Arc::new(IdentityProviderService::new(
             linked_identity_repo.clone(),
             user_repo.clone(),
-            Arc::new(KeycloakClient::new(config.keycloak.clone())),
+            federation_broker,
         ));
         let webauthn_service = {
             let rp_origin = url::Url::parse(&config.webauthn.rp_origin).unwrap();
@@ -408,6 +410,7 @@ impl TestAppState {
             audit_repo,
             jwt_manager,
             keycloak_client,
+            identity_engine,
             cache_manager,
             db_pool,
             tenant_repo,
@@ -519,6 +522,10 @@ impl HasServices for TestAppState {
 
     fn keycloak_client(&self) -> &KeycloakClient {
         &self.keycloak_client
+    }
+
+    fn identity_engine(&self) -> &Arc<dyn IdentityEngine> {
+        &self.identity_engine
     }
 
     fn action_service(&self) -> &ActionService<Self::ActionRepo> {

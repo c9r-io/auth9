@@ -5,39 +5,23 @@
 //! ensures the corresponding Keycloak realm settings are updated.
 
 use crate::error::Result;
-use crate::keycloak::{KeycloakClient, RealmUpdate, SmtpServerConfig};
+use crate::identity_engine::IdentityEngine;
+use crate::keycloak::RealmUpdate;
+use crate::keycloak::SmtpServerConfig;
 use crate::models::branding::BrandingConfig;
 use crate::models::password::PasswordPolicy;
-use async_trait::async_trait;
 use std::sync::Arc;
 use tracing::{error, info};
 
-/// Minimal interface needed by [`KeycloakSyncService`].
-///
-/// Using a trait here keeps unit tests fast and independent from HTTP mocking.
-#[cfg_attr(test, mockall::automock)]
-#[async_trait]
-pub trait KeycloakRealmUpdater: Send + Sync {
-    async fn update_realm(&self, settings: &RealmUpdate) -> Result<()>;
-}
-
-#[async_trait]
-impl KeycloakRealmUpdater for KeycloakClient {
-    async fn update_realm(&self, settings: &RealmUpdate) -> Result<()> {
-        // Call the inherent method on KeycloakClient (avoid trait recursion).
-        KeycloakClient::update_realm(self, settings).await
-    }
-}
-
 /// Service for synchronizing Auth9 configuration with Keycloak realm settings
 pub struct KeycloakSyncService {
-    keycloak: Arc<dyn KeycloakRealmUpdater>,
+    identity_engine: Arc<dyn IdentityEngine>,
 }
 
 impl KeycloakSyncService {
     /// Create a new KeycloakSyncService
-    pub fn new(keycloak: Arc<dyn KeycloakRealmUpdater>) -> Self {
-        Self { keycloak }
+    pub fn new(identity_engine: Arc<dyn IdentityEngine>) -> Self {
+        Self { identity_engine }
     }
 
     /// Synchronize realm settings to Keycloak
@@ -46,7 +30,7 @@ impl KeycloakSyncService {
     /// provided settings. Only non-None fields in the update will be applied.
     pub async fn sync_realm_settings(&self, settings: RealmUpdate) -> Result<()> {
         info!("Syncing realm settings to Keycloak: {:?}", settings);
-        self.keycloak.update_realm(&settings).await?;
+        self.identity_engine.update_realm(&settings).await?;
         info!("Successfully synced realm settings");
         Ok(())
     }
@@ -167,6 +151,140 @@ impl KeycloakSyncService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::AppError;
+    use crate::identity_engine::{
+        FederationBroker, IdentityClientStore, IdentityCredentialStore, IdentityEventSource,
+        IdentitySessionStore, IdentityUserStore,
+    };
+    use crate::keycloak::{KeycloakFederatedIdentity, KeycloakIdentityProvider};
+    use async_trait::async_trait;
+    use std::sync::Mutex;
+
+    struct FakeIdentityEngine {
+        failure: Option<String>,
+        updates: Mutex<Vec<RealmUpdate>>,
+    }
+
+    impl FakeIdentityEngine {
+        fn succeeds() -> Self {
+            Self {
+                failure: None,
+                updates: Mutex::new(Vec::new()),
+            }
+        }
+
+        fn fails(error: AppError) -> Self {
+            Self {
+                failure: Some(error.to_string()),
+                updates: Mutex::new(Vec::new()),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl IdentityUserStore for FakeIdentityEngine {}
+
+    #[async_trait]
+    impl IdentityClientStore for FakeIdentityEngine {}
+
+    #[async_trait]
+    impl IdentityCredentialStore for FakeIdentityEngine {}
+
+    #[async_trait]
+    impl IdentityEventSource for FakeIdentityEngine {}
+
+    #[async_trait]
+    impl IdentitySessionStore for FakeIdentityEngine {
+        async fn delete_user_session(&self, _session_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn logout_user(&self, _user_id: &str) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl FederationBroker for FakeIdentityEngine {
+        async fn list_identity_providers(&self) -> Result<Vec<KeycloakIdentityProvider>> {
+            Ok(Vec::new())
+        }
+
+        async fn get_identity_provider(&self, _alias: &str) -> Result<KeycloakIdentityProvider> {
+            Err(AppError::NotFound("not used".to_string()))
+        }
+
+        async fn create_identity_provider(
+            &self,
+            _provider: &KeycloakIdentityProvider,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        async fn update_identity_provider(
+            &self,
+            _alias: &str,
+            _provider: &KeycloakIdentityProvider,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        async fn delete_identity_provider(&self, _alias: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn get_user_federated_identities(
+            &self,
+            _user_id: &str,
+        ) -> Result<Vec<KeycloakFederatedIdentity>> {
+            Ok(Vec::new())
+        }
+
+        async fn remove_user_federated_identity(
+            &self,
+            _user_id: &str,
+            _provider_alias: &str,
+        ) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl IdentityEngine for FakeIdentityEngine {
+        fn user_store(&self) -> &dyn IdentityUserStore {
+            self
+        }
+
+        fn client_store(&self) -> &dyn IdentityClientStore {
+            self
+        }
+
+        fn session_store(&self) -> &dyn IdentitySessionStore {
+            self
+        }
+
+        fn credential_store(&self) -> &dyn IdentityCredentialStore {
+            self
+        }
+
+        fn federation_broker(&self) -> &dyn FederationBroker {
+            self
+        }
+
+        fn event_source(&self) -> &dyn IdentityEventSource {
+            self
+        }
+
+        async fn update_realm(&self, settings: &RealmUpdate) -> Result<()> {
+            self.updates.lock().unwrap().push(settings.clone());
+
+            if let Some(message) = &self.failure {
+                Err(AppError::Keycloak(message.clone()))
+            } else {
+                Ok(())
+            }
+        }
+    }
 
     #[test]
     fn test_extract_realm_settings_allow_registration_true() {
@@ -202,9 +320,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_realm_settings_success() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm().returning(|_| Ok(())).times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let engine = Arc::new(FakeIdentityEngine::succeeds());
+        let service = KeycloakSyncService::new(engine.clone());
 
         let settings = RealmUpdate {
             registration_allowed: Some(true),
@@ -213,19 +330,14 @@ mod tests {
 
         let result = service.sync_realm_settings(settings).await;
         assert!(result.is_ok());
+        assert_eq!(engine.updates.lock().unwrap().len(), 1);
     }
 
     #[tokio::test]
     async fn test_sync_realm_settings_error() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm()
-            .returning(|_| {
-                Err(crate::error::AppError::Keycloak(
-                    "access_denied".to_string(),
-                ))
-            })
-            .times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::fails(
+            crate::error::AppError::Keycloak("access_denied".to_string()),
+        )));
 
         let settings = RealmUpdate {
             registration_allowed: Some(true),
@@ -238,9 +350,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_branding_config_success() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm().returning(|_| Ok(())).times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
 
         let branding = BrandingConfig {
             allow_registration: true,
@@ -253,15 +363,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_branding_config_error_does_not_propagate() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm()
-            .returning(|_| {
-                Err(crate::error::AppError::Keycloak(
-                    "internal_error".to_string(),
-                ))
-            })
-            .times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::fails(
+            crate::error::AppError::Keycloak("internal_error".to_string()),
+        )));
 
         let branding = BrandingConfig {
             allow_registration: true,
@@ -274,9 +378,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_email_config_success() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm().returning(|_| Ok(())).times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
 
         let smtp = SmtpServerConfig {
             host: Some("smtp.example.com".to_string()),
@@ -296,25 +398,19 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_email_config_none_skips_sync() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm().times(0);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let engine = Arc::new(FakeIdentityEngine::succeeds());
+        let service = KeycloakSyncService::new(engine.clone());
 
         // This should not panic and should not make any HTTP requests
         service.sync_email_config(None).await;
+        assert!(engine.updates.lock().unwrap().is_empty());
     }
 
     #[tokio::test]
     async fn test_sync_email_config_error_does_not_propagate() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm()
-            .returning(|_| {
-                Err(crate::error::AppError::Keycloak(
-                    "internal_error".to_string(),
-                ))
-            })
-            .times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::fails(
+            crate::error::AppError::Keycloak("internal_error".to_string()),
+        )));
 
         let smtp = SmtpServerConfig {
             host: Some("smtp.example.com".to_string()),
@@ -328,9 +424,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_email_config_empty_clears_smtp() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm().returning(|_| Ok(())).times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
 
         // Empty config should be sent to clear SMTP settings
         let empty_smtp = SmtpServerConfig::default();
@@ -385,12 +479,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_password_policy_success() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm()
-            .withf(|update| update.password_policy.is_some())
-            .returning(|_| Ok(()))
-            .times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let engine = Arc::new(FakeIdentityEngine::succeeds());
+        let service = KeycloakSyncService::new(engine.clone());
 
         let policy = PasswordPolicy {
             min_length: 12,
@@ -398,19 +488,14 @@ mod tests {
             ..Default::default()
         };
         service.sync_password_policy(&policy).await;
+        assert!(engine.updates.lock().unwrap()[0].password_policy.is_some());
     }
 
     #[tokio::test]
     async fn test_sync_password_policy_error_does_not_propagate() {
-        let mut mock = MockKeycloakRealmUpdater::new();
-        mock.expect_update_realm()
-            .returning(|_| {
-                Err(crate::error::AppError::Keycloak(
-                    "internal_error".to_string(),
-                ))
-            })
-            .times(1);
-        let service = KeycloakSyncService::new(Arc::new(mock));
+        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::fails(
+            crate::error::AppError::Keycloak("internal_error".to_string()),
+        )));
 
         let policy = PasswordPolicy::default();
         // Should not panic even on error

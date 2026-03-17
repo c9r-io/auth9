@@ -19,6 +19,7 @@ use crate::domains::security_observability::service::{AnalyticsService, Security
 use crate::domains::tenant_access::service::{
     InvitationService, SamlApplicationService, TenantService, UserService,
 };
+use crate::identity_engine::IdentityEngine;
 use crate::jwt::JwtManager;
 use crate::keycloak::KeycloakClient;
 use crate::repository::audit::AuditRepository;
@@ -120,6 +121,9 @@ pub trait HasServices: Clone + Send + Sync + 'static {
 
     /// Get the Keycloak client
     fn keycloak_client(&self) -> &KeycloakClient;
+
+    /// Get the abstract identity engine
+    fn identity_engine(&self) -> &std::sync::Arc<dyn IdentityEngine>;
 
     /// Get the action service
     fn action_service(&self) -> &ActionService<Self::ActionRepo>;

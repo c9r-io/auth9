@@ -26,6 +26,7 @@ use crate::domains::tenant_access::service::{
     InvitationService, SamlApplicationService, TenantRepositoryBundle, TenantService,
     UserRepositoryBundle, UserService,
 };
+use crate::identity_engine::{FederationBroker, IdentityEngine, IdentitySessionStore};
 use crate::jwt::JwtManager;
 use crate::keycloak::KeycloakClient;
 use crate::repository::{
@@ -111,6 +112,7 @@ pub struct AppState {
     pub jwt_manager: JwtManager,
     pub cache_manager: CacheManager,
     pub keycloak_client: KeycloakClient,
+    pub identity_engine: Arc<dyn IdentityEngine>,
     pub system_settings_service: Arc<SystemSettingsService<SystemSettingsRepositoryImpl>>,
     pub email_service: Arc<EmailService<SystemSettingsRepositoryImpl>>,
     pub email_template_service: Arc<EmailTemplateService<SystemSettingsRepositoryImpl>>,
@@ -231,6 +233,10 @@ impl HasServices for AppState {
 
     fn keycloak_client(&self) -> &KeycloakClient {
         &self.keycloak_client
+    }
+
+    fn identity_engine(&self) -> &Arc<dyn IdentityEngine> {
+        &self.identity_engine
     }
 
     fn action_service(&self) -> &ActionService<Self::ActionRepo> {
@@ -491,6 +497,9 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     // Create services
     // Create Arc-wrapped Keycloak client for services that need it
     let keycloak_arc = Arc::new(keycloak_client.clone());
+    let identity_sessions: Arc<dyn IdentitySessionStore> = keycloak_arc.clone();
+    let federation_broker: Arc<dyn FederationBroker> = keycloak_arc.clone();
+    let identity_engine: Arc<dyn IdentityEngine> = keycloak_arc.clone();
 
     // Create webhook service first (needed for webhook event publishing)
     let webhook_service = Arc::new(WebhookService::new(webhook_repo.clone()));
@@ -584,10 +593,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     };
 
     // Create Keycloak sync service (shared between branding and system settings)
-    let keycloak_updater: Arc<
-        dyn crate::domains::platform::service::keycloak_sync::KeycloakRealmUpdater,
-    > = keycloak_arc.clone();
-    let keycloak_sync_service = Arc::new(KeycloakSyncService::new(keycloak_updater));
+    let keycloak_sync_service = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
 
     // Create system settings service with Keycloak sync
     let system_settings_service = Arc::new(SystemSettingsService::with_sync_service(
@@ -641,7 +647,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     let session_service = Arc::new(SessionService::new(
         session_repo.clone(),
         user_repo.clone(),
-        keycloak_arc.clone(),
+        identity_sessions,
         Some(webhook_service.clone()), // webhook event publisher
     ));
 
@@ -672,7 +678,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     let identity_provider_service = Arc::new(IdentityProviderService::new(
         linked_identity_repo.clone(),
         user_repo.clone(),
-        keycloak_arc,
+        federation_broker,
     ));
 
     let analytics_service = Arc::new(AnalyticsService::new(login_event_repo.clone()));
@@ -714,6 +720,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         jwt_manager: jwt_manager.clone(),
         cache_manager: cache_manager.clone(),
         keycloak_client,
+        identity_engine,
         system_settings_service,
         email_service,
         email_template_service,

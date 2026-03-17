@@ -11,6 +11,7 @@ pub mod email;
 pub mod error;
 pub mod grpc;
 pub mod http_support;
+pub mod identity_engine;
 pub mod jwt;
 pub mod keycloak;
 pub mod middleware;

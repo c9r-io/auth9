@@ -172,7 +172,7 @@
 | [sdk/09-auth-password-passkey-clients.md](./sdk/09-auth-password-passkey-clients.md) | 认证流程与凭证管理子客户端（Password/Passkeys/EmailOtp/Auth/Organizations） | 5 |
 | [sdk/10-observability-config-clients.md](./sdk/10-observability-config-clients.md) | 可观测性与系统配置子客户端（AuditLogs/Analytics/SecurityAlerts/System/EmailTemplates/Branding） | 5 |
 
-### 集成测试 (12 个文档, 59 个场景)
+### 集成测试 (13 个文档, 62 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [integration/01-concurrent-operations.md](./integration/01-concurrent-operations.md) | 并发操作、竞态条件 | 4 |
@@ -187,6 +187,7 @@
 | [integration/09-security-hardening-config.md](./integration/09-security-hardening-config.md) | 生产环境安全启动校验、REST aud 严格校验、HSTS 条件下发、gRPC audience 必填 | 5 |
 | [integration/10-security-hardening-p2.md](./integration/10-security-hardening-p2.md) | 事务性级联删除原子性、Keycloak 事件源安全校验、外部系统同步 | 5 |
 | [integration/12-otp-service-layer.md](./integration/12-otp-service-layer.md) | OTP 通用服务层基础设施（OtpManager、OtpChannel、速率限制、CacheOperations 扩展） | 5 |
+| [integration/13-identity-engine-state-injection.md](./integration/13-identity-engine-state-injection.md) | IdentityEngine 抽象注入、Session/Identity Provider/Realm Sync 回归 | 3 |
 
 ### SAML Application (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
@@ -226,15 +227,16 @@
 | 审计日志 | 1 | 5 |
 | Action | 12 | 49 |
 | SDK | 9 | 45 |
-| 集成测试 | 11 | 54 |
+| 集成测试 | 13 | 62 |
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
-| **总计** | **104** | **494** |
+| **总计** | **105** | **497** |
 
 ### 文档对齐记录
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-03-17 | 5.13.0 | **Keycloak Phase 1 FR1**：新增 `integration/13-identity-engine-state-injection.md`（3 场景），覆盖 `IdentityEngine` 抽象注入、Session API 回归、Identity Provider API 回归；集成测试统计更新为 13 个文档 62 个场景；总计 105 个文档 497 个场景 |
 | 2026-03-17 | 5.12.0 | **SDK Phase 3 认证流程与凭证管理**：新增 `sdk/09-auth-password-passkey-clients.md`（5 场景），覆盖 Password/Passkeys/EmailOtp/Auth/Organizations 5 个子客户端 21 个方法；同步修正 SDK 统计（8→9 文档、40→45 场景）；共 104 个文档 494 个场景 |
 | 2026-03-14 | 4.3.0 | 新增平台级恶意 IP 黑名单 QA 文档（`settings/04`），并同步修正 `session/04` 对可疑 IP 告警来源的说明，覆盖黑名单配置、输入校验、`suspicious_ip`/`critical` 告警联动 |
 | 2026-03-16 | 5.11.0 | **SAML IdP 出站 Phase 3（证书/加密/SLO）**：新增 `saml-application/04-certificate-encryption.md`（5 场景），覆盖 IdP 签名证书下载公开端点、证书过期信息受保护端点、Assertion 加密缺少 SP 证书校验、SLO POST Binding 验证、Portal 证书下载链接与过期告警 badge；跨文档更新 `01-crud.md` 端点列表、`02-metadata-validation.md` 公开端点列表、`03-portal-ui.md` 列表展示项；共 103 个文档 489 个场景 |

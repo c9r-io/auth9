@@ -2,7 +2,7 @@
 
 use crate::domains::integration::service::WebhookEventPublisher;
 use crate::error::{AppError, Result};
-use crate::keycloak::KeycloakClient;
+use crate::identity_engine::IdentitySessionStore;
 use crate::models::analytics::WebhookEvent;
 use crate::models::common::StringUuid;
 use crate::models::session::{parse_user_agent, CreateSessionInput, Session, SessionInfo};
@@ -17,7 +17,7 @@ const MAX_SESSIONS_PER_USER: i64 = 10;
 pub struct SessionService<S: SessionRepository, U: UserRepository> {
     session_repo: Arc<S>,
     user_repo: Arc<U>,
-    keycloak: Arc<KeycloakClient>,
+    identity_sessions: Arc<dyn IdentitySessionStore>,
     webhook_publisher: Option<Arc<dyn WebhookEventPublisher>>,
 }
 
@@ -25,13 +25,13 @@ impl<S: SessionRepository, U: UserRepository> SessionService<S, U> {
     pub fn new(
         session_repo: Arc<S>,
         user_repo: Arc<U>,
-        keycloak: Arc<KeycloakClient>,
+        identity_sessions: Arc<dyn IdentitySessionStore>,
         webhook_publisher: Option<Arc<dyn WebhookEventPublisher>>,
     ) -> Self {
         Self {
             session_repo,
             user_repo,
-            keycloak,
+            identity_sessions,
             webhook_publisher,
         }
     }
@@ -56,9 +56,12 @@ impl<S: SessionRepository, U: UserRepository> SessionService<S, U> {
                 .find_oldest_active_by_user(user_id)
                 .await?
             {
-                // Revoke in Keycloak if session ID exists
+                // Revoke in the identity backend if session ID exists
                 if let Some(kc_session_id) = &oldest_session.keycloak_session_id {
-                    let _ = self.keycloak.delete_user_session(kc_session_id).await;
+                    let _ = self
+                        .identity_sessions
+                        .delete_user_session(kc_session_id)
+                        .await;
                 }
                 // Revoke in database
                 let _ = self.session_repo.revoke(oldest_session.id).await;
@@ -129,8 +132,11 @@ impl<S: SessionRepository, U: UserRepository> SessionService<S, U> {
 
         // Revoke in Keycloak if session ID exists
         if let Some(kc_session_id) = &session.keycloak_session_id {
-            // Ignore errors from Keycloak (session may already be expired)
-            let _ = self.keycloak.delete_user_session(kc_session_id).await;
+            // Ignore errors from the identity backend (session may already be expired)
+            let _ = self
+                .identity_sessions
+                .delete_user_session(kc_session_id)
+                .await;
         }
 
         // Mark session as revoked in our database
@@ -167,14 +173,17 @@ impl<S: SessionRepository, U: UserRepository> SessionService<S, U> {
         // Get all active sessions
         let sessions = self.session_repo.list_active_by_user(user_id).await?;
 
-        // Revoke each session in Keycloak (except current)
+        // Revoke each session in the identity backend (except current)
         for session in sessions {
             if session.id == current_session_id {
                 continue;
             }
 
             if let Some(kc_session_id) = &session.keycloak_session_id {
-                let _ = self.keycloak.delete_user_session(kc_session_id).await;
+                let _ = self
+                    .identity_sessions
+                    .delete_user_session(kc_session_id)
+                    .await;
             }
         }
 
@@ -193,8 +202,8 @@ impl<S: SessionRepository, U: UserRepository> SessionService<S, U> {
             .await?
             .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
 
-        // Logout from Keycloak (ignore if user doesn't exist in Keycloak)
-        let _ = self.keycloak.logout_user(&user.keycloak_id).await;
+        // Logout from the identity backend (ignore if user doesn't exist there)
+        let _ = self.identity_sessions.logout_user(&user.keycloak_id).await;
 
         // Revoke all sessions in database regardless of Keycloak status
         self.session_repo.revoke_all_by_user(user_id).await
@@ -230,6 +239,7 @@ impl<S: SessionRepository, U: UserRepository> SessionService<S, U> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::keycloak::KeycloakClient;
     use crate::models::user::User;
     use crate::repository::session::MockSessionRepository;
     use crate::repository::user::MockUserRepository;

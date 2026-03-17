@@ -362,6 +362,14 @@ documents:
     has_entry_visibility: false
     has_checklist: true
     last_reviewed: 2026-03-16
+  - id: integration/13-identity-engine-state-injection
+    path: docs/qa/integration/13-identity-engine-state-injection.md
+    module: integration
+    scenarios: 3
+    has_ui_flow: false
+    has_entry_visibility: false
+    has_checklist: true
+    last_reviewed: 2026-03-17
   - id: invitation/01-create-send
     path: docs/qa/invitation/01-create-send.md
     module: invitation

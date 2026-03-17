@@ -4,7 +4,8 @@
 //! IdP configuration is stored in Keycloak, Auth9 provides the management UI.
 
 use crate::error::{AppError, Result};
-use crate::keycloak::{KeycloakClient, KeycloakIdentityProvider};
+use crate::identity_engine::FederationBroker;
+use crate::keycloak::KeycloakIdentityProvider;
 use crate::models::common::StringUuid;
 use crate::models::identity_provider::{
     CreateIdentityProviderInput, IdentityProvider, IdentityProviderTemplate,
@@ -21,19 +22,19 @@ use validator::Validate;
 pub struct IdentityProviderService<L: LinkedIdentityRepository, U: UserRepository> {
     linked_identity_repo: Arc<L>,
     user_repo: Arc<U>,
-    keycloak: Arc<KeycloakClient>,
+    federation_broker: Arc<dyn FederationBroker>,
 }
 
 impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, U> {
     pub fn new(
         linked_identity_repo: Arc<L>,
         user_repo: Arc<U>,
-        keycloak: Arc<KeycloakClient>,
+        federation_broker: Arc<dyn FederationBroker>,
     ) -> Self {
         Self {
             linked_identity_repo,
             user_repo,
-            keycloak,
+            federation_broker,
         }
     }
 
@@ -43,13 +44,13 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
 
     /// List all identity providers
     pub async fn list_providers(&self) -> Result<Vec<IdentityProvider>> {
-        let kc_providers = self.keycloak.list_identity_providers().await?;
+        let kc_providers = self.federation_broker.list_identity_providers().await?;
         Ok(kc_providers.into_iter().map(Into::into).collect())
     }
 
     /// Get an identity provider by alias
     pub async fn get_provider(&self, alias: &str) -> Result<IdentityProvider> {
-        let kc_provider = self.keycloak.get_identity_provider(alias).await?;
+        let kc_provider = self.federation_broker.get_identity_provider(alias).await?;
         Ok(kc_provider.into())
     }
 
@@ -84,7 +85,9 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
             extra: HashMap::new(),
         };
 
-        self.keycloak.create_identity_provider(&kc_provider).await?;
+        self.federation_broker
+            .create_identity_provider(&kc_provider)
+            .await?;
 
         // Fetch the created provider
         self.get_provider(&input.alias).await
@@ -99,7 +102,7 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
         input.validate()?;
 
         // Get existing provider
-        let existing = self.keycloak.get_identity_provider(alias).await?;
+        let existing = self.federation_broker.get_identity_provider(alias).await?;
 
         // Merge updates (preserve extra Keycloak fields like internalId for round-trip)
         let updated = KeycloakIdentityProvider {
@@ -115,7 +118,7 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
             extra: existing.extra,
         };
 
-        self.keycloak
+        self.federation_broker
             .update_identity_provider(alias, &updated)
             .await?;
 
@@ -125,7 +128,7 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
 
     /// Delete an identity provider
     pub async fn delete_provider(&self, alias: &str) -> Result<()> {
-        self.keycloak.delete_identity_provider(alias).await
+        self.federation_broker.delete_identity_provider(alias).await
     }
 
     /// Get available provider templates
@@ -174,7 +177,7 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
             .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
 
         // Remove from Keycloak
-        self.keycloak
+        self.federation_broker
             .remove_user_federated_identity(&user.keycloak_id, &identity.provider_alias)
             .await?;
 
@@ -192,7 +195,7 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
     ) -> Result<()> {
         // Get current identities from Keycloak
         let kc_identities = self
-            .keycloak
+            .federation_broker
             .get_user_federated_identities(keycloak_user_id)
             .await?;
 
@@ -227,6 +230,7 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::keycloak::KeycloakClient;
     use crate::repository::linked_identity::MockLinkedIdentityRepository;
     use crate::repository::user::MockUserRepository;
     use mockall::predicate::*;
