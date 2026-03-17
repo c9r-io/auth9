@@ -33,7 +33,7 @@ spec:
         - name: auth9-portal
           # Image tag is overridden at deploy time via: kubectl set image deployment/auth9-portal auth9-portal=ghcr.io/c9r-io/auth9-portal@sha256:<digest>
           image: ghcr.io/c9r-io/auth9-portal:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 3000
