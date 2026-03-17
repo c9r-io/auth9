@@ -164,6 +164,14 @@ check_command() {
     return 0
 }
 
+generate_strong_admin_password() {
+    # Ensure the seeded admin password always satisfies the default password policy:
+    # uppercase + lowercase + digit + special + sufficient length.
+    local suffix
+    suffix=$(openssl rand -base64 48 | tr -dc 'A-Za-z0-9' | head -c 16)
+    printf 'A9!a%s' "$suffix"
+}
+
 ################################################################################
 # Phase 2: Detection Logic
 ################################################################################
@@ -229,12 +237,14 @@ detect_existing_configmap() {
     local core_public_url=$(kubectl get configmap auth9-config -n "$NAMESPACE" -o jsonpath='{.data.AUTH9_CORE_PUBLIC_URL}' 2>/dev/null || echo "")
     local portal_url=$(kubectl get configmap auth9-config -n "$NAMESPACE" -o jsonpath='{.data.AUTH9_PORTAL_URL}' 2>/dev/null || echo "")
     local keycloak_public_url=$(kubectl get configmap auth9-config -n "$NAMESPACE" -o jsonpath='{.data.KEYCLOAK_PUBLIC_URL}' 2>/dev/null || echo "")
+    local portal_client_id=$(kubectl get configmap auth9-config -n "$NAMESPACE" -o jsonpath='{.data.AUTH9_PORTAL_CLIENT_ID}' 2>/dev/null || echo "")
 
     if [ -n "$jwt_issuer" ]; then
         CONFIGMAP_VALUES[JWT_ISSUER]="$jwt_issuer"
         [ -n "$core_public_url" ] && CONFIGMAP_VALUES[AUTH9_CORE_PUBLIC_URL]="$core_public_url"
         [ -n "$portal_url" ] && CONFIGMAP_VALUES[AUTH9_PORTAL_URL]="$portal_url"
         [ -n "$keycloak_public_url" ] && CONFIGMAP_VALUES[KEYCLOAK_PUBLIC_URL]="$keycloak_public_url"
+        [ -n "$portal_client_id" ] && CONFIGMAP_VALUES[AUTH9_PORTAL_CLIENT_ID]="$portal_client_id"
         print_info "auth9-config ConfigMap 已找到"
         return 0
     fi
@@ -465,6 +475,21 @@ collect_admin_email() {
 }
 
 generate_secrets() {
+    # AUTH9 admin password used by auth9-init seeder for the initial platform admin.
+    # Keep existing value stable to avoid accidental credential rotation on re-deploy.
+    if [ -z "${AUTH9_SECRETS[AUTH9_ADMIN_PASSWORD]}" ]; then
+        AUTH9_SECRETS[AUTH9_ADMIN_PASSWORD]=$(generate_strong_admin_password)
+        AUTH9_ADMIN_PASSWORD="${AUTH9_SECRETS[AUTH9_ADMIN_PASSWORD]}"
+        echo ""
+        print_warning "已生成 AUTH9_ADMIN_PASSWORD - 请立即安全保存："
+        echo -e "${GREEN}${AUTH9_SECRETS[AUTH9_ADMIN_PASSWORD]}${NC}"
+        echo ""
+        read "?保存后按 Enter 继续..."
+    else
+        AUTH9_ADMIN_PASSWORD="${AUTH9_SECRETS[AUTH9_ADMIN_PASSWORD]}"
+        print_info "AUTH9_ADMIN_PASSWORD 已存在（不会重新生成）"
+    fi
+
     # JWT_SECRET
     if [ -z "${AUTH9_SECRETS[JWT_SECRET]}" ]; then
         AUTH9_SECRETS[JWT_SECRET]=$(openssl rand -hex 32)
@@ -630,6 +655,7 @@ data:
   JWT_ISSUER: "$jwt_issuer"
   JWT_ACCESS_TOKEN_TTL_SECS: "3600"
   JWT_REFRESH_TOKEN_TTL_SECS: "604800"
+  JWT_TENANT_ACCESS_ALLOWED_AUDIENCES: "${CONFIGMAP_VALUES[AUTH9_PORTAL_CLIENT_ID]:-auth9-portal}"
   PASSWORD_RESET_TOKEN_TTL_SECS: "3600"
   KEYCLOAK_REALM: "auth9"
   KEYCLOAK_ADMIN_CLIENT_ID: "auth9-admin"
@@ -640,11 +666,16 @@ data:
   WEBAUTHN_RP_ID: "${CONFIGMAP_VALUES[WEBAUTHN_RP_ID]:-auth9.example.com}"
   CORS_ALLOWED_ORIGINS: "${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]:-https://auth9.example.com}"
   CORS_ALLOW_CREDENTIALS: "true"
+  ACTION_ALLOWED_DOMAINS: "gitski.work,c9r.io"
+  HSTS_ENABLED: "true"
+  HSTS_HTTPS_ONLY: "true"
+  HSTS_TRUST_X_FORWARDED_PROTO: "true"
   PLATFORM_ADMIN_EMAILS: "${CONFIGMAP_VALUES[PLATFORM_ADMIN_EMAILS]:-admin@auth9.local}"
+  APP_BASE_URL: "${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]:-https://auth9.example.com}"
   AUTH9_CORE_URL: "http://auth9-core:8080"
   AUTH9_CORE_PUBLIC_URL: "${CONFIGMAP_VALUES[AUTH9_CORE_PUBLIC_URL]:-https://api.auth9.example.com}"
   AUTH9_PORTAL_URL: "${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]:-https://auth9.example.com}"
-  AUTH9_PORTAL_CLIENT_ID: "auth9-portal"
+  AUTH9_PORTAL_CLIENT_ID: "${CONFIGMAP_VALUES[AUTH9_PORTAL_CLIENT_ID]:-auth9-portal}"
   ENVIRONMENT: "production"
   NODE_ENV: "production"
   OTEL_METRICS_ENABLED: "true"
@@ -679,7 +710,7 @@ run_interactive_setup() {
     # Detect auth9-secrets
     detect_existing_secrets "auth9-secrets" "$NAMESPACE" AUTH9_SECRETS \
         "DATABASE_URL" "REDIS_URL" "JWT_SECRET" "JWT_PRIVATE_KEY" "JWT_PUBLIC_KEY" \
-        "SESSION_SECRET" "SETTINGS_ENCRYPTION_KEY" "PASSWORD_RESET_HMAC_KEY" \
+        "SESSION_SECRET" "SETTINGS_ENCRYPTION_KEY" "PASSWORD_RESET_HMAC_KEY" "AUTH9_ADMIN_PASSWORD" \
         "KEYCLOAK_URL" "KEYCLOAK_ADMIN" "KEYCLOAK_ADMIN_PASSWORD" "KEYCLOAK_ADMIN_CLIENT_SECRET" \
         "KEYCLOAK_WEBHOOK_SECRET" "GRPC_API_KEYS" "AUTH9_ADMIN_EMAIL" || true
 

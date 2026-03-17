@@ -41,8 +41,12 @@ spec:
           envFrom:
             - configMapRef:
                 name: auth9-config
-            - secretRef:
-                name: auth9-secrets
+          env:
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth9-secrets
+                  key: SESSION_SECRET
           resources:
             requests:
               cpu: 200m
