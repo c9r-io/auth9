@@ -312,11 +312,13 @@ pub async fn create<S: HasServices>(
     let keycloak_client = build_keycloak_client_from_create_input(&input);
 
     let client_uuid = state
-        .keycloak_client()
+        .identity_engine()
+        .client_store()
         .create_oidc_client(&keycloak_client)
         .await?;
     let client_secret = state
-        .keycloak_client()
+        .identity_engine()
+        .client_store()
         .get_client_secret(&client_uuid)
         .await?;
 
@@ -372,12 +374,14 @@ pub async fn update<S: HasServices>(
     for client in keycloak_clients {
         let keycloak_client = build_keycloak_client_for_update(&client.client_id, &merged);
         if let Ok(kc_uuid) = state
-            .keycloak_client()
+            .identity_engine()
+            .client_store()
             .get_client_uuid_by_client_id(&client.client_id)
             .await
         {
             let _ = state
-                .keycloak_client()
+                .identity_engine()
+                .client_store()
                 .update_oidc_client(&kc_uuid, &keycloak_client)
                 .await;
         }
@@ -490,10 +494,15 @@ pub async fn create_client<S: HasServices>(
     };
 
     let kc_uuid = state
-        .keycloak_client()
+        .identity_engine()
+        .client_store()
         .create_oidc_client(&keycloak_client)
         .await?;
-    let client_secret = state.keycloak_client().get_client_secret(&kc_uuid).await?;
+    let client_secret = state
+        .identity_engine()
+        .client_store()
+        .get_client_secret(&kc_uuid)
+        .await?;
 
     let client_with_secret = state
         .client_service()
@@ -539,11 +548,16 @@ pub async fn delete_client<S: HasServices>(
 
     // Also delete from Keycloak
     if let Ok(kc_uuid) = state
-        .keycloak_client()
+        .identity_engine()
+        .client_store()
         .get_client_uuid_by_client_id(&client_id)
         .await
     {
-        let _ = state.keycloak_client().delete_oidc_client(&kc_uuid).await;
+        let _ = state
+            .identity_engine()
+            .client_store()
+            .delete_oidc_client(&kc_uuid)
+            .await;
     }
 
     state
@@ -593,11 +607,16 @@ pub async fn delete<S: HasServices>(
     let clients = state.client_service().list_clients(id).await?;
     for client in clients {
         if let Ok(kc_uuid) = state
-            .keycloak_client()
+            .identity_engine()
+            .client_store()
             .get_client_uuid_by_client_id(&client.client_id)
             .await
         {
-            let _ = state.keycloak_client().delete_oidc_client(&kc_uuid).await;
+            let _ = state
+                .identity_engine()
+                .client_store()
+                .delete_oidc_client(&kc_uuid)
+                .await;
         }
     }
 
@@ -776,7 +795,8 @@ pub async fn integration_info<S: HasServices>(
     let mut clients = Vec::new();
     for c in &db_clients {
         let kc_result = state
-            .keycloak_client()
+            .identity_engine()
+            .client_store()
             .get_client_by_client_id(&c.client_id)
             .await;
 
@@ -788,7 +808,12 @@ pub async fn integration_info<S: HasServices>(
                     // Confidential — fetch secret from Keycloak
                     let secret = match kc_client.id {
                         Some(ref kc_uuid) => {
-                            match state.keycloak_client().get_client_secret(kc_uuid).await {
+                            match state
+                                .identity_engine()
+                                .client_store()
+                                .get_client_secret(kc_uuid)
+                                .await
+                            {
                                 Ok(s) => Some(s),
                                 Err(e) => {
                                     tracing::warn!(
@@ -799,7 +824,8 @@ pub async fn integration_info<S: HasServices>(
                                     );
                                     // Secret may not exist yet — try regenerating
                                     match state
-                                        .keycloak_client()
+                                        .identity_engine()
+                                        .client_store()
                                         .regenerate_client_secret(kc_uuid)
                                         .await
                                     {
@@ -901,13 +927,15 @@ pub async fn regenerate_client_secret<S: HasServices>(
 
     // Regenerate in Keycloak first (if it exists there)
     let new_secret = if let Ok(kc_uuid) = state
-        .keycloak_client()
+        .identity_engine()
+        .client_store()
         .get_client_uuid_by_client_id(&client_id)
         .await
     {
         // Use Keycloak's regenerated secret
         state
-            .keycloak_client()
+            .identity_engine()
+            .client_store()
             .regenerate_client_secret(&kc_uuid)
             .await?
     } else {
@@ -922,7 +950,8 @@ pub async fn regenerate_client_secret<S: HasServices>(
     // ClientService.regenerate_client_secret already updates the hash if used
     // But if Keycloak generated, we need manual DB update
     if state
-        .keycloak_client()
+        .identity_engine()
+        .client_store()
         .get_client_uuid_by_client_id(&client_id)
         .await
         .is_ok()

@@ -157,7 +157,12 @@ mod tests {
         IdentityCredentialStore, IdentityEventSource, IdentityProviderRepresentation,
         IdentitySessionStore, IdentityUserStore,
     };
+    use crate::keycloak::{
+        CreateKeycloakUserInput, KeycloakOidcClient, KeycloakUser, KeycloakUserCredential,
+        KeycloakUserUpdate,
+    };
     use async_trait::async_trait;
+    use std::collections::HashMap;
     use std::sync::Mutex;
 
     struct FakeIdentityEngine {
@@ -182,13 +187,96 @@ mod tests {
     }
 
     #[async_trait]
-    impl IdentityUserStore for FakeIdentityEngine {}
+    impl IdentityUserStore for FakeIdentityEngine {
+        async fn create_user(&self, _input: &CreateKeycloakUserInput) -> Result<String> {
+            Ok("user-1".to_string())
+        }
+
+        async fn get_user(&self, user_id: &str) -> Result<KeycloakUser> {
+            Ok(KeycloakUser {
+                id: Some(user_id.to_string()),
+                username: user_id.to_string(),
+                email: None,
+                first_name: None,
+                last_name: None,
+                enabled: true,
+                email_verified: false,
+                attributes: HashMap::new(),
+            })
+        }
+
+        async fn update_user(&self, _user_id: &str, _input: &KeycloakUserUpdate) -> Result<()> {
+            Ok(())
+        }
+
+        async fn delete_user(&self, _user_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn validate_user_password(&self, _user_id: &str, _password: &str) -> Result<bool> {
+            Ok(true)
+        }
+    }
 
     #[async_trait]
-    impl IdentityClientStore for FakeIdentityEngine {}
+    impl IdentityClientStore for FakeIdentityEngine {
+        async fn create_oidc_client(&self, _client: &KeycloakOidcClient) -> Result<String> {
+            Ok("client-1".to_string())
+        }
+
+        async fn get_client_secret(&self, _client_uuid: &str) -> Result<String> {
+            Ok("secret".to_string())
+        }
+
+        async fn regenerate_client_secret(&self, _client_uuid: &str) -> Result<String> {
+            Ok("secret".to_string())
+        }
+
+        async fn get_client_uuid_by_client_id(&self, client_id: &str) -> Result<String> {
+            Ok(format!("uuid-{client_id}"))
+        }
+
+        async fn get_client_by_client_id(&self, client_id: &str) -> Result<KeycloakOidcClient> {
+            Ok(KeycloakOidcClient {
+                id: Some(format!("uuid-{client_id}")),
+                client_id: client_id.to_string(),
+                name: None,
+                enabled: true,
+                protocol: "openid-connect".to_string(),
+                base_url: None,
+                root_url: None,
+                admin_url: None,
+                redirect_uris: Vec::new(),
+                web_origins: Vec::new(),
+                attributes: None,
+                public_client: false,
+                secret: None,
+            })
+        }
+
+        async fn update_oidc_client(
+            &self,
+            _client_uuid: &str,
+            _client: &KeycloakOidcClient,
+        ) -> Result<()> {
+            Ok(())
+        }
+
+        async fn delete_oidc_client(&self, _client_uuid: &str) -> Result<()> {
+            Ok(())
+        }
+    }
 
     #[async_trait]
-    impl IdentityCredentialStore for FakeIdentityEngine {}
+    impl IdentityCredentialStore for FakeIdentityEngine {
+        async fn list_user_credentials(&self, _user_id: &str) -> Result<Vec<KeycloakUserCredential>> {
+            Ok(Vec::new())
+        }
+
+        async fn remove_totp_credentials(&self, _user_id: &str) -> Result<()> {
+            Ok(())
+        }
+    }
 
     #[async_trait]
     impl IdentityEventSource for FakeIdentityEngine {}

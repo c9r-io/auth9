@@ -5,7 +5,10 @@ use auth9_core::identity_engine::adapters::keycloak::{
 use auth9_core::identity_engine::{
     FederationBroker, IdentityEngine, IdentityProviderRepresentation, IdentitySessionStore,
 };
-use auth9_core::keycloak::KeycloakClient;
+use auth9_core::keycloak::{
+    CreateKeycloakUserInput, KeycloakClient, KeycloakCredential, KeycloakOidcClient,
+    KeycloakUserUpdate,
+};
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -228,6 +231,270 @@ async fn keycloak_identity_engine_adapter_updates_realm_through_wrapped_client()
             registration_allowed: Some(true),
             ..Default::default()
         })
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn keycloak_identity_engine_adapter_supports_user_client_and_credential_stores() {
+    let server = MockServer::start().await;
+    mock_admin_token(&server, 1).await;
+
+    Mock::given(method("POST"))
+        .and(path("/admin/realms/test/users"))
+        .and(body_string_contains("\"username\":\"alice@example.com\""))
+        .respond_with(ResponseTemplate::new(201).insert_header("location", "/users/user-123"))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/admin/realms/test/users/user-123"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "id": "user-123",
+            "username": "alice@example.com",
+            "email": "alice@example.com",
+            "enabled": true,
+            "emailVerified": false,
+            "attributes": {}
+        })))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("PUT"))
+        .and(path("/admin/realms/test/users/user-123"))
+        .and(body_string_contains("\"firstName\":\"Alice Updated\""))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/admin/realms/test/users/user-123"))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/realms/test/protocol/openid-connect/token"))
+        .and(body_string_contains("grant_type=password"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "access_token": "user-token"
+        })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/admin/realms/test/clients"))
+        .and(body_string_contains("\"clientId\":\"svc-123\""))
+        .respond_with(ResponseTemplate::new(201).insert_header("location", "/clients/client-uuid-1"))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/admin/realms/test/clients/client-uuid-1/client-secret"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "value": "secret-1" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("POST"))
+        .and(path("/admin/realms/test/clients/client-uuid-1/client-secret"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({ "value": "secret-2" })))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/admin/realms/test/clients"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {
+                "id": "client-uuid-1",
+                "clientId": "svc-123",
+                "enabled": true,
+                "protocol": "openid-connect",
+                "redirectUris": [],
+                "webOrigins": [],
+                "publicClient": false
+            }
+        ])))
+        .mount(&server)
+        .await;
+
+    Mock::given(method("PUT"))
+        .and(path("/admin/realms/test/clients/client-uuid-1"))
+        .and(body_string_contains("\"name\":\"Service 123 Updated\""))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/admin/realms/test/clients/client-uuid-1"))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("GET"))
+        .and(path("/admin/realms/test/users/user-123/credentials"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            { "id": "cred-1", "type": "password" },
+            { "id": "cred-2", "type": "otp" }
+        ])))
+        .expect(2)
+        .mount(&server)
+        .await;
+
+    Mock::given(method("DELETE"))
+        .and(path("/admin/realms/test/users/user-123/credentials/cred-2"))
+        .respond_with(ResponseTemplate::new(204))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let adapter = KeycloakIdentityEngineAdapter::new(create_test_client(&server.uri()));
+
+    let user_id = adapter
+        .user_store()
+        .create_user(&CreateKeycloakUserInput {
+            username: "alice@example.com".to_string(),
+            email: "alice@example.com".to_string(),
+            first_name: Some("Alice".to_string()),
+            last_name: None,
+            enabled: true,
+            email_verified: false,
+            credentials: Some(vec![KeycloakCredential {
+                credential_type: "password".to_string(),
+                value: "Password123!".to_string(),
+                temporary: false,
+            }]),
+        })
+        .await
+        .unwrap();
+    assert_eq!(user_id, "user-123");
+
+    let user = adapter.user_store().get_user(&user_id).await.unwrap();
+    assert_eq!(user.email.as_deref(), Some("alice@example.com"));
+    assert!(
+        adapter
+            .user_store()
+            .validate_user_password(&user_id, "Password123!")
+            .await
+            .unwrap()
+    );
+    adapter
+        .user_store()
+        .update_user(
+            &user_id,
+            &KeycloakUserUpdate {
+                username: None,
+                email: None,
+                first_name: Some("Alice Updated".to_string()),
+                last_name: None,
+                enabled: None,
+                email_verified: None,
+                required_actions: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    let client_uuid = adapter
+        .client_store()
+        .create_oidc_client(&KeycloakOidcClient {
+            id: None,
+            client_id: "svc-123".to_string(),
+            name: Some("Service 123".to_string()),
+            enabled: true,
+            protocol: "openid-connect".to_string(),
+            base_url: None,
+            root_url: None,
+            admin_url: None,
+            redirect_uris: Vec::new(),
+            web_origins: Vec::new(),
+            attributes: None,
+            public_client: false,
+            secret: None,
+        })
+        .await
+        .unwrap();
+    assert_eq!(client_uuid, "client-uuid-1");
+    assert_eq!(
+        adapter
+            .client_store()
+            .get_client_secret(&client_uuid)
+            .await
+            .unwrap(),
+        "secret-1"
+    );
+    assert_eq!(
+        adapter
+            .client_store()
+            .get_client_uuid_by_client_id("svc-123")
+            .await
+            .unwrap(),
+        "client-uuid-1"
+    );
+    assert_eq!(
+        adapter
+            .client_store()
+            .get_client_by_client_id("svc-123")
+            .await
+            .unwrap()
+            .client_id,
+        "svc-123"
+    );
+    assert_eq!(
+        adapter
+            .client_store()
+            .regenerate_client_secret(&client_uuid)
+            .await
+            .unwrap(),
+        "secret-2"
+    );
+    adapter
+        .client_store()
+        .update_oidc_client(
+            &client_uuid,
+            &KeycloakOidcClient {
+                id: Some(client_uuid.clone()),
+                client_id: "svc-123".to_string(),
+                name: Some("Service 123 Updated".to_string()),
+                enabled: true,
+                protocol: "openid-connect".to_string(),
+                base_url: None,
+                root_url: None,
+                admin_url: None,
+                redirect_uris: Vec::new(),
+                web_origins: Vec::new(),
+                attributes: None,
+                public_client: false,
+                secret: None,
+            },
+        )
+        .await
+        .unwrap();
+
+    let credentials = adapter
+        .credential_store()
+        .list_user_credentials(&user_id)
+        .await
+        .unwrap();
+    assert_eq!(credentials.len(), 2);
+    adapter
+        .credential_store()
+        .remove_totp_credentials(&user_id)
+        .await
+        .unwrap();
+
+    adapter.user_store().delete_user(&user_id).await.unwrap();
+    adapter
+        .client_store()
+        .delete_oidc_client(&client_uuid)
         .await
         .unwrap();
 }

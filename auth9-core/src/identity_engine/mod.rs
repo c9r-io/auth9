@@ -1,5 +1,8 @@
 use crate::error::Result;
-use crate::keycloak::RealmUpdate;
+use crate::keycloak::{
+    CreateKeycloakUserInput, KeycloakOidcClient, KeycloakUser, KeycloakUserCredential,
+    KeycloakUserUpdate, RealmUpdate,
+};
 use async_trait::async_trait;
 
 pub mod adapters;
@@ -9,11 +12,29 @@ pub use types::{FederatedIdentityRepresentation, IdentityProviderRepresentation}
 
 /// User lifecycle operations for an identity backend.
 #[async_trait]
-pub trait IdentityUserStore: Send + Sync {}
+pub trait IdentityUserStore: Send + Sync {
+    async fn create_user(&self, input: &CreateKeycloakUserInput) -> Result<String>;
+    async fn get_user(&self, user_id: &str) -> Result<KeycloakUser>;
+    async fn update_user(&self, user_id: &str, input: &KeycloakUserUpdate) -> Result<()>;
+    async fn delete_user(&self, user_id: &str) -> Result<()>;
+    async fn validate_user_password(&self, user_id: &str, password: &str) -> Result<bool>;
+}
 
 /// OIDC/SAML client lifecycle operations for an identity backend.
 #[async_trait]
-pub trait IdentityClientStore: Send + Sync {}
+pub trait IdentityClientStore: Send + Sync {
+    async fn create_oidc_client(&self, client: &KeycloakOidcClient) -> Result<String>;
+    async fn get_client_secret(&self, client_uuid: &str) -> Result<String>;
+    async fn regenerate_client_secret(&self, client_uuid: &str) -> Result<String>;
+    async fn get_client_uuid_by_client_id(&self, client_id: &str) -> Result<String>;
+    async fn get_client_by_client_id(&self, client_id: &str) -> Result<KeycloakOidcClient>;
+    async fn update_oidc_client(
+        &self,
+        client_uuid: &str,
+        client: &KeycloakOidcClient,
+    ) -> Result<()>;
+    async fn delete_oidc_client(&self, client_uuid: &str) -> Result<()>;
+}
 
 /// Session lifecycle operations for an identity backend.
 #[async_trait]
@@ -24,7 +45,10 @@ pub trait IdentitySessionStore: Send + Sync {
 
 /// Credential lifecycle operations for an identity backend.
 #[async_trait]
-pub trait IdentityCredentialStore: Send + Sync {}
+pub trait IdentityCredentialStore: Send + Sync {
+    async fn list_user_credentials(&self, user_id: &str) -> Result<Vec<KeycloakUserCredential>>;
+    async fn remove_totp_credentials(&self, user_id: &str) -> Result<()>;
+}
 
 /// Federation and broker management operations for an identity backend.
 #[async_trait]

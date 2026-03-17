@@ -204,7 +204,6 @@ pub struct TestAppState {
     pub action_service: Arc<ActionService<TestActionRepository>>,
     pub audit_repo: Arc<TestAuditRepository>,
     pub jwt_manager: auth9_core::jwt::JwtManager,
-    pub keycloak_client: KeycloakClient,
     pub identity_engine: Arc<dyn IdentityEngine>,
     #[allow(dead_code)]
     pub cache_manager: NoOpCacheManager,
@@ -310,8 +309,7 @@ impl TestAppState {
         ));
 
         let jwt_manager = create_test_jwt_manager();
-        let keycloak_client = KeycloakClient::new(config.keycloak.clone());
-        let keycloak_arc = Arc::new(keycloak_client.clone());
+        let keycloak_arc = Arc::new(KeycloakClient::new(config.keycloak.clone()));
         let identity_sessions: Arc<dyn IdentitySessionStore> =
             Arc::new(KeycloakSessionStoreAdapter::new(keycloak_arc.clone()));
         let federation_broker: Arc<dyn FederationBroker> =
@@ -417,7 +415,6 @@ impl TestAppState {
             action_service,
             audit_repo,
             jwt_manager,
-            keycloak_client,
             identity_engine,
             cache_manager,
             db_pool,
@@ -526,10 +523,6 @@ impl HasServices for TestAppState {
 
     fn jwt_manager(&self) -> &JwtManager {
         &self.jwt_manager
-    }
-
-    fn keycloak_client(&self) -> &KeycloakClient {
-        &self.keycloak_client
     }
 
     fn identity_engine(&self) -> &Arc<dyn IdentityEngine> {

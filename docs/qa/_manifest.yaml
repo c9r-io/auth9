@@ -1,5 +1,5 @@
 version: qa-doc-gen-v1
-generated_at: 2026-03-13
+generated_at: 2026-03-17
 documents:
   - id: action/01-crud
     path: docs/qa/action/01-crud.md
@@ -886,3 +886,11 @@ documents:
     has_entry_visibility: false
     has_checklist: true
     last_reviewed: 2026-03-16
+  - id: integration/17-identity-engine-capabilities-state-cleanup
+    path: docs/qa/integration/17-identity-engine-capabilities-state-cleanup.md
+    module: integration
+    scenarios: 3
+    has_ui_flow: false
+    has_entry_visibility: false
+    has_checklist: true
+    last_reviewed: 2026-03-17

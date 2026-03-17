@@ -56,8 +56,24 @@ fn backend_switch_can_use_auth9_oidc_stub() -> Result<()> {
             .get_user_federated_identities("user-1")
             .await?;
         identity_engine.update_realm(&Default::default()).await?;
+        let credentials = identity_engine
+            .credential_store()
+            .list_user_credentials("user-1")
+            .await?;
         assert!(providers.is_empty());
         assert!(linked.is_empty());
+        assert!(credentials.is_empty());
+        assert!(matches!(
+            identity_engine.user_store().delete_user("user-1").await,
+            Err(AppError::Internal(_))
+        ));
+        assert!(matches!(
+            identity_engine
+                .client_store()
+                .get_client_secret("client-1")
+                .await,
+            Err(AppError::Internal(_))
+        ));
         Ok::<(), AppError>(())
     })?;
 

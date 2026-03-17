@@ -21,7 +21,6 @@ use crate::domains::tenant_access::service::{
 };
 use crate::identity_engine::IdentityEngine;
 use crate::jwt::JwtManager;
-use crate::keycloak::KeycloakClient;
 use crate::repository::audit::AuditRepository;
 use crate::repository::scim_group_mapping::ScimGroupRoleMappingRepository;
 use crate::repository::scim_log::ScimProvisioningLogRepository;
@@ -118,9 +117,6 @@ pub trait HasServices: Clone + Send + Sync + 'static {
 
     /// Get the JWT manager
     fn jwt_manager(&self) -> &JwtManager;
-
-    /// Get the Keycloak client
-    fn keycloak_client(&self) -> &KeycloakClient;
 
     /// Get the abstract identity engine
     fn identity_engine(&self) -> &std::sync::Arc<dyn IdentityEngine>;

@@ -259,10 +259,6 @@ impl HasServices for AppState {
         &self.jwt_manager
     }
 
-    fn keycloak_client(&self) -> &KeycloakClient {
-        &self.keycloak_client
-    }
-
     fn identity_engine(&self) -> &Arc<dyn IdentityEngine> {
         &self.identity_engine
     }

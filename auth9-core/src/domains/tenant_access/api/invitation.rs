@@ -425,7 +425,8 @@ pub async fn accept<S: HasInvitations>(
             }];
 
             let keycloak_id = state
-                .keycloak_client()
+                .identity_engine()
+                .user_store()
                 .create_user(&CreateKeycloakUserInput {
                     username: invitation.email.clone(),
                     email: invitation.email.clone(),

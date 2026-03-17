@@ -2,7 +2,7 @@
 
 use crate::error::{AppError, Result};
 use crate::http_support::{write_audit_log_generic, MessageResponse, SuccessResponse};
-use crate::keycloak::KeycloakIdentityProvider;
+use crate::identity_engine::IdentityProviderRepresentation;
 use crate::middleware::auth::AuthUser;
 use crate::models::common::StringUuid;
 use crate::models::enterprise_sso::{
@@ -77,7 +77,7 @@ pub async fn create_connector<S: HasServices + HasDbPool>(
     let alias = input.alias.trim().to_lowercase();
     let provider_alias = format!("{}--{}", tenant.slug, alias);
 
-    let keycloak_provider = KeycloakIdentityProvider {
+    let identity_provider = IdentityProviderRepresentation {
         alias: provider_alias.clone(),
         display_name: input.display_name.clone(),
         provider_id: provider_type.clone(),
@@ -90,8 +90,9 @@ pub async fn create_connector<S: HasServices + HasDbPool>(
         extra: HashMap::new(),
     };
     state
-        .keycloak_client()
-        .create_identity_provider(&keycloak_provider)
+        .identity_engine()
+        .federation_broker()
+        .create_identity_provider(&identity_provider)
         .await?;
 
     let connector_id = StringUuid::new_v4();
@@ -112,7 +113,8 @@ pub async fn create_connector<S: HasServices + HasDbPool>(
 
     if let Err(e) = insert_result {
         let _ = state
-            .keycloak_client()
+            .identity_engine()
+            .federation_broker()
             .delete_identity_provider(&provider_alias)
             .await;
         return Err(e);
@@ -171,7 +173,7 @@ pub async fn update_connector<S: HasServices + HasDbPool>(
     let priority = input.priority.unwrap_or(before.priority);
     let display_name = input.display_name.or(before.display_name.clone());
 
-    let keycloak_provider = KeycloakIdentityProvider {
+    let identity_provider = IdentityProviderRepresentation {
         alias: before.provider_alias.clone(),
         display_name: display_name.clone(),
         provider_id: before.provider_type.clone(),
@@ -184,8 +186,9 @@ pub async fn update_connector<S: HasServices + HasDbPool>(
         extra: HashMap::new(),
     };
     state
-        .keycloak_client()
-        .update_identity_provider(&before.provider_alias, &keycloak_provider)
+        .identity_engine()
+        .federation_broker()
+        .update_identity_provider(&before.provider_alias, &identity_provider)
         .await?;
 
     let mut tx = state.db_pool().begin().await?;
@@ -264,7 +267,8 @@ pub async fn delete_connector<S: HasServices + HasDbPool>(
         get_connector_by_id(state.db_pool(), tenant_id, StringUuid::from(connector_id)).await?;
 
     state
-        .keycloak_client()
+        .identity_engine()
+        .federation_broker()
         .delete_identity_provider(&before.provider_alias)
         .await?;
 
@@ -323,7 +327,8 @@ pub async fn test_connector<S: HasServices + HasDbPool>(
         get_connector_by_id(state.db_pool(), tenant_id, StringUuid::from(connector_id)).await?;
 
     let result = match state
-        .keycloak_client()
+        .identity_engine()
+        .federation_broker()
         .get_identity_provider(&connector.provider_alias)
         .await
     {

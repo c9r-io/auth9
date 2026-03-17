@@ -447,7 +447,8 @@ pub async fn create<S: HasServices + HasBranding>(
     });
 
     let keycloak_id = state
-        .keycloak_client()
+        .identity_engine()
+        .user_store()
         .create_user(&CreateKeycloakUserInput {
             username: input.user.email.clone(),
             email: input.user.email.clone(),
@@ -467,7 +468,12 @@ pub async fn create<S: HasServices + HasBranding>(
                 error = %e,
                 "DB user creation failed, compensating by deleting Keycloak user"
             );
-            if let Err(cleanup_err) = state.keycloak_client().delete_user(&keycloak_id).await {
+            if let Err(cleanup_err) = state
+                .identity_engine()
+                .user_store()
+                .delete_user(&keycloak_id)
+                .await
+            {
                 tracing::error!(
                     keycloak_id = %keycloak_id,
                     error = %cleanup_err,
@@ -550,7 +556,8 @@ pub async fn update_me<S: HasServices>(
             required_actions: None,
         };
         state
-            .keycloak_client()
+            .identity_engine()
+            .user_store()
             .update_user(&before.identity_subject, &update)
             .await?;
     }
@@ -611,7 +618,8 @@ pub async fn update<S: HasServices>(
             required_actions: None,
         };
         state
-            .keycloak_client()
+            .identity_engine()
+            .user_store()
             .update_user(&before.identity_subject, &update)
             .await?;
     }
@@ -660,7 +668,8 @@ pub async fn delete<S: HasServices>(
     }
 
     if let Err(err) = state
-        .keycloak_client()
+        .identity_engine()
+        .user_store()
         .delete_user(&before.identity_subject)
         .await
     {
@@ -908,7 +917,8 @@ pub async fn enable_mfa<S: HasServices>(
         .get(StringUuid::from(auth.user_id))
         .await?;
     let password_valid = state
-        .keycloak_client()
+        .identity_engine()
+        .user_store()
         .validate_user_password(&admin_user.identity_subject, &input.confirm_password)
         .await?;
     if !password_valid {
@@ -930,7 +940,8 @@ pub async fn enable_mfa<S: HasServices>(
         required_actions: Some(vec!["CONFIGURE_TOTP".to_string()]),
     };
     state
-        .keycloak_client()
+        .identity_engine()
+        .user_store()
         .update_user(&user.identity_subject, &update)
         .await?;
     let updated = state.user_service().set_mfa_enabled(id, true).await?;
@@ -993,7 +1004,8 @@ pub async fn disable_mfa<S: HasServices>(
         .get(StringUuid::from(auth.user_id))
         .await?;
     let password_valid = state
-        .keycloak_client()
+        .identity_engine()
+        .user_store()
         .validate_user_password(&admin_user.identity_subject, &input.confirm_password)
         .await?;
     if !password_valid {
@@ -1006,7 +1018,8 @@ pub async fn disable_mfa<S: HasServices>(
     let id = StringUuid::from(id);
     let user = state.user_service().get(id).await?;
     state
-        .keycloak_client()
+        .identity_engine()
+        .credential_store()
         .remove_totp_credentials(&user.identity_subject)
         .await?;
     let update = KeycloakUserUpdate {
@@ -1019,7 +1032,8 @@ pub async fn disable_mfa<S: HasServices>(
         required_actions: Some(vec![]),
     };
     state
-        .keycloak_client()
+        .identity_engine()
+        .user_store()
         .update_user(&user.identity_subject, &update)
         .await?;
     let updated = state.user_service().set_mfa_enabled(id, false).await?;
@@ -1088,7 +1102,7 @@ mod tests {
             "email": "user@example.com",
             "display_name": "John Doe",
             "avatar_url": "https://example.com/avatar.png",
-            "password": "secret123"
+            "password": "secret123" // pragma: allowlist secret
         }"#;
         let request: CreateUserRequest = serde_json::from_str(json).unwrap();
         assert_eq!(request.user.email, "user@example.com");
@@ -1219,7 +1233,7 @@ mod tests {
             "email": "full@example.com",
             "display_name": "Full Name",
             "avatar_url": "https://cdn.example.com/avatars/full.png",
-            "password": "SecureP@ssw0rd!"
+            "password": "SecureP@ssw0rd!" // pragma: allowlist secret
         }"#;
         let request: CreateUserRequest = serde_json::from_str(json).unwrap();
 
@@ -1357,7 +1371,7 @@ mod tests {
     fn test_create_user_request_password_only() {
         let json = r#"{
             "email": "pwd@example.com",
-            "password": "OnlyPassword123"
+            "password": "OnlyPassword123" // pragma: allowlist secret
         }"#;
         let request: CreateUserRequest = serde_json::from_str(json).unwrap();
         assert_eq!(request.user.email, "pwd@example.com");

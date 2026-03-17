@@ -26,7 +26,8 @@ pub(super) async fn exchange_code_for_tokens<S: HasServices>(
     code_verifier: Option<&str>,
 ) -> Result<KeycloakTokenResponse> {
     let kc_client = state
-        .keycloak_client()
+        .identity_engine()
+        .client_store()
         .get_client_by_client_id(&callback_state.client_id)
         .await?;
     let client_uuid = kc_client
@@ -57,7 +58,8 @@ pub(super) async fn exchange_code_for_tokens<S: HasServices>(
     // Public clients don't have a secret; only fetch and send secret for confidential clients
     if !kc_client.public_client {
         let client_secret = state
-            .keycloak_client()
+            .identity_engine()
+            .client_store()
             .get_client_secret(&client_uuid)
             .await?;
         params.push(("client_secret", client_secret));
@@ -100,7 +102,8 @@ pub(super) async fn exchange_refresh_token<S: HasServices>(
     refresh_token: &str,
 ) -> Result<KeycloakTokenResponse> {
     let kc_client = state
-        .keycloak_client()
+        .identity_engine()
+        .client_store()
         .get_client_by_client_id(&callback_state.client_id)
         .await?;
     let client_uuid = kc_client
@@ -121,7 +124,8 @@ pub(super) async fn exchange_refresh_token<S: HasServices>(
 
     if !kc_client.public_client {
         let client_secret = state
-            .keycloak_client()
+            .identity_engine()
+            .client_store()
             .get_client_secret(&client_uuid)
             .await?;
         params.push(("client_secret", client_secret));

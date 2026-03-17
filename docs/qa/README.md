@@ -173,7 +173,7 @@
 | [sdk/09-auth-password-passkey-clients.md](./sdk/09-auth-password-passkey-clients.md) | 认证流程与凭证管理子客户端（Password/Passkeys/EmailOtp/Auth/Organizations） | 5 |
 | [sdk/10-observability-config-clients.md](./sdk/10-observability-config-clients.md) | 可观测性与系统配置子客户端（AuditLogs/Analytics/SecurityAlerts/System/EmailTemplates/Branding） | 5 |
 
-### 集成测试 (15 个文档, 70 个场景)
+### 集成测试 (17 个文档, 77 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [integration/01-concurrent-operations.md](./integration/01-concurrent-operations.md) | 并发操作、竞态条件 | 4 |
@@ -192,6 +192,7 @@
 | [integration/14-keycloak-adapter-layer.md](./integration/14-keycloak-adapter-layer.md) | Keycloak adapter 层回归（Session revoke、IdP CRUD、linked identity、realm sync 注入链） | 4 |
 | [integration/15-neutral-identity-schema-migration.md](./integration/15-neutral-identity-schema-migration.md) | 中性身份字段迁移回归（identity_subject / provider_session_id / provider_alias） | 4 |
 | [integration/16-auth9-oidc-skeleton-and-backend-flag.md](./integration/16-auth9-oidc-skeleton-and-backend-flag.md) | `auth9-oidc` 服务骨架、`IDENTITY_BACKEND` 开关与双 backend smoke test | 4 |
+| [integration/17-identity-engine-capabilities-state-cleanup.md](./integration/17-identity-engine-capabilities-state-cleanup.md) | Identity Engine 最小能力面补齐、`state` 去 `keycloak_client()` 出口、adapter contract 回归 | 3 |
 
 ### SAML Application (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
@@ -231,10 +232,10 @@
 | 审计日志 | 1 | 5 |
 | Action | 12 | 49 |
 | SDK | 9 | 45 |
-| 集成测试 | 16 | 74 |
+| 集成测试 | 17 | 77 |
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
-| **总计** | **109** | **509** |
+| **总计** | **110** | **512** |
 
 ### 文档对齐记录
 

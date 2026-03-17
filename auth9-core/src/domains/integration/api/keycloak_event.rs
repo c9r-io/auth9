@@ -466,7 +466,8 @@ pub async fn process_keycloak_event<
     {
         if let Some(ref kc_user_id) = event.user_id {
             match state
-                .keycloak_client()
+                .identity_engine()
+                .credential_store()
                 .list_user_credentials(kc_user_id)
                 .await
             {
@@ -854,7 +855,7 @@ mod tests {
 
     #[test]
     fn test_verify_signature_valid() {
-        let secret = "test-secret";
+        let secret = "test-secret"; // pragma: allowlist secret
         let body = b"test body";
 
         // Compute expected signature
@@ -868,7 +869,7 @@ mod tests {
 
     #[test]
     fn test_verify_signature_invalid() {
-        let secret = "test-secret";
+        let secret = "test-secret"; // pragma: allowlist secret
         let body = b"test body";
         let wrong_signature =
             "sha256=0000000000000000000000000000000000000000000000000000000000000000";
@@ -878,7 +879,7 @@ mod tests {
 
     #[test]
     fn test_verify_signature_without_prefix() {
-        let secret = "test-secret";
+        let secret = "test-secret"; // pragma: allowlist secret
         let body = b"test body";
 
         // Compute expected signature without prefix
