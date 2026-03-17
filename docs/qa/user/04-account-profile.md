@@ -23,7 +23,7 @@
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | CHAR(36) | UUID 主键 |
-| keycloak_id | VARCHAR(255) | Keycloak 用户 ID |
+| identity_subject | VARCHAR(255) | 中性身份主体 ID（migration period 下与 `keycloak_id` 同步） |
 | email | VARCHAR(255) | 邮箱（唯一） |
 | display_name | VARCHAR(255) | 显示名称 |
 | avatar_url | TEXT | 头像 URL |

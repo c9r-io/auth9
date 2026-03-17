@@ -124,8 +124,8 @@
 
 ### 预期数据状态
 ```sql
-SELECT id, email, keycloak_id FROM users WHERE email = '{google_email}';
--- 预期: 存在用户记录
+SELECT id, email, identity_subject, keycloak_id FROM users WHERE email = '{google_email}';
+-- 预期: 存在用户记录，identity_subject 非空；migration period 下 keycloak_id 与其保持一致
 
 SELECT * FROM linked_identities WHERE user_id = '{user_id}';
 -- 预期: 存在 provider=google 的关联记录

@@ -88,7 +88,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (18 个文档, 80 个场景)
+### 认证流程 (18 个文档, 82 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 4 |
@@ -173,7 +173,7 @@
 | [sdk/09-auth-password-passkey-clients.md](./sdk/09-auth-password-passkey-clients.md) | 认证流程与凭证管理子客户端（Password/Passkeys/EmailOtp/Auth/Organizations） | 5 |
 | [sdk/10-observability-config-clients.md](./sdk/10-observability-config-clients.md) | 可观测性与系统配置子客户端（AuditLogs/Analytics/SecurityAlerts/System/EmailTemplates/Branding） | 5 |
 
-### 集成测试 (18 个文档, 82 个场景)
+### 集成测试 (19 个文档, 86 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [integration/01-concurrent-operations.md](./integration/01-concurrent-operations.md) | 并发操作、竞态条件 | 4 |
@@ -194,6 +194,7 @@
 | [integration/16-auth9-oidc-skeleton-and-backend-flag.md](./integration/16-auth9-oidc-skeleton-and-backend-flag.md) | `auth9-oidc` 服务骨架、`IDENTITY_BACKEND` 开关与双 backend smoke test | 4 |
 | [integration/17-identity-engine-capabilities-state-cleanup.md](./integration/17-identity-engine-capabilities-state-cleanup.md) | Identity Engine 最小能力面补齐、`state` 去 `keycloak_client()` 出口、adapter contract 回归 | 3 |
 | [integration/18-business-layer-keycloak-decoupling.md](./integration/18-business-layer-keycloak-decoupling.md) | 业务层去 `KeycloakClient` 直接依赖、handler 中性 DTO、Password/WebAuthn/SCIM/SAML 抽象回归 | 5 |
+| [integration/19-phase1-identity-abstraction-closure.md](./integration/19-phase1-identity-abstraction-closure.md) | Phase 1 身份抽象层 closure 验收（默认 `keycloak` backend、`auth9_oidc` stub、adapter contract、中性字段主路径） | 4 |
 
 ### SAML Application (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
@@ -225,23 +226,24 @@
 | 邀请管理 | 3 | 15 |
 | 会话与安全 | 8 | 39 |
 | Webhook | 4 | 17 |
-| 认证流程 | 17 | 80 |
+| 认证流程 | 18 | 82 |
 | 系统设置 | 4 | 20 |
 | 身份提供商 | 3 | 15 |
 | Passkeys | 3 | 15 |
 | 分析与统计 | 2 | 10 |
 | 审计日志 | 1 | 5 |
 | Action | 12 | 49 |
-| SDK | 9 | 45 |
-| 集成测试 | 18 | 82 |
+| SDK | 10 | 50 |
+| 集成测试 | 19 | 86 |
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
-| **总计** | **111** | **517** |
+| **总计** | **118** | **553** |
 
 ### 文档对齐记录
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-03-17 | 5.19.0 | **Keycloak Phase 1 FR3 Closure**：新增 `integration/19-phase1-identity-abstraction-closure.md`（4 场景），收束默认 `keycloak` backend、`auth9_oidc` stub、adapter contract 与中性字段主路径总验收；同步更新 `session/03-alerts.md`、`user/02-advanced.md`、`user/04-account-profile.md`、`identity-provider/02-toggle-validation.md` 的主断言字段说明；集成测试统计更新为 19 个文档 86 个场景；总计 118 个文档 553 个场景 |
 | 2026-03-17 | 5.18.0 | **Keycloak Phase 1 FR2**：新增 `integration/18-business-layer-keycloak-decoupling.md`（5 场景），覆盖业务层去 `KeycloakClient` 直接依赖、handler 中性 DTO、Password/WebAuthn/SCIM/SAML 抽象回归；集成测试统计更新为 18 个文档 82 个场景；总计 111 个文档 517 个场景 |
 | 2026-03-17 | 5.17.0 | **Keycloak Phase 1 FR4**：新增 `integration/16-auth9-oidc-skeleton-and-backend-flag.md`（4 场景），覆盖 `auth9-oidc` 独立服务骨架、`IDENTITY_BACKEND` 默认/切换/非法值校验；同步更新 `integration/13`、`integration/14` 的分支覆盖边界说明；集成测试统计更新为 16 个文档 74 个场景；总计 109 个文档 509 个场景 |
 | 2026-03-17 | 5.16.0 | **Keycloak Phase 1 FR3**：新增 `integration/15-neutral-identity-schema-migration.md`（4 场景），覆盖 `identity_subject` / `provider_session_id` / `provider_alias` 的 migration、主路径读写与兼容性；同步更新用户、会话、Enterprise SSO 相关 QA 文档字段说明；集成测试统计更新为 15 个文档 70 个场景；总计 108 个文档 505 个场景 |

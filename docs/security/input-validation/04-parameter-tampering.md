@@ -36,7 +36,7 @@
    - `created_at` - 创建时间
    - `created_by` - 创建者
    - `tenant_id` - 租户 ID
-   - `keycloak_id` - 外部 ID
+   - `identity_subject` - 外部身份主体 ID（migration period 下与 `keycloak_id` 同步）
 3. 检查字段是否被修改
 
 ### 预期安全行为
@@ -55,16 +55,16 @@ curl -X PUT -H "Authorization: Bearer $TOKEN" \
     "id": "different-uuid",
     "created_at": "2020-01-01T00:00:00Z",
     "tenant_id": "other-tenant-id",
-    "keycloak_id": "fake-keycloak-id"
+    "identity_subject": "fake-identity-subject"
   }'
 
 # 验证修改结果
 curl -H "Authorization: Bearer $TOKEN" \
   http://localhost:8080/api/v1/users/me
-# 预期: id, created_at, tenant_id, keycloak_id 未变
+# 预期: id, created_at, tenant_id, identity_subject 未变
 
 # 数据库验证
-SELECT id, created_at, keycloak_id FROM users WHERE id = '...';
+SELECT id, created_at, identity_subject, keycloak_id FROM users WHERE id = '...';
 ```
 
 ### 修复建议

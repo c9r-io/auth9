@@ -21,18 +21,18 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 < docs/qa/session/seed.sql
 
 1. 通过 Auth9 Portal「用户管理」创建 `target@example.com`
 2. 或通过 Auth9 用户 API / 测试脚本创建同名用户
-3. 若本地集成环境需要补齐底层认证主体映射，使用受控脚本完成 `keycloak_id` 对齐，不要求 QA 手工操作底层管理控制台
+3. 若本地集成环境需要补齐底层认证主体映射，使用受控脚本完成 `identity_subject` 对齐；migration period 下该值会与 `keycloak_id` 同步，不要求 QA 手工操作底层管理控制台
 
 验证目标：
 
 - `target@example.com` 能通过正常登录流程完成认证
-- `users.keycloak_id`（或底层认证主体映射字段）已正确存在
+- `users.identity_subject`（migration period 下与 `keycloak_id` 同步）已正确存在
 
 说明：
 - `seed.sql` 会创建目标用户的会话数据和历史登录记录（用于安全告警检测）
 - 管理员：`admin@auth9.local`
 - 目标用户：`target@example.com`（密码：`Target123!`）
-- Step 2 确保用户同时存在于 Auth9 和底层认证主体映射中，并同步 `keycloak_id`
+- Step 2 确保用户同时存在于 Auth9 和底层认证主体映射中，并同步 `identity_subject`
 - seed.sql 预置的登录记录使 new_device 和 impossible_travel 检测能在本地环境触发
 
 ---
