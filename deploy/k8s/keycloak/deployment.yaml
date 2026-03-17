@@ -8,7 +8,7 @@ metadata:
     app.kubernetes.io/component: auth-engine
     app.kubernetes.io/part-of: auth9
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: keycloak
