@@ -342,6 +342,29 @@ impl NoOpCacheManager {
             .await
             .remove(&format!("auth_code:{}", code)))
     }
+
+    // ==================== Social Login State ====================
+
+    pub async fn store_social_login_state(
+        &self,
+        id: &str,
+        data: &str,
+        _ttl_secs: u64,
+    ) -> Result<()> {
+        self.oidc_states
+            .write()
+            .await
+            .insert(format!("social_state:{}", id), data.to_string());
+        Ok(())
+    }
+
+    pub async fn consume_social_login_state(&self, id: &str) -> Result<Option<String>> {
+        Ok(self
+            .oidc_states
+            .write()
+            .await
+            .remove(&format!("social_state:{}", id)))
+    }
 }
 
 impl Default for NoOpCacheManager {

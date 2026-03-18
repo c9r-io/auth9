@@ -219,4 +219,19 @@ impl CacheOperations for NoOpCacheManager {
     async fn consume_authorization_code(&self, code: &str) -> Result<Option<String>> {
         NoOpCacheManager::consume_authorization_code(self, code).await
     }
+
+    // ==================== Social Login State ====================
+
+    async fn store_social_login_state(
+        &self,
+        id: &str,
+        data: &str,
+        ttl_secs: u64,
+    ) -> Result<()> {
+        NoOpCacheManager::store_social_login_state(self, id, data, ttl_secs).await
+    }
+
+    async fn consume_social_login_state(&self, id: &str) -> Result<Option<String>> {
+        NoOpCacheManager::consume_social_login_state(self, id).await
+    }
 }

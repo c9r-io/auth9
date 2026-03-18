@@ -95,6 +95,23 @@ where
             "/api/v1/hosted-login/verify-email",
             post(identity_api::email_verification::verify_email::<S>),
         )
+        // Social login broker
+        .route(
+            "/api/v1/social-login/providers",
+            get(identity_api::social_broker::list_enabled_providers::<S>),
+        )
+        .route(
+            "/api/v1/social-login/authorize/{alias}",
+            get(identity_api::social_broker::authorize::<S>),
+        )
+        .route(
+            "/api/v1/social-login/callback",
+            get(identity_api::social_broker::callback::<S>),
+        )
+        .route(
+            "/api/v1/social-login/link/callback",
+            get(identity_api::social_broker::link_callback::<S>),
+        )
 }
 
 pub fn protected_routes<S>() -> Router<S>
@@ -174,6 +191,11 @@ where
         .route(
             "/api/v1/users/me/linked-identities/{id}",
             delete(identity_api::identity_provider::unlink_identity::<S>),
+        )
+        // Social login account linking
+        .route(
+            "/api/v1/social-login/link/{alias}",
+            get(identity_api::social_broker::link_authorize::<S>),
         )
         // Required actions
         .route(

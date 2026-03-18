@@ -159,6 +159,19 @@ pub trait CacheOperations: Send + Sync {
 
     /// Consume (get + delete) an authorization code (one-time use)
     async fn consume_authorization_code(&self, code: &str) -> Result<Option<String>>;
+
+    // ==================== Social Login State ====================
+
+    /// Store social login state (social authorize → provider → callback)
+    async fn store_social_login_state(
+        &self,
+        id: &str,
+        data: &str,
+        ttl_secs: u64,
+    ) -> Result<()>;
+
+    /// Consume (get + delete) a social login state
+    async fn consume_social_login_state(&self, id: &str) -> Result<Option<String>>;
 }
 
 /// Cache key prefixes
@@ -183,6 +196,7 @@ pub(crate) mod keys {
     pub const MFA_SESSION: &str = "auth9:mfa_session";
     pub const LOGIN_CHALLENGE: &str = "auth9:login_challenge";
     pub const AUTH_CODE: &str = "auth9:auth_code";
+    pub const SOCIAL_STATE: &str = "auth9:social_state";
 }
 
 /// Default TTLs

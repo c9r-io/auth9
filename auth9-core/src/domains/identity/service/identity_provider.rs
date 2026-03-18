@@ -184,6 +184,25 @@ impl<L: LinkedIdentityRepository, U: UserRepository> IdentityProviderService<L, 
         self.linked_identity_repo.delete(identity_id).await
     }
 
+    /// Create a linked identity directly
+    pub async fn create_linked_identity(
+        &self,
+        input: &CreateLinkedIdentityInput,
+    ) -> Result<LinkedIdentity> {
+        self.linked_identity_repo.create(input).await
+    }
+
+    /// Find a linked identity by provider alias and external user ID
+    pub async fn find_linked_identity(
+        &self,
+        provider_alias: &str,
+        external_user_id: &str,
+    ) -> Result<Option<LinkedIdentity>> {
+        self.linked_identity_repo
+            .find_by_provider(provider_alias, external_user_id)
+            .await
+    }
+
     /// Sync federated identities from Keycloak to our database
     ///
     /// Called after user login to keep our linked_identities table in sync

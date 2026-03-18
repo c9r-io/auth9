@@ -53,24 +53,18 @@ fn backend_switch_can_use_auth9_oidc_stub() -> Result<()> {
     let mut config = common::test_config();
     config.identity_backend = IdentityBackend::Auth9Oidc;
 
-    let (session_store, federation_broker, identity_engine) =
+    let (session_store, _federation_broker, identity_engine) =
         select_identity_backend(&config, build_keycloak_client(&config), dummy_pool());
 
     runtime.block_on(async {
+        // Session store (no DB) operations should succeed
         session_store.delete_user_session("session-1").await?;
         session_store.logout_user("user-1").await?;
-        let providers = federation_broker.list_identity_providers().await?;
-        let linked = federation_broker
-            .get_user_federated_identities("user-1")
-            .await?;
+
+        // Realm update is a no-op for Auth9Oidc
         identity_engine.update_realm(&Default::default()).await?;
-        let credentials = identity_engine
-            .credential_store()
-            .list_user_credentials("user-1")
-            .await?;
-        assert!(providers.is_empty());
-        assert!(linked.is_empty());
-        assert!(credentials.is_empty());
+
+        // User store operations return "not implemented" errors (no DB needed)
         assert!(matches!(
             identity_engine.user_store().delete_user("user-1").await,
             Err(AppError::Internal(_))
@@ -82,6 +76,11 @@ fn backend_switch_can_use_auth9_oidc_stub() -> Result<()> {
                 .await,
             Err(AppError::Internal(_))
         ));
+
+        // Note: federation_broker and credential_store operations now require a
+        // real DB connection (backed by SocialProviderRepository and credentials
+        // table respectively), so they are not tested with dummy_pool().
+
         Ok::<(), AppError>(())
     })?;
 

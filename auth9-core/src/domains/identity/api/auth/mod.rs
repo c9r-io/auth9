@@ -1,7 +1,7 @@
 //! Authentication API handlers
 
 mod action_helpers;
-mod helpers;
+pub(crate) mod helpers;
 mod keycloak_client;
 
 pub mod discovery;
@@ -13,6 +13,7 @@ pub mod types;
 /// Allowed OIDC scopes whitelist
 const ALLOWED_SCOPES: &[&str] = &["openid", "profile", "email"];
 const OIDC_STATE_TTL_SECS: u64 = 300;
+pub(crate) use helpers::LOGIN_CHALLENGE_TTL_SECS;
 
 // Re-export all public items so that `auth::function_name` paths remain valid.
 

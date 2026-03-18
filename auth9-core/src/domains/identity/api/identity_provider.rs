@@ -194,7 +194,7 @@ pub async fn unlink_identity<S: HasIdentityProviders + HasServices>(
 }
 
 /// Extract user ID from JWT token
-fn extract_user_id<S: HasIdentityProviders + HasServices>(
+pub(crate) fn extract_user_id<S: HasIdentityProviders + HasServices>(
     state: &S,
     headers: &HeaderMap,
 ) -> Result<StringUuid, AppError> {

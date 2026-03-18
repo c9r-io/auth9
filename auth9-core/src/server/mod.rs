@@ -93,11 +93,26 @@ pub fn select_identity_backend(
             Arc::new(KeycloakFederationBrokerAdapter::new(keycloak_arc.clone())),
             Arc::new(KeycloakIdentityEngineAdapter::new(keycloak_arc)),
         ),
-        IdentityBackend::Auth9Oidc => (
-            Arc::new(Auth9OidcSessionStoreAdapter::new()),
-            Arc::new(Auth9OidcFederationBrokerAdapter::new()),
-            Arc::new(Auth9OidcIdentityEngineAdapter::new(db_pool)),
-        ),
+        IdentityBackend::Auth9Oidc => {
+            let social_provider_repo: Arc<dyn crate::repository::SocialProviderRepository> =
+                Arc::new(crate::repository::social_provider::SocialProviderRepositoryImpl::new(
+                    db_pool.clone(),
+                ));
+            let linked_identity_repo: Arc<dyn crate::repository::LinkedIdentityRepository> =
+                Arc::new(LinkedIdentityRepositoryImpl::new(db_pool.clone()));
+            (
+                Arc::new(Auth9OidcSessionStoreAdapter::new()),
+                Arc::new(Auth9OidcFederationBrokerAdapter::new(
+                    social_provider_repo.clone(),
+                    linked_identity_repo.clone(),
+                )),
+                Arc::new(Auth9OidcIdentityEngineAdapter::new(
+                    db_pool,
+                    social_provider_repo,
+                    linked_identity_repo,
+                )),
+            )
+        }
     }
 }
 

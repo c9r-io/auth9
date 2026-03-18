@@ -14,7 +14,8 @@ import { mapApiError, mapOAuthError } from "~/lib/error-messages";
 import { LockClosedIcon } from "@radix-ui/react-icons";
 import { resolveLocale } from "~/services/locale.server";
 import { commitSession, serializeOAuthState } from "~/services/session.server";
-import { enterpriseSsoApi, hostedLoginApi, publicBrandingApi, type BrandingConfig } from "~/services/api";
+import { enterpriseSsoApi, hostedLoginApi, publicBrandingApi, identityProviderApi, type BrandingConfig } from "~/services/api";
+import type { PublicSocialProvider } from "~/services/api/identity-provider";
 import { DEFAULT_PUBLIC_BRANDING } from "~/services/api/branding";
 import type { AppLocale } from "~/i18n";
 
@@ -140,7 +141,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Fall back to default Portal-owned branding.
   }
 
-  return { error, apiBaseUrl, locale, branding, loginChallenge };
+  let socialProviders: PublicSocialProvider[] = [];
+  try {
+    const { data } = await identityProviderApi.listEnabledPublic();
+    socialProviders = data;
+  } catch {
+    // Social providers unavailable — continue without them.
+  }
+
+  return { error, apiBaseUrl, locale, branding, loginChallenge, socialProviders };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -148,6 +157,43 @@ export async function action({ request }: ActionFunctionArgs) {
   const locale = await resolveLocale(request);
   const formData = await request.formData();
   const intent = formData.get("intent");
+
+  // Handle social login: create login_challenge if needed, then redirect to social broker
+  if (intent === "social-login") {
+    const providerAlias = String(formData.get("providerAlias") || "").trim();
+    let loginChallenge = formData.get("loginChallenge") as string | null;
+
+    if (!providerAlias) {
+      return { error: translate(locale, "auth.login.socialProviderRequired") };
+    }
+
+    // If no login_challenge, initiate OIDC authorize to get one
+    if (!loginChallenge) {
+      const auth = await buildAuthorizeParams(url, locale);
+      const coreInternalUrl = process.env.AUTH9_CORE_URL || auth.corePublicUrl;
+      const authorizeUrl = `${coreInternalUrl}/api/v1/auth/authorize?response_type=${auth.response_type}&client_id=${auth.client_id}&redirect_uri=${encodeURIComponent(auth.redirect_uri)}&scope=${encodeURIComponent(auth.scope)}&state=${auth.state}&code_challenge=${auth.code_challenge}&code_challenge_method=${auth.code_challenge_method}`;
+
+      const authorizeResponse = await fetch(authorizeUrl, { redirect: "manual" });
+      const location = authorizeResponse.headers.get("Location") || "";
+      const challengeMatch = location.match(/login_challenge=([^&]+)/);
+      loginChallenge = challengeMatch ? challengeMatch[1] : null;
+
+      if (!loginChallenge) {
+        return { error: translate(locale, "auth.login.socialLoginFailed") };
+      }
+
+      // Store OAuth state for the callback to validate later
+      const oauthCookie = await serializeOAuthState(auth.state, auth.codeVerifier);
+      const corePublicUrl = process.env.AUTH9_CORE_PUBLIC_URL || process.env.AUTH9_CORE_URL || "http://localhost:8080";
+      const socialUrl = `${corePublicUrl}/api/v1/social-login/authorize/${encodeURIComponent(providerAlias)}?login_challenge=${encodeURIComponent(loginChallenge)}`;
+      return redirect(socialUrl, { headers: { "Set-Cookie": oauthCookie } });
+    }
+
+    // login_challenge already exists, redirect directly
+    const apiBaseUrl = process.env.AUTH9_CORE_PUBLIC_URL || process.env.AUTH9_CORE_URL || "http://localhost:8080";
+    const socialUrl = `${apiBaseUrl}/api/v1/social-login/authorize/${encodeURIComponent(providerAlias)}?login_challenge=${encodeURIComponent(loginChallenge)}`;
+    return redirect(socialUrl);
+  }
 
   // Handle passkey token storage
   if (intent === "passkey-login") {
@@ -303,12 +349,26 @@ function toRequestOptions(publicKey: Record<string, unknown>): PublicKeyCredenti
   } as PublicKeyCredentialRequestOptions;
 }
 
+function SocialProviderIcon({ providerType }: { providerType: string }) {
+  switch (providerType.toLowerCase()) {
+    case "google":
+      return <span className="inline-block w-4 h-4 text-center font-semibold text-sm leading-4">G</span>;
+    case "github":
+      return <span className="inline-block w-4 h-4 text-center font-semibold text-sm leading-4">GH</span>;
+    case "microsoft":
+      return <span className="inline-block w-4 h-4 text-center font-semibold text-sm leading-4">MS</span>;
+    default:
+      return <span className="inline-block w-4 h-4 text-center font-semibold text-sm leading-4">{providerType.slice(0, 2).toUpperCase()}</span>;
+  }
+}
+
 export default function Login() {
   const loaderData = (useLoaderData<typeof loader>() ?? {}) as {
     error: string | null;
     apiBaseUrl: string;
     locale: string;
     branding: BrandingConfig;
+    socialProviders?: PublicSocialProvider[];
   };
   const data = {
     error: loaderData.error ?? null,
@@ -316,6 +376,7 @@ export default function Login() {
     locale: loaderData.locale ?? "zh-CN",
     branding: { ...DEFAULT_PUBLIC_BRANDING, ...(loaderData.branding ?? {}) },
     loginChallenge: (loaderData as Record<string, unknown>).loginChallenge as string | undefined,
+    socialProviders: loaderData.socialProviders ?? [],
   };
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -528,6 +589,41 @@ export default function Login() {
                   <LockClosedIcon className="h-4 w-4 mr-2" />
                   {authenticating ? t("auth.login.verifying") : t("auth.login.passkeyButton")}
                 </Button>
+
+                {data.socialProviders.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="relative my-2">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-[var(--glass-border-subtle)]" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-[var(--surface-elevated)] px-2 text-[var(--text-tertiary)]">
+                          {t("auth.login.socialDivider")}
+                        </span>
+                      </div>
+                    </div>
+                    {data.socialProviders.map((provider) => (
+                      <Form method="post" action="/login" key={provider.alias}>
+                        <input type="hidden" name="intent" value="social-login" />
+                        <input type="hidden" name="providerAlias" value={provider.alias} />
+                        {data.loginChallenge && (
+                          <input type="hidden" name="loginChallenge" value={data.loginChallenge} />
+                        )}
+                        <Button
+                          type="submit"
+                          variant="outline"
+                          className="w-full"
+                          disabled={isSubmitting || authenticating}
+                        >
+                          <SocialProviderIcon providerType={provider.provider_id} />
+                          <span className="ml-2">
+                            {provider.display_name || provider.alias}
+                          </span>
+                        </Button>
+                      </Form>
+                    ))}
+                  </div>
+                )}
 
                 <div className="rounded-2xl border border-dashed border-[var(--glass-border-subtle)] px-4 py-3 text-left">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">

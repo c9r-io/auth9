@@ -10,7 +10,7 @@ use sha2::{Digest, Sha256};
 use url::Url;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub(super) struct CallbackState {
+pub(crate) struct CallbackState {
     pub redirect_uri: String,
     pub client_id: String,
     pub original_state: Option<String>,
@@ -18,7 +18,7 @@ pub(super) struct CallbackState {
 
 /// Login challenge data stored during authorize → consumed by authorize_complete
 #[derive(Debug, Serialize, Deserialize)]
-pub(super) struct LoginChallengeData {
+pub(crate) struct LoginChallengeData {
     pub client_id: String,
     pub redirect_uri: String,
     pub scope: String,
@@ -30,7 +30,7 @@ pub(super) struct LoginChallengeData {
 
 /// Authorization code data stored during authorize_complete → consumed by token endpoint
 #[derive(Debug, Serialize, Deserialize)]
-pub(super) struct AuthorizationCodeData {
+pub(crate) struct AuthorizationCodeData {
     pub user_id: String,
     pub email: String,
     pub display_name: Option<String>,
@@ -44,14 +44,14 @@ pub(super) struct AuthorizationCodeData {
 }
 
 /// Authorization code TTL (2 minutes, per OIDC spec recommendation)
-pub(super) const AUTH_CODE_TTL_SECS: u64 = 120;
+pub(crate) const AUTH_CODE_TTL_SECS: u64 = 120;
 
 /// Login challenge TTL (10 minutes, generous for password + MFA flow)
-pub(super) const LOGIN_CHALLENGE_TTL_SECS: u64 = 600;
+pub(crate) const LOGIN_CHALLENGE_TTL_SECS: u64 = 600;
 
 /// Verify PKCE S256 code_verifier against stored code_challenge.
 /// Returns true if BASE64URL(SHA256(code_verifier)) == code_challenge.
-pub(super) fn verify_pkce_s256(code_verifier: &str, code_challenge: &str) -> bool {
+pub(crate) fn verify_pkce_s256(code_verifier: &str, code_challenge: &str) -> bool {
     let hash = Sha256::digest(code_verifier.as_bytes());
     let computed = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hash);
     computed == code_challenge
@@ -159,7 +159,7 @@ pub fn build_keycloak_logout_url(
 
 /// Extract client IP address from request headers
 /// Checks X-Forwarded-For, X-Real-IP, then falls back to None
-pub(super) fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
+pub(crate) fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
     // Check X-Forwarded-For first (may contain multiple IPs)
     if let Some(xff) = headers.get("x-forwarded-for") {
         if let Ok(xff_str) = xff.to_str() {
@@ -180,7 +180,7 @@ pub(super) fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
     None
 }
 
-pub(super) fn extract_identity_claims_from_headers<S: HasServices>(
+pub(crate) fn extract_identity_claims_from_headers<S: HasServices>(
     state: &S,
     headers: &HeaderMap,
 ) -> Result<IdentityClaims> {
@@ -202,14 +202,14 @@ pub(super) fn extract_identity_claims_from_headers<S: HasServices>(
 
 // Legacy helpers kept for unit tests and backward-compatibility checks.
 #[cfg(test)]
-pub(super) fn encode_state(state_payload: &CallbackState) -> Result<String> {
+pub(crate) fn encode_state(state_payload: &CallbackState) -> Result<String> {
     use base64::Engine;
     let bytes = serde_json::to_vec(state_payload).map_err(|e| AppError::Internal(e.into()))?;
     Ok(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes))
 }
 
 #[cfg(test)]
-pub(super) fn decode_state(state: Option<&str>) -> Result<CallbackState> {
+pub(crate) fn decode_state(state: Option<&str>) -> Result<CallbackState> {
     use base64::Engine;
     let encoded = state.ok_or_else(|| AppError::BadRequest("Missing state".to_string()))?;
     let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD

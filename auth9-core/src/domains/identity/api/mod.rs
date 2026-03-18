@@ -9,4 +9,5 @@ pub mod mfa;
 pub mod password;
 pub mod required_actions;
 pub mod session;
+pub mod social_broker;
 pub mod webauthn;

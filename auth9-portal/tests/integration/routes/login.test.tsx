@@ -37,6 +37,9 @@ vi.mock("~/services/api", () => ({
             },
         }),
     },
+    identityProviderApi: {
+        listEnabledPublic: vi.fn().mockResolvedValue({ data: [] }),
+    },
 }));
 
 describe("Login Page", () => {
@@ -60,6 +63,8 @@ describe("Login Page", () => {
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: defaultBranding,
+            loginChallenge: undefined,
+            socialProviders: [],
         });
     });
 
@@ -72,6 +77,8 @@ describe("Login Page", () => {
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: defaultBranding,
+            loginChallenge: undefined,
+            socialProviders: [],
         });
     });
 
@@ -84,6 +91,8 @@ describe("Login Page", () => {
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: defaultBranding,
+            loginChallenge: undefined,
+            socialProviders: [],
         });
     });
 
@@ -107,6 +116,8 @@ describe("Login Page", () => {
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: { ...defaultBranding, allow_registration: true },
+            loginChallenge: undefined,
+            socialProviders: [],
         });
     });
 
@@ -327,6 +338,8 @@ describe("Login Page", () => {
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: defaultBranding,
+            loginChallenge: undefined,
+            socialProviders: [],
         });
     });
 });

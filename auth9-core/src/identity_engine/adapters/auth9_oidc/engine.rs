@@ -7,6 +7,8 @@ use crate::identity_engine::{
     IdentityUserUpdateInput, IdentityVerificationStore, PendingActionInfo, VerificationTokenInfo,
 };
 use crate::keycloak::{KeycloakOidcClient, RealmUpdate};
+use crate::repository::linked_identity::LinkedIdentityRepository;
+use crate::repository::social_provider::SocialProviderRepository;
 use anyhow::anyhow;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHash, PasswordHasher, PasswordVerifier, SaltString},
@@ -15,6 +17,7 @@ use argon2::{
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use sqlx::MySqlPool;
+use std::sync::Arc;
 
 struct Auth9OidcUserStore {
     pool: MySqlPool,
@@ -582,13 +585,20 @@ pub struct Auth9OidcIdentityEngineAdapter {
 }
 
 impl Auth9OidcIdentityEngineAdapter {
-    pub fn new(pool: MySqlPool) -> Self {
+    pub fn new(
+        pool: MySqlPool,
+        social_provider_repo: Arc<dyn SocialProviderRepository>,
+        linked_identity_repo: Arc<dyn LinkedIdentityRepository>,
+    ) -> Self {
         Self {
             user_store: Auth9OidcUserStore::new(pool.clone()),
             client_store: Auth9OidcClientStore,
             session_store: Auth9OidcSessionStoreAdapter::new(),
             credential_store: Auth9OidcCredentialStore::new(pool.clone()),
-            federation_broker: Auth9OidcFederationBrokerAdapter::new(),
+            federation_broker: Auth9OidcFederationBrokerAdapter::new(
+                social_provider_repo,
+                linked_identity_repo,
+            ),
             event_source: Auth9OidcEventSource,
             action_store: Auth9OidcActionStore::new(pool.clone()),
             verification_store: Auth9OidcVerificationStore::new(pool),
