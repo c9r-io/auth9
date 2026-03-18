@@ -75,6 +75,8 @@ base64 = "0.22"
 lazy_static = "1.4"
 regex = "1"
 url = "2"
+quick-xml = "0.37"
+flate2 = "1"
 rsa = { version = "0.9", features = ["pem"] }
 x509-parser = "0.16"
 

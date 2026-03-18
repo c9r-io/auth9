@@ -2,7 +2,6 @@
 
 use crate::error::{AppError, Result};
 use crate::http_support::{write_audit_log_generic, MessageResponse, SuccessResponse};
-use crate::identity_engine::IdentityProviderRepresentation;
 use crate::middleware::auth::AuthUser;
 use crate::models::common::StringUuid;
 use crate::models::enterprise_sso::{
@@ -77,26 +76,7 @@ pub async fn create_connector<S: HasServices + HasDbPool>(
     let alias = input.alias.trim().to_lowercase();
     let provider_alias = format!("{}--{}", tenant.slug, alias);
 
-    // Only create Keycloak IDP for SAML connectors; OIDC connectors are handled natively by Auth9
-    if provider_type == "saml" {
-        let identity_provider = IdentityProviderRepresentation {
-            alias: provider_alias.clone(),
-            display_name: input.display_name.clone(),
-            provider_id: provider_type.clone(),
-            enabled: input.enabled,
-            trust_email: false,
-            store_token: false,
-            link_only: false,
-            first_broker_login_flow_alias: None,
-            config: config.clone(),
-            extra: HashMap::new(),
-        };
-        state
-            .identity_engine()
-            .federation_broker()
-            .create_identity_provider(&identity_provider)
-            .await?;
-    }
+    // Both OIDC and SAML connectors are handled natively by Auth9 (no Keycloak IDP needed)
 
     let connector_id = StringUuid::new_v4();
     let insert_result = insert_connector(
@@ -114,16 +94,7 @@ pub async fn create_connector<S: HasServices + HasDbPool>(
     )
     .await;
 
-    if let Err(e) = insert_result {
-        if provider_type == "saml" {
-            let _ = state
-                .identity_engine()
-                .federation_broker()
-                .delete_identity_provider(&provider_alias)
-                .await;
-        }
-        return Err(e);
-    }
+    insert_result?;
 
     let created = get_connector_by_id(state.db_pool(), tenant_id, connector_id).await?;
     let _ = write_audit_log_generic(
@@ -178,26 +149,7 @@ pub async fn update_connector<S: HasServices + HasDbPool>(
     let priority = input.priority.unwrap_or(before.priority);
     let display_name = input.display_name.or(before.display_name.clone());
 
-    // Only update Keycloak IDP for SAML connectors; OIDC connectors are handled natively
-    if before.provider_type == "saml" {
-        let identity_provider = IdentityProviderRepresentation {
-            alias: before.provider_alias.clone(),
-            display_name: display_name.clone(),
-            provider_id: before.provider_type.clone(),
-            enabled,
-            trust_email: false,
-            store_token: false,
-            link_only: false,
-            first_broker_login_flow_alias: None,
-            config: config.clone(),
-            extra: HashMap::new(),
-        };
-        state
-            .identity_engine()
-            .federation_broker()
-            .update_identity_provider(&before.provider_alias, &identity_provider)
-            .await?;
-    }
+    // Both OIDC and SAML connectors are handled natively by Auth9 (no Keycloak IDP needed)
 
     let mut tx = state.db_pool().begin().await?;
     sqlx::query(
@@ -274,14 +226,7 @@ pub async fn delete_connector<S: HasServices + HasDbPool>(
     let before =
         get_connector_by_id(state.db_pool(), tenant_id, StringUuid::from(connector_id)).await?;
 
-    // Only delete Keycloak IDP for SAML connectors; OIDC connectors have no Keycloak IDP
-    if before.provider_type == "saml" {
-        state
-            .identity_engine()
-            .federation_broker()
-            .delete_identity_provider(&before.provider_alias)
-            .await?;
-    }
+    // Both OIDC and SAML connectors are handled natively by Auth9 (no Keycloak IDP needed)
 
     let mut tx = state.db_pool().begin().await?;
     sqlx::query("DELETE FROM scim_group_role_mappings WHERE connector_id = ?")
@@ -373,21 +318,69 @@ pub async fn test_connector<S: HasServices + HasDbPool>(
             }
         }
     } else {
-        // SAML: check Keycloak IDP
-        match state
-            .identity_engine()
-            .federation_broker()
-            .get_identity_provider(&connector.provider_alias)
-            .await
-        {
-            Ok(_) => ConnectorTestResult {
-                ok: true,
-                message: "Connector is available in Keycloak.".to_string(),
-            },
-            Err(err) => ConnectorTestResult {
+        // SAML: validate certificate and SSO URL
+        let cert = connector.config.get("signingCertificate").cloned().unwrap_or_default();
+        let sso_url = connector.config.get("singleSignOnServiceUrl").cloned().unwrap_or_default();
+
+        if cert.is_empty() {
+            ConnectorTestResult {
                 ok: false,
-                message: format!("Connector check failed: {}", err),
-            },
+                message: "Missing signingCertificate in connector config.".to_string(),
+            }
+        } else if sso_url.is_empty() {
+            ConnectorTestResult {
+                ok: false,
+                message: "Missing singleSignOnServiceUrl in connector config.".to_string(),
+            }
+        } else {
+            // Validate certificate format
+            let cert_valid = {
+                use base64::{engine::general_purpose::STANDARD, Engine};
+                let cert_bytes = if cert.contains("-----BEGIN") {
+                    let pem_data: String = cert.lines().filter(|l| !l.starts_with("-----")).collect::<Vec<_>>().join("");
+                    STANDARD.decode(&pem_data).ok()
+                } else {
+                    let cleaned: String = cert.chars().filter(|c| !c.is_whitespace()).collect();
+                    STANDARD.decode(&cleaned).ok()
+                };
+                match cert_bytes {
+                    Some(der) => x509_parser::parse_x509_certificate(&der).is_ok(),
+                    None => false,
+                }
+            };
+
+            if !cert_valid {
+                ConnectorTestResult {
+                    ok: false,
+                    message: "signingCertificate is not a valid X.509 certificate.".to_string(),
+                }
+            } else {
+                // Test SSO URL reachability
+                match reqwest::Client::new()
+                    .get(&sso_url)
+                    .timeout(std::time::Duration::from_secs(10))
+                    .send()
+                    .await
+                {
+                    Ok(resp) if resp.status().is_success() || resp.status().is_redirection() || resp.status().as_u16() == 400 || resp.status().as_u16() == 405 => {
+                        ConnectorTestResult {
+                            ok: true,
+                            message: "SAML SSO endpoint is reachable and certificate is valid.".to_string(),
+                        }
+                    }
+                    Ok(resp) => ConnectorTestResult {
+                        ok: false,
+                        message: format!(
+                            "SAML SSO endpoint returned unexpected status: {}",
+                            resp.status()
+                        ),
+                    },
+                    Err(err) => ConnectorTestResult {
+                        ok: false,
+                        message: format!("SAML SSO endpoint unreachable: {}", err),
+                    },
+                }
+            }
         }
     };
 

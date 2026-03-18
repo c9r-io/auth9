@@ -75,6 +75,7 @@ describe("Tenant SSO Page", () => {
     expect(result).toEqual({
       tenant: mockTenant,
       connectors: [],
+      corePublicUrl: "http://localhost:8080",
     });
   });
 
@@ -133,7 +134,7 @@ describe("Tenant SSO Page", () => {
       {
         path: "/dashboard/tenants/:tenantId/sso",
         Component: WrappedPage,
-        loader: () => ({ tenant: mockTenant, connectors: [] }),
+        loader: () => ({ tenant: mockTenant, connectors: [], corePublicUrl: "http://localhost:8080" }),
       },
     ]);
 
@@ -154,7 +155,7 @@ describe("Tenant SSO Page", () => {
       {
         path: "/dashboard/tenants/:tenantId/sso",
         Component: WrappedPage,
-        loader: () => ({ tenant: mockTenant, connectors: [] }),
+        loader: () => ({ tenant: mockTenant, connectors: [], corePublicUrl: "http://localhost:8080" }),
       },
     ]);
 
@@ -178,7 +179,7 @@ describe("Tenant SSO Page", () => {
       {
         path: "/dashboard/tenants/:tenantId/sso",
         Component: WrappedPage,
-        loader: () => ({ tenant: mockTenant, connectors: [] }),
+        loader: () => ({ tenant: mockTenant, connectors: [], corePublicUrl: "http://localhost:8080" }),
         action: async ({ request }) => {
           const formData = await request.formData();
           expect(formData.get("intent")).toBe("create");

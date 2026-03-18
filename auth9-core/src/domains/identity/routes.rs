@@ -95,7 +95,7 @@ where
             "/api/v1/hosted-login/verify-email",
             post(identity_api::email_verification::verify_email::<S>),
         )
-        // Enterprise SSO OIDC broker
+        // Enterprise SSO broker (OIDC + SAML)
         .route(
             "/api/v1/enterprise-sso/authorize/{alias}",
             get(identity_api::enterprise_broker::authorize::<S>),
@@ -103,6 +103,14 @@ where
         .route(
             "/api/v1/enterprise-sso/callback",
             get(identity_api::enterprise_broker::callback::<S>),
+        )
+        .route(
+            "/api/v1/enterprise-sso/saml/acs",
+            post(identity_api::enterprise_saml_broker::saml_acs::<S>),
+        )
+        .route(
+            "/api/v1/enterprise-sso/saml/metadata/{alias}",
+            get(identity_api::enterprise_saml_broker::saml_metadata::<S>),
         )
         // Social login broker
         .route(

@@ -146,82 +146,55 @@ pub async fn authorize<S: HasServices + HasCache + crate::state::HasDbPool>(
         .store_oidc_state(&state_nonce, &state_payload_json, OIDC_STATE_TTL_SECS)
         .await?;
 
-    // Resolve connector_alias: OIDC connectors go to Auth9 enterprise broker,
-    // SAML connectors still use Keycloak kc_idp_hint.
+    // Resolve connector_alias: both OIDC and SAML connectors go to Auth9 enterprise broker.
     if let Some(alias) = params.connector_alias.as_deref() {
-        let connector_row = sqlx::query(
-            "SELECT provider_type, COALESCE(provider_alias, keycloak_alias) AS provider_alias FROM enterprise_sso_connectors WHERE alias = ? AND enabled = TRUE LIMIT 1",
+        let connector_exists = sqlx::query(
+            "SELECT 1 FROM enterprise_sso_connectors WHERE alias = ? AND enabled = TRUE LIMIT 1",
         )
         .bind(alias)
         .fetch_optional(state.db_pool())
         .await
         .ok()
-        .flatten();
+        .flatten()
+        .is_some();
 
-        if let Some(ref row) = connector_row {
-            use sqlx::Row;
-            let provider_type: String = row.try_get("provider_type").unwrap_or_default();
-            if provider_type == "oidc" {
-                // OIDC: redirect to Auth9 enterprise broker with login_challenge
-                let challenge_data = LoginChallengeData {
-                    client_id: state_payload.client_id,
-                    redirect_uri: state_payload.redirect_uri,
-                    scope: filtered_scope,
-                    original_state: state_payload.original_state,
-                    nonce: params.nonce,
-                    code_challenge: params.code_challenge,
-                    code_challenge_method: params.code_challenge_method,
-                };
-                let challenge_id = uuid::Uuid::new_v4().to_string();
-                let challenge_json = serde_json::to_string(&challenge_data)
-                    .map_err(|e| AppError::Internal(e.into()))?;
-                state
-                    .cache()
-                    .store_login_challenge(&challenge_id, &challenge_json, LOGIN_CHALLENGE_TTL_SECS)
-                    .await?;
+        if connector_exists {
+            // Redirect to Auth9 enterprise broker with login_challenge
+            let challenge_data = LoginChallengeData {
+                client_id: state_payload.client_id,
+                redirect_uri: state_payload.redirect_uri,
+                scope: filtered_scope,
+                original_state: state_payload.original_state,
+                nonce: params.nonce,
+                code_challenge: params.code_challenge,
+                code_challenge_method: params.code_challenge_method,
+            };
+            let challenge_id = uuid::Uuid::new_v4().to_string();
+            let challenge_json = serde_json::to_string(&challenge_data)
+                .map_err(|e| AppError::Internal(e.into()))?;
+            state
+                .cache()
+                .store_login_challenge(&challenge_id, &challenge_json, LOGIN_CHALLENGE_TTL_SECS)
+                .await?;
 
-                let base = state
-                    .config()
-                    .keycloak
-                    .core_public_url
-                    .as_deref()
-                    .unwrap_or(&state.config().jwt.issuer);
-                let broker_url = format!(
-                    "{}/api/v1/enterprise-sso/authorize/{}?login_challenge={}",
-                    base.trim_end_matches('/'),
-                    alias,
-                    challenge_id,
-                );
-                // Clean up the stored OIDC state since we won't use Keycloak callback
-                let _ = state.cache().consume_oidc_state(&state_nonce).await;
-                return Ok(Redirect::temporary(&broker_url).into_response());
-            }
+            let base = state
+                .config()
+                .keycloak
+                .core_public_url
+                .as_deref()
+                .unwrap_or(&state.config().jwt.issuer);
+            let broker_url = format!(
+                "{}/api/v1/enterprise-sso/authorize/{}?login_challenge={}",
+                base.trim_end_matches('/'),
+                alias,
+                challenge_id,
+            );
+            // Clean up the stored OIDC state since we won't use Keycloak callback
+            let _ = state.cache().consume_oidc_state(&state_nonce).await;
+            return Ok(Redirect::temporary(&broker_url).into_response());
         }
 
-        // SAML or unknown: use Keycloak kc_idp_hint
-        let kc_idp_hint = connector_row
-            .and_then(|row| {
-                use sqlx::Row;
-                row.try_get::<String, _>("provider_alias").ok()
-            })
-            .unwrap_or_else(|| alias.to_string());
-
-        let auth_url = build_keycloak_auth_url(&KeycloakAuthUrlParams {
-            keycloak_public_url: &state.config().keycloak.public_url,
-            realm: &state.config().keycloak.realm,
-            response_type: &params.response_type,
-            client_id: &state_payload.client_id,
-            callback_url: &callback_url,
-            scope: &filtered_scope,
-            encoded_state: &state_nonce,
-            nonce: params.nonce.as_deref(),
-            connector_alias: Some(&kc_idp_hint),
-            kc_action: params.kc_action.as_deref(),
-            ui_locales: params.ui_locales.as_deref(),
-            code_challenge: params.code_challenge.as_deref(),
-            code_challenge_method: params.code_challenge_method.as_deref(),
-        })?;
-        return Ok(Redirect::temporary(&auth_url).into_response());
+        // Unknown connector: fall through to standard Keycloak auth flow
     }
 
     // No connector_alias: standard Keycloak auth flow
@@ -267,82 +240,39 @@ pub async fn enterprise_sso_discovery<S: HasServices + HasCache + crate::state::
 
     let discovery = discover_connector_by_domain(state.db_pool(), domain).await?;
 
-    let authorize_url = if discovery.provider_type == "oidc" {
-        // OIDC: Auth9 native enterprise broker — store login challenge, return broker URL
-        let filtered_scope = filter_scopes(&params.scope)?;
-        let challenge_data = LoginChallengeData {
-            client_id: params.client_id,
-            redirect_uri: params.redirect_uri,
-            scope: filtered_scope,
-            original_state: Some(params.state),
-            nonce: params.nonce,
-            code_challenge: params.code_challenge,
-            code_challenge_method: params.code_challenge_method,
-        };
-        let challenge_id = uuid::Uuid::new_v4().to_string();
-        let challenge_json = serde_json::to_string(&challenge_data)
-            .map_err(|e| AppError::Internal(e.into()))?;
-        state
-            .cache()
-            .store_login_challenge(&challenge_id, &challenge_json, LOGIN_CHALLENGE_TTL_SECS)
-            .await?;
-
-        let base = state
-            .config()
-            .keycloak
-            .core_public_url
-            .as_deref()
-            .unwrap_or(&state.config().jwt.issuer);
-        let mut url = format!(
-            "{}/api/v1/enterprise-sso/authorize/{}?login_challenge={}",
-            base.trim_end_matches('/'),
-            discovery.connector_alias,
-            challenge_id,
-        );
-        // Pass login_hint (user's email) for IdP to pre-fill
-        url.push_str(&format!("&login_hint={}", urlencoding::encode(&input.email)));
-        url
-    } else {
-        // SAML: still use Keycloak (Phase 4 FR3 scope)
-        let callback_url = build_callback_url(
-            state
-                .config()
-                .keycloak
-                .core_public_url
-                .as_deref()
-                .unwrap_or(&state.config().jwt.issuer),
-        );
-        let filtered_scope = filter_scopes(&params.scope)?;
-
-        let state_payload = CallbackState {
-            redirect_uri: params.redirect_uri,
-            client_id: params.client_id,
-            original_state: Some(params.state),
-        };
-        let state_nonce = uuid::Uuid::new_v4().to_string();
-        let state_payload_json =
-            serde_json::to_string(&state_payload).map_err(|e| AppError::Internal(e.into()))?;
-        state
-            .cache()
-            .store_oidc_state(&state_nonce, &state_payload_json, OIDC_STATE_TTL_SECS)
-            .await?;
-
-        build_keycloak_auth_url(&KeycloakAuthUrlParams {
-            keycloak_public_url: &state.config().keycloak.public_url,
-            realm: &state.config().keycloak.realm,
-            response_type: &params.response_type,
-            client_id: &state_payload.client_id,
-            callback_url: &callback_url,
-            scope: &filtered_scope,
-            encoded_state: &state_nonce,
-            nonce: params.nonce.as_deref(),
-            connector_alias: Some(&discovery.provider_alias),
-            kc_action: None,
-            ui_locales: params.ui_locales.as_deref(),
-            code_challenge: params.code_challenge.as_deref(),
-            code_challenge_method: params.code_challenge_method.as_deref(),
-        })?
+    // Both OIDC and SAML: Auth9 enterprise broker handles natively
+    let filtered_scope = filter_scopes(&params.scope)?;
+    let challenge_data = LoginChallengeData {
+        client_id: params.client_id,
+        redirect_uri: params.redirect_uri,
+        scope: filtered_scope,
+        original_state: Some(params.state),
+        nonce: params.nonce,
+        code_challenge: params.code_challenge,
+        code_challenge_method: params.code_challenge_method,
     };
+    let challenge_id = uuid::Uuid::new_v4().to_string();
+    let challenge_json = serde_json::to_string(&challenge_data)
+        .map_err(|e| AppError::Internal(e.into()))?;
+    state
+        .cache()
+        .store_login_challenge(&challenge_id, &challenge_json, LOGIN_CHALLENGE_TTL_SECS)
+        .await?;
+
+    let base = state
+        .config()
+        .keycloak
+        .core_public_url
+        .as_deref()
+        .unwrap_or(&state.config().jwt.issuer);
+    let mut authorize_url = format!(
+        "{}/api/v1/enterprise-sso/authorize/{}?login_challenge={}",
+        base.trim_end_matches('/'),
+        discovery.connector_alias,
+        challenge_id,
+    );
+    // Pass login_hint (user's email) for IdP to pre-fill
+    authorize_url.push_str(&format!("&login_hint={}", urlencoding::encode(&input.email)));
 
     Ok(Json(SuccessResponse::new(EnterpriseSsoDiscoveryResponse {
         tenant_id: discovery.tenant_id,

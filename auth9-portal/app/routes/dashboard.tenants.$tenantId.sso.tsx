@@ -34,9 +34,12 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       tenantSsoApi.list(tenantId, accessToken || undefined),
     ]);
 
+    const corePublicUrl = process.env.AUTH9_CORE_PUBLIC_URL || process.env.AUTH9_CORE_URL || "http://localhost:8080";
+
     return {
       tenant: tenantRes.data,
       connectors: connectorsRes.data,
+      corePublicUrl,
     };
   } catch {
     throw redirect("/dashboard/tenants");
@@ -116,7 +119,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 export default function TenantSsoPage() {
   const { t } = useI18n();
-  const { tenant, connectors } = useLoaderData<typeof loader>();
+  const { tenant, connectors, corePublicUrl } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -267,6 +270,17 @@ export default function TenantSsoPage() {
                   </Form>
                 </div>
                 <div className="flex items-center gap-2">
+                  {connector.provider_type === "saml" && (
+                    <a
+                      href={`${corePublicUrl}/api/v1/enterprise-sso/saml/metadata/${connector.alias}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button type="button" variant="outline" size="sm">
+                        SP Metadata
+                      </Button>
+                    </a>
+                  )}
                   <Form method="post">
                     <input type="hidden" name="intent" value="test" />
                     <input type="hidden" name="connector_id" value={connector.id} />

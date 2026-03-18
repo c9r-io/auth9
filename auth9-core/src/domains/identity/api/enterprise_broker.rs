@@ -1,55 +1,29 @@
-//! Enterprise OIDC broker handlers.
+//! Enterprise SSO broker handlers (OIDC + SAML dispatch).
 //!
-//! Executes the full OAuth2 redirect→callback→token-exchange→profile-mapping flow
-//! for enterprise SSO OIDC connectors (tenant-scoped).
+//! The `authorize` handler dispatches to OIDC or SAML based on connector provider_type.
+//! The OIDC `callback` handles the OAuth2 code exchange flow.
+//! SAML uses a separate ACS endpoint in `enterprise_saml_broker`.
 
 use crate::cache::CacheOperations;
-use crate::domains::identity::api::auth::helpers::{
-    AuthorizationCodeData, LoginChallengeData, AUTH_CODE_TTL_SECS,
+use crate::domains::identity::api::enterprise_common::{
+    self, ConnectorRecord, EnterpriseSsoLoginState, ENTERPRISE_SSO_STATE_TTL_SECS,
 };
 use crate::error::{AppError, Result};
-use crate::models::linked_identity::CreateLinkedIdentityInput;
-use crate::models::user::AddUserToTenantInput;
 use crate::state::{HasCache, HasDbPool, HasIdentityProviders, HasServices, HasSessionManagement};
 use axum::{
     extract::{Path, Query, State},
     response::{IntoResponse, Redirect, Response},
 };
-use serde::{Deserialize, Serialize};
-use sqlx::Row;
+use serde::Deserialize;
 use url::Url;
 
-/// Enterprise SSO login state TTL (10 minutes)
-const ENTERPRISE_SSO_STATE_TTL_SECS: u64 = 600;
-
 // ── Data Structures ──
-
-#[derive(Debug, Serialize, Deserialize)]
-struct EnterpriseSsoLoginState {
-    login_challenge_id: String,
-    connector_alias: String,
-    tenant_id: String,
-}
-
-#[derive(Debug, Clone)]
-struct ConnectorRecord {
-    alias: String,
-    tenant_id: String,
-    config: std::collections::HashMap<String, String>,
-}
 
 struct OAuthEndpoints {
     authorization_url: String,
     token_url: String,
     userinfo_url: String,
     scopes: String,
-}
-
-#[derive(Debug, Clone)]
-struct EnterpriseProfile {
-    external_user_id: String,
-    email: Option<String>,
-    name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -104,8 +78,7 @@ fn resolve_endpoints(
 fn map_profile(
     config: &std::collections::HashMap<String, String>,
     json: &serde_json::Value,
-) -> Result<EnterpriseProfile> {
-    // Parse claim mapping from config, or use defaults
+) -> Result<enterprise_common::EnterpriseProfile> {
     let sub_claim = config.get("claimSub").map(|s| s.as_str()).unwrap_or("sub");
     let email_claim = config
         .get("claimEmail")
@@ -126,7 +99,7 @@ fn map_profile(
         })?
         .to_string();
 
-    Ok(EnterpriseProfile {
+    Ok(enterprise_common::EnterpriseProfile {
         external_user_id,
         email: json[email_claim].as_str().map(String::from),
         name: json[name_claim].as_str().map(String::from),
@@ -237,73 +210,16 @@ fn build_enterprise_authorize_url(
     Ok(url.to_string())
 }
 
-fn enterprise_callback_url(config: &crate::config::Config) -> String {
-    let base = config
-        .keycloak
-        .core_public_url
-        .as_deref()
-        .unwrap_or(&config.jwt.issuer);
-    format!(
-        "{}/api/v1/enterprise-sso/callback",
-        base.trim_end_matches('/')
-    )
-}
-
-fn portal_login_url(config: &crate::config::Config) -> String {
-    let portal = config
-        .keycloak
-        .portal_url
-        .as_deref()
-        .unwrap_or(&config.jwt.issuer);
-    format!("{}/login", portal.trim_end_matches('/'))
-}
-
-// ── DB Helpers ──
-
-async fn load_oidc_connector(
-    pool: &sqlx::MySqlPool,
-    alias: &str,
-) -> Result<ConnectorRecord> {
-    let row = sqlx::query(
-        r#"
-        SELECT alias, tenant_id, config
-        FROM enterprise_sso_connectors
-        WHERE alias = ? AND provider_type = 'oidc' AND enabled = TRUE
-        LIMIT 1
-        "#,
-    )
-    .bind(alias)
-    .fetch_optional(pool)
-    .await?;
-
-    let row = row.ok_or_else(|| {
-        AppError::NotFound(format!(
-            "No enabled OIDC enterprise SSO connector with alias '{}'",
-            alias
-        ))
-    })?;
-
-    let config_value: serde_json::Value = row.try_get("config")?;
-    let config: std::collections::HashMap<String, String> =
-        serde_json::from_value(config_value).unwrap_or_default();
-
-    Ok(ConnectorRecord {
-        alias: row.try_get("alias")?,
-        tenant_id: row.try_get("tenant_id")?,
-        config,
-    })
-}
-
 // ══════════════════════════════════════════════════════════════════════
 // Handlers
 // ══════════════════════════════════════════════════════════════════════
 
-/// Initiate enterprise SSO OIDC login: validate login_challenge, redirect to IdP.
+/// Initiate enterprise SSO login: validate login_challenge, dispatch to OIDC or SAML.
 #[utoipa::path(
     get,
     path = "/api/v1/enterprise-sso/authorize/{alias}",
     tag = "Identity",
-    responses((status = 302, description = "Redirect to enterprise OIDC provider"))
+    responses((status = 302, description = "Redirect to enterprise IdP"))
 )]
 pub async fn authorize<S: HasServices + HasCache + HasDbPool>(
     State(state): State<S>,
@@ -328,16 +244,38 @@ pub async fn authorize<S: HasServices + HasCache + HasDbPool>(
         )
         .await?;
 
-    // 2. Look up OIDC connector
-    let connector = load_oidc_connector(state.db_pool(), &alias).await?;
+    // 2. Load connector (any provider_type)
+    let connector = enterprise_common::load_connector(state.db_pool(), &alias).await?;
+
+    // 3. Dispatch by provider_type
+    if connector.provider_type == "saml" {
+        return super::enterprise_saml_broker::saml_authorize_redirect(
+            &state,
+            connector,
+            params.login_challenge,
+            params.login_hint,
+        )
+        .await;
+    }
+
+    // ── OIDC flow ──
+    oidc_authorize(&state, connector, params).await
+}
+
+async fn oidc_authorize<S: HasServices + HasCache + HasDbPool>(
+    state: &S,
+    connector: ConnectorRecord,
+    params: EnterpriseSsoAuthorizeQuery,
+) -> Result<Response> {
     let endpoints = resolve_endpoints(&connector.config)?;
 
-    // 3. Store enterprise SSO login state
+    // Store enterprise SSO login state
     let sso_state_id = uuid::Uuid::new_v4().to_string();
     let sso_state = EnterpriseSsoLoginState {
         login_challenge_id: params.login_challenge,
         connector_alias: connector.alias.clone(),
         tenant_id: connector.tenant_id.clone(),
+        authn_request_id: None,
     };
     let sso_state_json =
         serde_json::to_string(&sso_state).map_err(|e| AppError::Internal(e.into()))?;
@@ -346,11 +284,11 @@ pub async fn authorize<S: HasServices + HasCache + HasDbPool>(
         .store_enterprise_sso_state(&sso_state_id, &sso_state_json, ENTERPRISE_SSO_STATE_TTL_SECS)
         .await?;
 
-    // 4. Build authorize URL
+    // Build authorize URL
     let client_id = connector.config.get("clientId").ok_or_else(|| {
         AppError::BadRequest("Missing clientId in connector config".to_string())
     })?;
-    let redirect_uri = enterprise_callback_url(state.config());
+    let redirect_uri = enterprise_common::enterprise_callback_url(state.config());
 
     let authorize_url = build_enterprise_authorize_url(
         &endpoints,
@@ -379,7 +317,7 @@ pub async fn callback<S: HasServices + HasIdentityProviders + HasCache + HasSess
 ) -> Result<Response> {
     // 1. Check for error from provider
     if params.error.is_some() {
-        let login_url = portal_login_url(state.config());
+        let login_url = enterprise_common::portal_login_url(state.config());
         return Ok(
             Redirect::temporary(&format!("{}?error=enterprise_sso_cancelled", login_url))
                 .into_response(),
@@ -404,8 +342,13 @@ pub async fn callback<S: HasServices + HasIdentityProviders + HasCache + HasSess
     let sso_state: EnterpriseSsoLoginState =
         serde_json::from_str(&sso_state_json).map_err(|e| AppError::Internal(e.into()))?;
 
-    // 3. Look up connector
-    let connector = load_oidc_connector(state.db_pool(), &sso_state.connector_alias).await?;
+    // 3. Look up connector (OIDC only for this callback)
+    let connector = enterprise_common::load_connector(state.db_pool(), &sso_state.connector_alias).await?;
+    if connector.provider_type != "oidc" {
+        return Err(AppError::BadRequest(
+            "OIDC callback received for non-OIDC connector".to_string(),
+        ));
+    }
     let endpoints = resolve_endpoints(&connector.config)?;
     let client_id = connector.config.get("clientId").ok_or_else(|| {
         AppError::BadRequest("Missing clientId in connector config".to_string())
@@ -415,7 +358,7 @@ pub async fn callback<S: HasServices + HasIdentityProviders + HasCache + HasSess
     })?;
 
     // 4. Exchange code for access token
-    let redirect_uri = enterprise_callback_url(state.config());
+    let redirect_uri = enterprise_common::enterprise_callback_url(state.config());
     let access_token = exchange_code_for_access_token(
         &endpoints,
         client_id,
@@ -428,15 +371,16 @@ pub async fn callback<S: HasServices + HasIdentityProviders + HasCache + HasSess
     // 5. Fetch userinfo
     let userinfo_json = fetch_userinfo(&endpoints, &access_token).await?;
 
-    // 6. Map profile using connector claim mapping
+    // 6. Map profile
     let profile = map_profile(&connector.config, &userinfo_json)?;
 
     // 7. Find or create user (enterprise SSO is tenant-scoped)
-    let user = find_or_create_enterprise_user(
+    let user = enterprise_common::find_or_create_enterprise_user(
         &state,
         &connector.alias,
         &sso_state.tenant_id,
         &profile,
+        "oidc",
     )
     .await?;
 
@@ -446,162 +390,24 @@ pub async fn callback<S: HasServices + HasIdentityProviders + HasCache + HasSess
         .create_session(user.id, None, None, None)
         .await?;
 
-    // 9. Consume login challenge and generate authorization code
-    let challenge_json = state
-        .cache()
-        .consume_login_challenge(&sso_state.login_challenge_id)
-        .await?
-        .ok_or_else(|| {
-            AppError::BadRequest("Login challenge expired during enterprise SSO login".to_string())
-        })?;
-    let challenge: LoginChallengeData =
-        serde_json::from_str(&challenge_json).map_err(|e| AppError::Internal(e.into()))?;
-
-    let auth_code = uuid::Uuid::new_v4().to_string();
-    let code_data = AuthorizationCodeData {
-        user_id: user.id.to_string(),
-        email: user.email.clone(),
-        display_name: user.display_name.clone(),
-        session_id: session.id.to_string(),
-        client_id: challenge.client_id.clone(),
-        redirect_uri: challenge.redirect_uri.clone(),
-        scope: challenge.scope,
-        nonce: challenge.nonce,
-        code_challenge: challenge.code_challenge,
-        code_challenge_method: challenge.code_challenge_method,
-    };
-    let code_json =
-        serde_json::to_string(&code_data).map_err(|e| AppError::Internal(e.into()))?;
-    state
-        .cache()
-        .store_authorization_code(&auth_code, &code_json, AUTH_CODE_TTL_SECS)
-        .await?;
-
-    // 10. Build redirect URL
-    let mut redirect_url = Url::parse(&challenge.redirect_uri)
-        .map_err(|e| AppError::BadRequest(format!("Invalid redirect_uri: {}", e)))?;
-    {
-        let mut pairs = redirect_url.query_pairs_mut();
-        pairs.append_pair("code", &auth_code);
-        if let Some(original_state) = challenge.original_state {
-            pairs.append_pair("state", &original_state);
-        }
-    }
+    // 9. Complete login flow
+    let redirect_url = enterprise_common::complete_login_flow(
+        &state,
+        &sso_state.login_challenge_id,
+        &user,
+        session.id,
+    )
+    .await?;
 
     metrics::counter!("auth9_enterprise_sso_total", "action" => "callback_success", "connector" => connector.alias.clone())
         .increment(1);
 
-    let mut response = Redirect::temporary(redirect_url.as_str()).into_response();
+    let mut response = Redirect::temporary(&redirect_url).into_response();
     response.headers_mut().insert(
         axum::http::header::CACHE_CONTROL,
         "no-store".parse().unwrap(),
     );
     Ok(response)
-}
-
-// ── User Resolution (tenant-scoped) ──
-
-async fn find_or_create_enterprise_user<S: HasServices + HasIdentityProviders>(
-    state: &S,
-    connector_alias: &str,
-    tenant_id: &str,
-    profile: &EnterpriseProfile,
-) -> Result<crate::models::user::User> {
-    let tenant_uuid = uuid::Uuid::parse_str(tenant_id)
-        .map_err(|_| AppError::Internal(anyhow::anyhow!("Invalid tenant_id in SSO state")))?;
-
-    // Try to find existing linked identity
-    let existing_link = state
-        .identity_provider_service()
-        .find_linked_identity(connector_alias, &profile.external_user_id)
-        .await?;
-
-    if let Some(linked) = existing_link {
-        return state.user_service().get(linked.user_id).await;
-    }
-
-    // If email exists, try to find existing user by email and auto-link
-    if let Some(ref email) = profile.email {
-        if let Ok(existing_user) = state.user_service().get_by_email(email).await {
-            // Auto-link
-            let input = CreateLinkedIdentityInput {
-                user_id: existing_user.id,
-                provider_type: "oidc".to_string(),
-                provider_alias: connector_alias.to_string(),
-                external_user_id: profile.external_user_id.clone(),
-                external_email: profile.email.clone(),
-            };
-            let _ = state
-                .identity_provider_service()
-                .create_linked_identity(&input)
-                .await;
-
-            // Ensure tenant membership
-            ensure_tenant_membership(state, existing_user.id, tenant_uuid).await;
-
-            return Ok(existing_user);
-        }
-    }
-
-    // Create new user
-    let email = profile.email.clone().ok_or_else(|| {
-        AppError::BadRequest(
-            "Enterprise IdP did not return an email. Cannot create account.".to_string(),
-        )
-    })?;
-
-    let identity_subject = uuid::Uuid::new_v4().to_string();
-    let create_input = crate::models::user::CreateUserInput {
-        email: email.clone(),
-        display_name: profile.name.clone(),
-        avatar_url: None,
-    };
-    let new_user = state
-        .user_service()
-        .create(&identity_subject, create_input)
-        .await?;
-
-    // Create linked identity
-    let input = CreateLinkedIdentityInput {
-        user_id: new_user.id,
-        provider_type: "oidc".to_string(),
-        provider_alias: connector_alias.to_string(),
-        external_user_id: profile.external_user_id.clone(),
-        external_email: profile.email.clone(),
-    };
-    let _ = state
-        .identity_provider_service()
-        .create_linked_identity(&input)
-        .await;
-
-    // Add to tenant
-    ensure_tenant_membership(state, new_user.id, tenant_uuid).await;
-
-    Ok(new_user)
-}
-
-async fn ensure_tenant_membership<S: HasServices>(
-    state: &S,
-    user_id: crate::models::common::StringUuid,
-    tenant_id: uuid::Uuid,
-) {
-    // Check if already a member
-    if let Ok(tenants) = state.user_service().get_user_tenants(user_id).await {
-        if tenants
-            .iter()
-            .any(|t| *t.tenant_id == tenant_id)
-        {
-            return;
-        }
-    }
-
-    // Add as member
-    let input = AddUserToTenantInput {
-        user_id: *user_id,
-        tenant_id,
-        role_in_tenant: "member".to_string(),
-    };
-    let _ = state.user_service().add_to_tenant(input).await;
 }
 
 #[cfg(test)]
@@ -766,19 +572,5 @@ mod tests {
         )
         .unwrap();
         assert!(url.contains("login_hint=user%40corp.example.com"));
-    }
-
-    #[test]
-    fn test_enterprise_sso_login_state_roundtrip() {
-        let state = EnterpriseSsoLoginState {
-            login_challenge_id: "challenge-123".to_string(),
-            connector_alias: "okta-oidc".to_string(),
-            tenant_id: "tenant-456".to_string(),
-        };
-        let json = serde_json::to_string(&state).unwrap();
-        let decoded: EnterpriseSsoLoginState = serde_json::from_str(&json).unwrap();
-        assert_eq!(decoded.login_challenge_id, "challenge-123");
-        assert_eq!(decoded.connector_alias, "okta-oidc");
-        assert_eq!(decoded.tenant_id, "tenant-456");
     }
 }
