@@ -2,7 +2,6 @@
 
 mod action_helpers;
 pub(crate) mod helpers;
-mod keycloak_client;
 
 pub mod discovery;
 pub mod logout;
@@ -44,7 +43,4 @@ pub use logout::{__path_logout, __path_logout_redirect};
 pub use logout::{logout, logout_redirect, LogoutRequest};
 
 // Helpers (public API surface)
-pub use helpers::{
-    build_callback_url, build_keycloak_auth_url, build_keycloak_logout_url, validate_redirect_uri,
-    KeycloakAuthUrlParams,
-};
+pub use helpers::{build_callback_url, validate_redirect_uri};

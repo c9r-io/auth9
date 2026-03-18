@@ -239,14 +239,12 @@ impl<S: SessionRepository, U: UserRepository> SessionService<S, U> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::identity_engine::adapters::keycloak::KeycloakSessionStoreAdapter;
-    use crate::keycloak::KeycloakClient;
+    use crate::identity_engine::adapters::auth9_oidc::Auth9OidcSessionStoreAdapter;
     use crate::models::user::User;
     use crate::repository::session::MockSessionRepository;
     use crate::repository::user::MockUserRepository;
     use mockall::predicate::*;
 
-    // Note: Tests involving KeycloakClient would need wiremock for HTTP mocking
     // These tests focus on repository interactions
 
     #[tokio::test]
@@ -655,23 +653,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    // Helper to create a test KeycloakClient (won't make actual calls in these tests)
-    fn create_test_keycloak_client() -> Arc<KeycloakClient> {
-        use crate::config::KeycloakConfig;
-        Arc::new(KeycloakClient::new(KeycloakConfig {
-            url: "http://localhost:8081".to_string(),
-            public_url: "http://localhost:8081".to_string(),
-            realm: "auth9".to_string(),
-            admin_client_id: "admin-cli".to_string(),
-            admin_client_secret: "".to_string(),
-            ssl_required: "none".to_string(),
-            core_public_url: None,
-            portal_url: None,
-            webhook_secret: None,
-        }))
-    }
-
     fn create_test_identity_sessions() -> Arc<dyn IdentitySessionStore> {
-        Arc::new(KeycloakSessionStoreAdapter::new(create_test_keycloak_client()))
+        Arc::new(Auth9OidcSessionStoreAdapter::new())
     }
 }

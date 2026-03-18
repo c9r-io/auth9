@@ -1,7 +1,7 @@
 //! Server initialization and routing
 
 use crate::cache::CacheManager;
-use crate::config::{Config, IdentityBackend};
+use crate::config::Config;
 use crate::crypto::EncryptionKey;
 use crate::domains;
 use crate::grpc::interceptor::{ApiKeyAuthenticator, AuthInterceptor};
@@ -31,12 +31,8 @@ use crate::domains::tenant_access::service::{
 use crate::identity_engine::adapters::auth9_oidc::{
     Auth9OidcFederationBrokerAdapter, Auth9OidcIdentityEngineAdapter, Auth9OidcSessionStoreAdapter,
 };
-use crate::identity_engine::adapters::keycloak::{
-    KeycloakFederationBrokerAdapter, KeycloakIdentityEngineAdapter, KeycloakSessionStoreAdapter,
-};
 use crate::identity_engine::{FederationBroker, IdentityEngine, IdentitySessionStore};
 use crate::jwt::JwtManager;
-use crate::keycloak::KeycloakClient;
 use crate::repository::{
     action::ActionRepositoryImpl, audit::AuditRepositoryImpl, invitation::InvitationRepositoryImpl,
     linked_identity::LinkedIdentityRepositoryImpl, login_event::LoginEventRepositoryImpl,
@@ -77,40 +73,6 @@ use crate::middleware::rate_limit::{
 };
 use crate::middleware::require_auth::AuthMiddlewareState;
 use crate::middleware::security_headers::security_headers_middleware;
-
-pub fn select_identity_backend(
-    config: &Config,
-    keycloak_arc: Arc<KeycloakClient>,
-    db_pool: sqlx::MySqlPool,
-) -> (
-    Arc<dyn IdentitySessionStore>,
-    Arc<dyn FederationBroker>,
-    Arc<dyn IdentityEngine>,
-) {
-    match config.identity_backend {
-        IdentityBackend::Keycloak => (
-            Arc::new(KeycloakSessionStoreAdapter::new(keycloak_arc.clone())),
-            Arc::new(KeycloakFederationBrokerAdapter::new(keycloak_arc.clone())),
-            Arc::new(KeycloakIdentityEngineAdapter::new(keycloak_arc)),
-        ),
-        IdentityBackend::Auth9Oidc => {
-            let social_provider_repo: Arc<dyn crate::repository::SocialProviderRepository> =
-                Arc::new(crate::repository::social_provider::SocialProviderRepositoryImpl::new(
-                    db_pool.clone(),
-                ));
-            (
-                Arc::new(Auth9OidcSessionStoreAdapter::new()),
-                Arc::new(Auth9OidcFederationBrokerAdapter::new(
-                    social_provider_repo.clone(),
-                )),
-                Arc::new(Auth9OidcIdentityEngineAdapter::new(
-                    db_pool,
-                    social_provider_repo,
-                )),
-            )
-        }
-    }
-}
 
 // ============================================================
 // Production Service Type Aliases
@@ -153,7 +115,6 @@ pub struct AppState {
     pub audit_repo: Arc<AuditRepositoryImpl>,
     pub jwt_manager: JwtManager,
     pub cache_manager: CacheManager,
-    pub keycloak_client: KeycloakClient,
     pub identity_engine: Arc<dyn IdentityEngine>,
     pub system_settings_service: Arc<SystemSettingsService<SystemSettingsRepositoryImpl>>,
     pub email_service: Arc<EmailService<SystemSettingsRepositoryImpl>>,
@@ -512,7 +473,7 @@ impl HasScimServices for AppState {
 
 /// Run the server
 pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) -> Result<()> {
-    info!("Current identity backend: {}", config.identity_backend);
+    info!("Identity backend: auth9_oidc");
     // Create database connection pool
     let db_pool = MySqlPoolOptions::new()
         .max_connections(config.database.max_connections)
@@ -577,14 +538,17 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     // Create JWT manager
     let jwt_manager = JwtManager::new(config.jwt.clone());
 
-    // Create Keycloak client
-    let keycloak_client = KeycloakClient::new(config.keycloak.clone());
-
-    // Create services
-    // Create Arc-wrapped Keycloak client for services that need it
-    let keycloak_arc = Arc::new(keycloak_client.clone());
-    let (identity_sessions, federation_broker, identity_engine) =
-        select_identity_backend(&config, keycloak_arc.clone(), db_pool.clone());
+    // Create identity engine adapters (Auth9-OIDC)
+    let social_provider_repo: Arc<dyn crate::repository::SocialProviderRepository> =
+        Arc::new(crate::repository::social_provider::SocialProviderRepositoryImpl::new(
+            db_pool.clone(),
+        ));
+    let identity_sessions: Arc<dyn IdentitySessionStore> =
+        Arc::new(Auth9OidcSessionStoreAdapter::new());
+    let federation_broker: Arc<dyn FederationBroker> =
+        Arc::new(Auth9OidcFederationBrokerAdapter::new(social_provider_repo.clone()));
+    let identity_engine: Arc<dyn IdentityEngine> =
+        Arc::new(Auth9OidcIdentityEngineAdapter::new(db_pool.clone(), social_provider_repo));
 
     // Create webhook service first (needed for webhook event publishing)
     let webhook_service = Arc::new(WebhookService::new(webhook_repo.clone()));
@@ -835,7 +799,6 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         audit_repo: audit_repo.clone(),
         jwt_manager: jwt_manager.clone(),
         cache_manager: cache_manager.clone(),
-        keycloak_client,
         identity_engine,
         system_settings_service,
         email_service,

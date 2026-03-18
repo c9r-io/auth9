@@ -8,7 +8,6 @@
 //! - Uses production `build_full_router()` with `TestAppState` for actual handler coverage
 //! - Helper functions for making HTTP requests (get_json, post_json, etc.)
 
-pub use super::mock_keycloak::MockKeycloakServer;
 use crate::support::TestSamlApplicationRepository;
 use crate::support::{
     create_test_jwt_manager, TestActionRepository, TestAuditRepository, TestInvitationRepository,
@@ -42,12 +41,8 @@ use auth9_core::domains::tenant_access::service::{
     InvitationService, SamlApplicationService, TenantRepositoryBundle, TenantService,
     UserRepositoryBundle, UserService,
 };
-use auth9_core::identity_engine::adapters::keycloak::{
-    KeycloakFederationBrokerAdapter, KeycloakIdentityEngineAdapter, KeycloakSessionStoreAdapter,
-};
 use auth9_core::identity_engine::{FederationBroker, IdentityEngine, IdentitySessionStore};
 use auth9_core::jwt::JwtManager;
-use auth9_core::keycloak::KeycloakClient;
 use auth9_core::middleware::RateLimitState;
 use auth9_core::server::build_full_router;
 use auth9_core::state::HasScimServices;
@@ -111,7 +106,6 @@ pub fn create_test_config(keycloak_url: &str) -> Config {
         rate_limit: RateLimitConfig::default(),
         cors: CorsConfig::default(),
         telemetry: auth9_core::config::TelemetryConfig::default(),
-        identity_backend: auth9_core::config::IdentityBackend::Keycloak,
         platform_admin_emails: vec!["admin@auth9.local".to_string()],
         webauthn: auth9_core::config::WebAuthnConfig {
             rp_id: "localhost".to_string(),
@@ -313,15 +307,14 @@ impl TestAppState {
         ));
 
         let jwt_manager = create_test_jwt_manager();
-        let keycloak_arc = Arc::new(KeycloakClient::new(config.keycloak.clone()));
-        let identity_sessions: Arc<dyn IdentitySessionStore> =
-            Arc::new(KeycloakSessionStoreAdapter::new(keycloak_arc.clone()));
-        let federation_broker: Arc<dyn FederationBroker> =
-            Arc::new(KeycloakFederationBrokerAdapter::new(keycloak_arc.clone()));
-        let identity_engine: Arc<dyn IdentityEngine> =
-            Arc::new(KeycloakIdentityEngineAdapter::new(keycloak_arc.clone()));
         let cache_manager = NoOpCacheManager::new();
         let db_pool = sqlx::MySqlPool::connect_lazy(&config.database.url).unwrap();
+        let identity_sessions: Arc<dyn IdentitySessionStore> =
+            Arc::new(crate::support::noop_identity_engine::NoOpSessionStore);
+        let federation_broker: Arc<dyn FederationBroker> =
+            Arc::new(crate::support::noop_identity_engine::NoOpFederationBroker);
+        let identity_engine: Arc<dyn IdentityEngine> =
+            Arc::new(crate::support::noop_identity_engine::NoOpIdentityEngine);
 
         // Create Keycloak sync service for tests
         let keycloak_sync_service = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
@@ -467,11 +460,6 @@ impl TestAppState {
             totp_service,
             recovery_code_service,
         }
-    }
-
-    /// Create with an already started mock Keycloak server
-    pub fn with_mock_keycloak(mock_server: &MockKeycloakServer) -> Self {
-        Self::new(&mock_server.uri())
     }
 
     /// Enable public registration by setting allow_registration to true in branding config

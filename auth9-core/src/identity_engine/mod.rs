@@ -151,26 +151,16 @@ pub trait IdentityEngine: Send + Sync {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::KeycloakConfig;
-    use crate::identity_engine::adapters::keycloak::KeycloakIdentityEngineAdapter;
-    use crate::keycloak::KeycloakClient;
+    use crate::identity_engine::adapters::auth9_oidc::Auth9OidcIdentityEngineAdapter;
+    use crate::repository::social_provider::MockSocialProviderRepository;
     use std::sync::Arc;
 
-    #[test]
-    fn keycloak_adapter_exposes_identity_engine_surfaces() {
-        let client = Arc::new(KeycloakClient::new(KeycloakConfig {
-            url: "http://localhost:8080".to_string(),
-            public_url: "http://localhost:8080".to_string(),
-            realm: "test".to_string(),
-            admin_client_id: "admin-cli".to_string(),
-            admin_client_secret: "test-placeholder".to_string(), // pragma: allowlist secret
-            ssl_required: "none".to_string(),
-            core_public_url: None,
-            portal_url: None,
-            webhook_secret: None,
-        }));
-
-        let adapter = KeycloakIdentityEngineAdapter::new(client);
+    #[tokio::test]
+    async fn auth9_oidc_adapter_exposes_identity_engine_surfaces() {
+        let pool = sqlx::MySqlPool::connect_lazy("mysql://fake:fake@localhost/fake").unwrap();
+        let social_repo: Arc<dyn crate::repository::SocialProviderRepository> =
+            Arc::new(MockSocialProviderRepository::new());
+        let adapter = Auth9OidcIdentityEngineAdapter::new(pool, social_repo);
         let engine: &dyn IdentityEngine = &adapter;
 
         let _ = engine.user_store();

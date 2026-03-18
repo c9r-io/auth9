@@ -195,8 +195,7 @@ impl<L: LinkedIdentityRepository> IdentityProviderService<L> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::identity_engine::adapters::keycloak::KeycloakFederationBrokerAdapter;
-    use crate::keycloak::KeycloakClient;
+    use crate::identity_engine::adapters::auth9_oidc::Auth9OidcFederationBrokerAdapter;
     use crate::repository::linked_identity::MockLinkedIdentityRepository;
     use mockall::predicate::*;
     use std::sync::Arc;
@@ -487,25 +486,10 @@ mod tests {
         assert!(result.unwrap().is_none());
     }
 
-    // Helper to create a test KeycloakClient
-    fn create_test_keycloak_client() -> Arc<KeycloakClient> {
-        use crate::config::KeycloakConfig;
-        Arc::new(KeycloakClient::new(KeycloakConfig {
-            url: "http://localhost:8081".to_string(),
-            public_url: "http://localhost:8081".to_string(),
-            realm: "auth9".to_string(),
-            admin_client_id: "admin-cli".to_string(),
-            admin_client_secret: "".to_string(),
-            ssl_required: "none".to_string(),
-            core_public_url: None,
-            portal_url: None,
-            webhook_secret: None,
-        }))
-    }
-
     fn create_test_federation_broker() -> Arc<dyn FederationBroker> {
-        Arc::new(KeycloakFederationBrokerAdapter::new(
-            create_test_keycloak_client(),
-        ))
+        use crate::repository::social_provider::MockSocialProviderRepository;
+        let social_repo: Arc<dyn crate::repository::SocialProviderRepository> =
+            Arc::new(MockSocialProviderRepository::new());
+        Arc::new(Auth9OidcFederationBrokerAdapter::new(social_repo))
     }
 }

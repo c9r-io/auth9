@@ -5,7 +5,7 @@
 use crate::support::create_test_identity_token;
 use crate::support::http::{
     build_branding_test_router, get_json, get_json_with_auth, put_json_with_auth,
-    MockKeycloakServer, TestAppState,
+    TestAppState,
 };
 use auth9_core::models::system_settings::SystemSettingRow;
 use axum::http::StatusCode;
@@ -18,8 +18,7 @@ use serde_json::json;
 
 #[tokio::test]
 async fn test_get_public_branding_defaults() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
 
     let (status, body): (StatusCode, Option<serde_json::Value>) =
@@ -51,8 +50,7 @@ async fn test_get_public_branding_defaults() {
 
 #[tokio::test]
 async fn test_get_public_branding_custom() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
 
     // Pre-populate with custom branding config
     let branding_config = json!({
@@ -99,8 +97,7 @@ async fn test_get_public_branding_custom() {
 
 #[tokio::test]
 async fn test_get_admin_branding_defaults() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -121,8 +118,7 @@ async fn test_get_admin_branding_defaults() {
 
 #[tokio::test]
 async fn test_update_branding_success() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -156,8 +152,7 @@ async fn test_update_branding_success() {
 
 #[tokio::test]
 async fn test_update_branding_minimal() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -184,8 +179,7 @@ async fn test_update_branding_minimal() {
 
 #[tokio::test]
 async fn test_update_branding_with_custom_css() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -213,8 +207,7 @@ async fn test_update_branding_with_custom_css() {
 
 #[tokio::test]
 async fn test_update_branding_invalid_color() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -236,8 +229,7 @@ async fn test_update_branding_invalid_color() {
 
 #[tokio::test]
 async fn test_update_branding_invalid_color_no_hash() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -259,8 +251,7 @@ async fn test_update_branding_invalid_color_no_hash() {
 
 #[tokio::test]
 async fn test_update_branding_invalid_color_wrong_length() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -282,8 +273,7 @@ async fn test_update_branding_invalid_color_wrong_length() {
 
 #[tokio::test]
 async fn test_update_branding_invalid_logo_url() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -306,8 +296,7 @@ async fn test_update_branding_invalid_logo_url() {
 
 #[tokio::test]
 async fn test_update_branding_invalid_favicon_url() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -334,8 +323,7 @@ async fn test_update_branding_invalid_favicon_url() {
 
 #[tokio::test]
 async fn test_branding_roundtrip() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -375,8 +363,7 @@ async fn test_branding_roundtrip() {
 
 #[tokio::test]
 async fn test_branding_public_and_admin_match() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -418,8 +405,7 @@ async fn test_branding_public_and_admin_match() {
 
 #[tokio::test]
 async fn test_update_branding_lowercase_color() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -447,8 +433,7 @@ async fn test_update_branding_lowercase_color() {
 
 #[tokio::test]
 async fn test_branding_allow_registration_default_false() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
 
     // Get defaults - allow_registration should be false
@@ -465,8 +450,7 @@ async fn test_branding_allow_registration_default_false() {
 
 #[tokio::test]
 async fn test_update_branding_with_allow_registration() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 
@@ -500,8 +484,7 @@ async fn test_update_branding_with_allow_registration() {
 
 #[tokio::test]
 async fn test_update_branding_without_allow_registration_defaults_false() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let app = build_branding_test_router(state);
     let token = create_test_identity_token();
 

@@ -4,10 +4,8 @@
 //! external dependencies (no database, no Redis, no Keycloak).
 
 pub mod http;
-pub mod mock_keycloak;
-
-// Re-export MockKeycloakServer for convenience
-pub use mock_keycloak::MockKeycloakServer;
+pub mod noop_identity_engine;
+pub use noop_identity_engine::NoOpIdentityEngine;
 
 use async_trait::async_trait;
 pub use auth9_core::cache::NoOpCacheManager;

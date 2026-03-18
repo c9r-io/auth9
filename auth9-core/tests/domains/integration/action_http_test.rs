@@ -8,7 +8,7 @@ use crate::support::http::{
 };
 use crate::support::{
     create_test_action, create_test_service, create_test_tenant, create_test_tenant_access_token,
-    create_test_tenant_access_token_for_tenant, MockKeycloakServer,
+    create_test_tenant_access_token_for_tenant,
 };
 use auth9_core::http_support::{MessageResponse, SuccessResponse};
 use auth9_core::jwt::JwtManager;
@@ -79,8 +79,7 @@ fn create_action_for_service(tenant_id: Uuid, service_id: Uuid, name: &str) -> A
 
 #[tokio::test]
 async fn test_create_action_returns_200() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -123,8 +122,7 @@ async fn test_create_action_returns_200() {
 
 #[tokio::test]
 async fn test_create_action_allows_portal_audience_token_across_services() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -169,8 +167,7 @@ async fn test_create_action_allows_portal_audience_token_across_services() {
 
 #[tokio::test]
 async fn test_create_action_validates_input() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -210,8 +207,7 @@ async fn test_create_action_validates_input() {
 
 #[tokio::test]
 async fn test_create_action_rejects_duplicate_name() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -254,8 +250,7 @@ async fn test_create_action_rejects_duplicate_name() {
 
 #[tokio::test]
 async fn test_create_action_validates_trigger_id() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -303,8 +298,7 @@ async fn test_create_action_validates_trigger_id() {
 
 #[tokio::test]
 async fn test_list_actions_returns_all() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -340,8 +334,7 @@ async fn test_list_actions_returns_all() {
 
 #[tokio::test]
 async fn test_list_actions_filters_by_trigger() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -388,8 +381,7 @@ async fn test_list_actions_filters_by_trigger() {
 
 #[tokio::test]
 async fn test_list_actions_empty() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -423,8 +415,7 @@ async fn test_list_actions_empty() {
 
 #[tokio::test]
 async fn test_get_action_returns_200() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -459,8 +450,7 @@ async fn test_get_action_returns_200() {
 
 #[tokio::test]
 async fn test_get_action_returns_404() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -491,8 +481,7 @@ async fn test_get_action_returns_404() {
 
 #[tokio::test]
 async fn test_update_action_returns_200() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -538,8 +527,7 @@ async fn test_update_action_returns_200() {
 
 #[tokio::test]
 async fn test_update_action_validates_input() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -582,8 +570,7 @@ async fn test_update_action_validates_input() {
 
 #[tokio::test]
 async fn test_update_action_returns_404() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -625,8 +612,7 @@ async fn test_update_action_returns_404() {
 
 #[tokio::test]
 async fn test_delete_action_returns_200() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -658,8 +644,7 @@ async fn test_delete_action_returns_200() {
 
 #[tokio::test]
 async fn test_delete_action_returns_404() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -694,8 +679,7 @@ async fn test_delete_action_returns_404() {
 
 #[tokio::test]
 async fn test_batch_upsert_creates_new() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -741,8 +725,7 @@ async fn test_batch_upsert_creates_new() {
 
 #[tokio::test]
 async fn test_batch_upsert_updates_existing() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -786,8 +769,7 @@ async fn test_batch_upsert_updates_existing() {
 
 #[tokio::test]
 async fn test_batch_upsert_handles_errors() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -829,8 +811,7 @@ async fn test_batch_upsert_handles_errors() {
 
 #[tokio::test]
 async fn test_query_logs_returns_all() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -859,8 +840,7 @@ async fn test_query_logs_returns_all() {
 
 #[tokio::test]
 async fn test_query_logs_filters_by_action_id() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -894,8 +874,7 @@ async fn test_query_logs_filters_by_action_id() {
 
 #[tokio::test]
 async fn test_query_logs_filters_by_user_id() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -925,8 +904,7 @@ async fn test_query_logs_filters_by_user_id() {
 
 #[tokio::test]
 async fn test_query_logs_filters_by_success() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -953,8 +931,7 @@ async fn test_query_logs_filters_by_success() {
 
 #[tokio::test]
 async fn test_get_stats_returns_200() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -989,8 +966,7 @@ async fn test_get_stats_returns_200() {
 
 #[tokio::test]
 async fn test_get_stats_returns_404() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1021,8 +997,7 @@ async fn test_get_stats_returns_404() {
 
 #[tokio::test]
 async fn test_get_triggers_returns_list() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let token = create_test_tenant_access_token();
 
     let app = build_test_router(state.clone());
@@ -1041,8 +1016,7 @@ async fn test_get_triggers_returns_list() {
 
 #[tokio::test]
 async fn test_platform_admin_can_create_action() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
 
     let service_id = setup_tenant_and_service(&state, tenant_id).await;
@@ -1074,8 +1048,7 @@ async fn test_platform_admin_can_create_action() {
 
 #[tokio::test]
 async fn test_platform_admin_can_read_action() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
 
     let service_id = setup_tenant_and_service(&state, tenant_id).await;
@@ -1099,8 +1072,7 @@ async fn test_platform_admin_can_read_action() {
 
 #[tokio::test]
 async fn test_tenant_admin_can_manage_actions() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1139,8 +1111,7 @@ async fn test_tenant_admin_can_manage_actions() {
 
 #[tokio::test]
 async fn test_tenant_owner_can_manage_actions() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1179,8 +1150,7 @@ async fn test_tenant_owner_can_manage_actions() {
 
 #[tokio::test]
 async fn test_action_read_permission_allows_read() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1211,8 +1181,7 @@ async fn test_action_read_permission_allows_read() {
 
 #[tokio::test]
 async fn test_action_write_permission_allows_write() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1251,8 +1220,7 @@ async fn test_action_write_permission_allows_write() {
 
 #[tokio::test]
 async fn test_action_wildcard_permission_allows_all() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1291,8 +1259,7 @@ async fn test_action_wildcard_permission_allows_all() {
 
 #[tokio::test]
 async fn test_missing_permission_returns_403() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1331,8 +1298,7 @@ async fn test_missing_permission_returns_403() {
 
 #[tokio::test]
 async fn test_cross_service_access_returns_403() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1413,8 +1379,7 @@ async fn test_cross_service_access_returns_403() {
 
 #[tokio::test]
 async fn test_cross_service_access_allowed_for_same_service() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1447,8 +1412,7 @@ async fn test_cross_service_access_allowed_for_same_service() {
 
 #[tokio::test]
 async fn test_missing_token_returns_401() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let service_id = Uuid::new_v4();
 
     let input = CreateActionInput {
@@ -1482,8 +1446,7 @@ async fn test_missing_token_returns_401() {
 
 #[tokio::test]
 async fn test_invalid_token_returns_401() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let service_id = Uuid::new_v4();
 
     let input = CreateActionInput {
@@ -1515,8 +1478,7 @@ async fn test_invalid_token_returns_401() {
 
 #[tokio::test]
 async fn test_get_action_from_different_tenant_returns_404() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id_1 = Uuid::new_v4();
     let tenant_id_2 = Uuid::new_v4();
     let user_id = Uuid::new_v4();
@@ -1551,8 +1513,7 @@ async fn test_get_action_from_different_tenant_returns_404() {
 
 #[tokio::test]
 async fn test_update_action_from_different_tenant_returns_404() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id_1 = Uuid::new_v4();
     let tenant_id_2 = Uuid::new_v4();
     let user_id = Uuid::new_v4();
@@ -1600,8 +1561,7 @@ async fn test_update_action_from_different_tenant_returns_404() {
 
 #[tokio::test]
 async fn test_delete_action_from_different_tenant_returns_404() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id_1 = Uuid::new_v4();
     let tenant_id_2 = Uuid::new_v4();
     let user_id = Uuid::new_v4();
@@ -1636,8 +1596,7 @@ async fn test_delete_action_from_different_tenant_returns_404() {
 
 #[tokio::test]
 async fn test_list_actions_only_returns_own_tenant() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id_1 = Uuid::new_v4();
     let tenant_id_2 = Uuid::new_v4();
     let user_id = Uuid::new_v4();
@@ -1687,8 +1646,7 @@ async fn test_list_actions_only_returns_own_tenant() {
 
 #[tokio::test]
 async fn test_query_logs_only_returns_own_tenant() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id_1 = Uuid::new_v4();
     let tenant_id_2 = Uuid::new_v4();
     let user_id = Uuid::new_v4();
@@ -1724,8 +1682,7 @@ async fn test_query_logs_only_returns_own_tenant() {
 
 #[tokio::test]
 async fn test_test_action_returns_success() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1787,8 +1744,7 @@ async fn test_test_action_returns_success() {
 
 #[tokio::test]
 async fn test_test_action_not_found() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 
@@ -1846,8 +1802,7 @@ async fn test_test_action_not_found() {
 
 #[tokio::test]
 async fn test_get_action_log_not_found() {
-    let mock_kc = MockKeycloakServer::new().await;
-    let state = TestAppState::with_mock_keycloak(&mock_kc);
+    let state = TestAppState::new("http://localhost:8081");
     let tenant_id = Uuid::new_v4();
     let user_id = Uuid::new_v4();
 

@@ -6,7 +6,6 @@
 //! - Seeding default services in database
 
 use crate::config::Config;
-use crate::keycloak::KeycloakSeeder;
 use anyhow::{Context, Result};
 use sqlx::migrate::{MigrateError, Migrator};
 use sqlx::mysql::MySqlPoolOptions;
@@ -317,73 +316,13 @@ async fn index_exists(pool: &Pool<MySql>, table: &str, index: &str) -> Result<bo
     Ok(exists.is_some())
 }
 
-/// Seed Keycloak with default realm, admin user, and portal client
+/// Seed default services and initial data
 pub async fn seed_keycloak(config: &Config) -> Result<()> {
-    use tracing::warn;
-
-    info!("Initializing Keycloak seeder...");
-
-    let seeder = KeycloakSeeder::new(&config.keycloak);
-
-    // 🆕 Priority: Create admin client in master realm first
-    info!("Seeding admin client in master realm...");
-    seeder
-        .seed_master_admin_client()
-        .await
-        .context("Failed to seed admin client in master realm")?;
-
-    // Create realm if not exists (no settings applied yet)
-    info!("Ensuring realm '{}' exists...", config.keycloak.realm);
-    seeder
-        .ensure_realm_exists()
-        .await
-        .context("Failed to create realm")?;
-
-    // Seed default admin user BEFORE applying any realm settings.
-    // Keycloak 23 rejects user creation with credentials (POST /users returns 400
-    // "Password policy not met") when a password policy is active.
-    info!("Seeding default admin user...");
-    if let Err(e) = seeder.seed_admin_user().await {
-        warn!("Failed to seed admin user (non-fatal): {}", e);
-    }
-
-    // Apply ALL realm settings (events, SSL, login theme, password policy, brute force)
-    // This must happen AFTER admin user seeding due to Keycloak 23 password policy bug.
-    info!("Applying realm settings...");
-    seeder
-        .apply_realm_settings()
-        .await
-        .context("Failed to apply realm settings")?;
-
-    // Seed portal client (OIDC client for auth9-portal)
-    info!("Seeding portal client in Keycloak...");
-    seeder
-        .seed_portal_client()
-        .await
-        .context("Failed to seed portal client in Keycloak")?;
-
-    // Seed admin client in configured realm (Confidential client for realm-level operations)
-    info!(
-        "Seeding admin client in realm '{}'...",
-        config.keycloak.realm
-    );
-    seeder
-        .seed_admin_client()
-        .await
-        .context("Failed to seed admin client in Keycloak")?;
-
     // Seed portal service in database
     info!("Seeding portal service in database...");
     seed_portal_service(config)
         .await
         .context("Failed to seed portal service in database")?;
-
-    // Seed demo client in Keycloak
-    info!("Seeding demo client in Keycloak...");
-    seeder
-        .seed_demo_client()
-        .await
-        .context("Failed to seed demo client in Keycloak")?;
 
     // Seed demo service in database
     info!("Seeding demo service in database...");
@@ -406,7 +345,7 @@ pub async fn seed_keycloak(config: &Config) -> Result<()> {
         .await
         .context("Failed to seed initial data")?;
 
-    info!("Keycloak seeding completed");
+    info!("Seeding completed");
     Ok(())
 }
 
@@ -721,18 +660,17 @@ async fn seed_m2m_test_service(config: &Config) -> Result<()> {
 async fn seed_initial_data(config: &Config) -> Result<()> {
     use tracing::warn;
 
-    // 1. Query Keycloak for admin user's keycloak_id and email
-    let seeder = KeycloakSeeder::new(&config.keycloak);
-    let (keycloak_id, admin_email) = match seeder.get_admin_user_keycloak_id().await? {
-        Some((id, email)) => (id, email),
-        None => {
-            warn!("Admin user not found in Keycloak, skipping initial data seed");
-            return Ok(());
-        }
-    };
+    // 1. Use configured admin email for seed user
+    let admin_email = config
+        .platform_admin_emails
+        .first()
+        .cloned()
+        .unwrap_or_else(|| "admin@auth9.local".to_string());
+    // Use a deterministic identity subject derived from the email
+    let keycloak_id = format!("seed-admin-{}", admin_email);
 
     info!(
-        "Found admin user in Keycloak: keycloak_id={}, email={}",
+        "Seeding admin user: identity_subject={}, email={}",
         keycloak_id, admin_email
     );
 

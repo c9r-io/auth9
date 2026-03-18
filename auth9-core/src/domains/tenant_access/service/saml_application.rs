@@ -471,22 +471,13 @@ mod tests {
     use mockall::predicate::*;
 
     fn test_identity_engine() -> Arc<dyn IdentityEngine> {
-        use crate::identity_engine::adapters::keycloak::KeycloakIdentityEngineAdapter;
-        use crate::keycloak::KeycloakClient;
+        use crate::identity_engine::adapters::auth9_oidc::Auth9OidcIdentityEngineAdapter;
+        use crate::repository::social_provider::MockSocialProviderRepository;
 
-        Arc::new(KeycloakIdentityEngineAdapter::new(Arc::new(
-            KeycloakClient::new(crate::config::KeycloakConfig {
-                url: "http://localhost:8080".to_string(),
-                public_url: "http://localhost:8081".to_string(),
-                realm: "auth9".to_string(),
-                admin_client_id: "admin-cli".to_string(),
-                admin_client_secret: "".to_string(),
-                ssl_required: "none".to_string(),
-                core_public_url: None,
-                portal_url: None,
-                webhook_secret: None,
-            }),
-        )))
+        let pool = sqlx::MySqlPool::connect_lazy("mysql://fake:fake@localhost/fake").unwrap();
+        let social_repo: Arc<dyn crate::repository::SocialProviderRepository> =
+            Arc::new(MockSocialProviderRepository::new());
+        Arc::new(Auth9OidcIdentityEngineAdapter::new(pool, social_repo))
     }
 
     fn make_test_app(tenant_id: StringUuid) -> SamlApplication {
@@ -905,9 +896,7 @@ QRuQujMkNHI=";
 
         let result = service.list(tenant_id).await.unwrap();
         assert_eq!(result.len(), 1);
-        assert_eq!(
-            result[0].sso_url,
-            "http://localhost:8081/realms/auth9/protocol/saml"
-        );
+        // Auth9Oidc adapter returns empty SSO URL (will be populated after FR4 config refactor)
+        assert_eq!(result[0].sso_url, "");
     }
 }

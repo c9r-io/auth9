@@ -105,23 +105,6 @@ impl From<IdentityProvider> for KeycloakIdentityProvider {
     }
 }
 
-// Also implement From for the keycloak module's type
-impl From<crate::keycloak::KeycloakIdentityProvider> for IdentityProvider {
-    fn from(kc: crate::keycloak::KeycloakIdentityProvider) -> Self {
-        Self {
-            alias: kc.alias,
-            display_name: kc.display_name,
-            provider_id: kc.provider_id,
-            enabled: kc.enabled,
-            trust_email: kc.trust_email,
-            store_token: kc.store_token,
-            link_only: kc.link_only,
-            first_login_policy: "auto_merge".to_string(),
-            first_broker_login_flow_alias: kc.first_broker_login_flow_alias,
-            config: kc.config,
-        }
-    }
-}
 
 impl From<IdentityProviderRepresentation> for IdentityProvider {
     fn from(value: IdentityProviderRepresentation) -> Self {

@@ -141,24 +141,15 @@ mod tests {
         assert_ne!(h1, h2);
     }
 
-    #[test]
-    fn build_verification_link_format() {
-        use crate::identity_engine::adapters::keycloak::KeycloakIdentityEngineAdapter;
-        use crate::keycloak::KeycloakClient;
-        use crate::config::KeycloakConfig;
+    #[tokio::test]
+    async fn build_verification_link_format() {
+        use crate::identity_engine::adapters::auth9_oidc::Auth9OidcIdentityEngineAdapter;
+        use crate::repository::social_provider::MockSocialProviderRepository;
 
-        let client = Arc::new(KeycloakClient::new(KeycloakConfig {
-            url: "http://localhost:8080".to_string(),
-            public_url: "http://localhost:8080".to_string(),
-            realm: "test".to_string(),
-            admin_client_id: "admin-cli".to_string(),
-            admin_client_secret: "test-placeholder".to_string(), // pragma: allowlist secret
-            ssl_required: "none".to_string(),
-            core_public_url: None,
-            portal_url: None,
-            webhook_secret: None,
-        }));
-        let engine: Arc<dyn IdentityEngine> = Arc::new(KeycloakIdentityEngineAdapter::new(client));
+        let pool = sqlx::MySqlPool::connect_lazy("mysql://fake:fake@localhost/fake").unwrap();
+        let social_repo: Arc<dyn crate::repository::SocialProviderRepository> =
+            Arc::new(MockSocialProviderRepository::new());
+        let engine: Arc<dyn IdentityEngine> = Arc::new(Auth9OidcIdentityEngineAdapter::new(pool, social_repo));
 
         let service = EmailVerificationService::new(
             engine,
