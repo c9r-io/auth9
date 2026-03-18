@@ -128,6 +128,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const locale = await resolveLocale(request);
   const error = url.searchParams.get("error");
+  const loginChallenge = url.searchParams.get("login_challenge") || undefined;
   const apiBaseUrl = process.env.AUTH9_CORE_PUBLIC_URL || process.env.AUTH9_CORE_URL || "http://localhost:8080";
   const clientId = process.env.AUTH9_PORTAL_CLIENT_ID || "auth9-portal";
   let branding: BrandingConfig = DEFAULT_PUBLIC_BRANDING;
@@ -139,7 +140,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Fall back to default Portal-owned branding.
   }
 
-  return { error, apiBaseUrl, locale, branding };
+  return { error, apiBaseUrl, locale, branding, loginChallenge };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -152,9 +153,21 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === "passkey-login") {
     const accessToken = formData.get("accessToken") as string;
     const expiresIn = parseInt(formData.get("expiresIn") as string || "3600", 10);
+    const loginChallenge = formData.get("loginChallenge") as string | null;
 
     if (!accessToken) {
       return { error: translate(locale, "auth.login.missingAccessToken") };
+    }
+
+    // If login_challenge is present, complete the OIDC authorization flow
+    if (loginChallenge) {
+      try {
+        const result = await hostedLoginApi.authorizeComplete(loginChallenge, accessToken);
+        return redirect(result.redirect_url);
+      } catch (error) {
+        const message = mapApiError(error, locale);
+        return { error: message };
+      }
     }
 
     const session = {
@@ -195,6 +208,7 @@ export async function action({ request }: ActionFunctionArgs) {
   if (intent === "password-login") {
     const email = String(formData.get("email") || "").trim();
     const password = String(formData.get("password") || "").trim();
+    const loginChallenge = formData.get("loginChallenge") as string | null;
 
     if (!email || !password) {
       return { error: translate(locale, "auth.login.credentialsRequired") };
@@ -215,10 +229,25 @@ export async function action({ request }: ActionFunctionArgs) {
       // Redirect to first pending action if any, otherwise tenant select
       if (result.pending_actions && result.pending_actions.length > 0) {
         const first = result.pending_actions[0];
-        const actionUrl = first.redirect_url.includes("?")
+        let actionUrl = first.redirect_url.includes("?")
           ? `${first.redirect_url}&action_id=${first.id}`
           : `${first.redirect_url}?action_id=${first.id}`;
+        // Carry login_challenge through pending actions (MFA, etc.)
+        if (loginChallenge) {
+          actionUrl += `&login_challenge=${encodeURIComponent(loginChallenge)}`;
+        }
         return redirect(actionUrl, { headers: { "Set-Cookie": cookie } });
+      }
+
+      // If login_challenge is present, complete the OIDC authorization flow
+      if (loginChallenge && result.access_token) {
+        try {
+          const authResult = await hostedLoginApi.authorizeComplete(loginChallenge, result.access_token);
+          return redirect(authResult.redirect_url);
+        } catch (error) {
+          const message = mapApiError(error, locale);
+          return { error: message };
+        }
       }
 
       return redirect("/tenant/select", { headers: { "Set-Cookie": cookie } });
@@ -286,6 +315,7 @@ export default function Login() {
     apiBaseUrl: loaderData.apiBaseUrl ?? "http://localhost:8080",
     locale: loaderData.locale ?? "zh-CN",
     branding: { ...DEFAULT_PUBLIC_BRANDING, ...(loaderData.branding ?? {}) },
+    loginChallenge: (loaderData as Record<string, unknown>).loginChallenge as string | undefined,
   };
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -378,6 +408,13 @@ export default function Login() {
       expiresInput.value = String(tokenResult.expires_in);
       form.appendChild(expiresInput);
 
+      if (data.loginChallenge) {
+        const challengeInput = document.createElement("input");
+        challengeInput.name = "loginChallenge";
+        challengeInput.value = data.loginChallenge;
+        form.appendChild(challengeInput);
+      }
+
       document.body.appendChild(form);
       form.submit();
     } catch (error) {
@@ -426,6 +463,9 @@ export default function Login() {
               <AuthMethodStack>
                 <Form method="post" action="/login">
                   <input type="hidden" name="intent" value="sso-login" />
+                  {data.loginChallenge && (
+                    <input type="hidden" name="loginChallenge" value={data.loginChallenge} />
+                  )}
                   <Input
                     type="email"
                     name="email"
@@ -461,6 +501,9 @@ export default function Login() {
                     </p>
                     <Form method="post" action="/login" className="mt-4">
                       <input type="hidden" name="intent" value="password-login" />
+                      {data.loginChallenge && (
+                        <input type="hidden" name="loginChallenge" value={data.loginChallenge} />
+                      )}
                       <Button type="submit" variant="outline" className="w-full" disabled={isSubmitting || authenticating}>
                         {isSubmitting ? t("auth.login.redirecting") : t("auth.login.passwordFallbackContinue")}
                       </Button>

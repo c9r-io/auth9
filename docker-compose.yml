@@ -31,6 +31,7 @@ services:
       PASSWORD_RESET_HMAC_KEY: dev-password-reset-hmac-key-change-in-production
       PASSWORD_RESET_TOKEN_TTL_SECS: 3600
       IDENTITY_BACKEND: ${IDENTITY_BACKEND:-keycloak}
+      AUTH9_PORTAL_URL: ${AUTH9_PORTAL_URL:-http://localhost:3000}
     depends_on:
       tidb:
         condition: service_healthy
@@ -104,6 +105,7 @@ services:
       HSTS_HTTPS_ONLY: "true"
       HSTS_TRUST_X_FORWARDED_PROTO: "true"
       IDENTITY_BACKEND: ${IDENTITY_BACKEND:-keycloak}
+      AUTH9_PORTAL_URL: ${AUTH9_PORTAL_URL:-http://localhost:3000}
     security_opt:
       - no-new-privileges:true
     cap_drop:

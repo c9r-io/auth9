@@ -301,6 +301,47 @@ impl NoOpCacheManager {
             .await
             .remove(&format!("mfa_session:{}", token)))
     }
+
+    // ==================== Login Challenge ====================
+
+    pub async fn store_login_challenge(&self, id: &str, data: &str, _ttl_secs: u64) -> Result<()> {
+        self.oidc_states
+            .write()
+            .await
+            .insert(format!("login_challenge:{}", id), data.to_string());
+        Ok(())
+    }
+
+    pub async fn consume_login_challenge(&self, id: &str) -> Result<Option<String>> {
+        Ok(self
+            .oidc_states
+            .write()
+            .await
+            .remove(&format!("login_challenge:{}", id)))
+    }
+
+    // ==================== Authorization Code ====================
+
+    pub async fn store_authorization_code(
+        &self,
+        code: &str,
+        data: &str,
+        _ttl_secs: u64,
+    ) -> Result<()> {
+        self.oidc_states
+            .write()
+            .await
+            .insert(format!("auth_code:{}", code), data.to_string());
+        Ok(())
+    }
+
+    pub async fn consume_authorization_code(&self, code: &str) -> Result<Option<String>> {
+        Ok(self
+            .oidc_states
+            .write()
+            .await
+            .remove(&format!("auth_code:{}", code)))
+    }
 }
 
 impl Default for NoOpCacheManager {

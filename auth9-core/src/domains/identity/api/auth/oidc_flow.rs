@@ -8,12 +8,18 @@ use super::helpers::{
     build_callback_url, build_keycloak_auth_url, extract_client_ip, validate_redirect_uri,
     CallbackState, KeycloakAuthUrlParams,
 };
+use super::helpers::{
+    verify_pkce_s256, AuthorizationCodeData, LoginChallengeData, AUTH_CODE_TTL_SECS,
+    LOGIN_CHALLENGE_TTL_SECS,
+};
 use super::keycloak_client::{exchange_code_for_tokens, exchange_refresh_token, fetch_userinfo};
 use super::types::{
-    AuthorizeRequest, CallbackRequest, EnterpriseSsoDiscoveryResponse, TokenRequest, TokenResponse,
+    AuthorizeCompleteRequest, AuthorizeCompleteResponse, AuthorizeRequest, CallbackRequest,
+    EnterpriseSsoDiscoveryResponse, TokenRequest, TokenResponse,
 };
 use super::{ALLOWED_SCOPES, OIDC_STATE_TTL_SECS};
 use crate::cache::CacheOperations;
+use crate::config::IdentityBackend;
 use crate::domains::security_observability::service::analytics::LoginEventMetadata;
 use crate::error::{AppError, Result};
 use crate::http_support::SuccessResponse;
@@ -82,6 +88,41 @@ pub async fn authorize<S: HasServices + HasCache + crate::state::HasDbPool>(
     // Validate and filter scope against whitelist
     let filtered_scope = filter_scopes(&params.scope)?;
 
+    // ===== Auth9-OIDC backend: redirect to hosted login with login_challenge =====
+    if state.config().identity_backend == IdentityBackend::Auth9Oidc {
+        let challenge_data = LoginChallengeData {
+            client_id: params.client_id,
+            redirect_uri: params.redirect_uri,
+            scope: filtered_scope,
+            original_state: Some(params.state),
+            nonce: params.nonce,
+            code_challenge: params.code_challenge,
+            code_challenge_method: params.code_challenge_method,
+        };
+        let challenge_id = uuid::Uuid::new_v4().to_string();
+        let challenge_json = serde_json::to_string(&challenge_data)
+            .map_err(|e| AppError::Internal(e.into()))?;
+        state
+            .cache()
+            .store_login_challenge(&challenge_id, &challenge_json, LOGIN_CHALLENGE_TTL_SECS)
+            .await?;
+
+        let portal_url = state
+            .config()
+            .keycloak
+            .portal_url
+            .as_deref()
+            .unwrap_or(&state.config().jwt.issuer);
+        let login_url = format!(
+            "{}/login?login_challenge={}",
+            portal_url.trim_end_matches('/'),
+            challenge_id
+        );
+
+        return Ok(Redirect::temporary(&login_url).into_response());
+    }
+
+    // ===== Keycloak backend: redirect to Keycloak auth URL (existing path) =====
     let callback_url = build_callback_url(
         state
             .config()
@@ -261,6 +302,81 @@ pub async fn callback<S: HasServices + HasCache>(
 
 #[utoipa::path(
     post,
+    path = "/api/v1/auth/authorize/complete",
+    tag = "Identity",
+    responses(
+        (status = 200, description = "Authorization complete with redirect URL")
+    )
+)]
+/// Complete the OIDC authorization flow after hosted login.
+/// The caller must provide a valid identity token (from hosted-login) and the login_challenge_id.
+/// Returns a redirect URL containing the authorization code and original state.
+pub async fn authorize_complete<S: HasServices + HasCache>(
+    State(state): State<S>,
+    headers: HeaderMap,
+    Json(params): Json<AuthorizeCompleteRequest>,
+) -> Result<Json<crate::http_support::SuccessResponse<AuthorizeCompleteResponse>>> {
+    // 1. Extract and verify identity token from Authorization header
+    let identity_claims =
+        super::helpers::extract_identity_claims_from_headers(&state, &headers)?;
+    let session_id = identity_claims.sid.ok_or_else(|| {
+        AppError::BadRequest("Identity token must contain a session ID (sid)".to_string())
+    })?;
+
+    // 2. Consume login challenge
+    let challenge_json = state
+        .cache()
+        .consume_login_challenge(&params.login_challenge_id)
+        .await?
+        .ok_or_else(|| {
+            AppError::BadRequest("Invalid or expired login challenge".to_string())
+        })?;
+    let challenge: LoginChallengeData =
+        serde_json::from_str(&challenge_json).map_err(|e| AppError::Internal(e.into()))?;
+
+    // 3. Generate authorization code
+    let code = uuid::Uuid::new_v4().to_string();
+
+    // 4. Store authorization code data
+    let code_data = AuthorizationCodeData {
+        user_id: identity_claims.sub,
+        email: identity_claims.email,
+        display_name: identity_claims.name,
+        session_id,
+        client_id: challenge.client_id.clone(),
+        redirect_uri: challenge.redirect_uri.clone(),
+        scope: challenge.scope,
+        nonce: challenge.nonce,
+        code_challenge: challenge.code_challenge,
+        code_challenge_method: challenge.code_challenge_method,
+    };
+    let code_json =
+        serde_json::to_string(&code_data).map_err(|e| AppError::Internal(e.into()))?;
+    state
+        .cache()
+        .store_authorization_code(&code, &code_json, AUTH_CODE_TTL_SECS)
+        .await?;
+
+    // 5. Build redirect URL
+    let mut redirect_url = Url::parse(&challenge.redirect_uri)
+        .map_err(|e| AppError::BadRequest(format!("Invalid redirect_uri: {}", e)))?;
+    {
+        let mut pairs = redirect_url.query_pairs_mut();
+        pairs.append_pair("code", &code);
+        if let Some(original_state) = challenge.original_state {
+            pairs.append_pair("state", &original_state);
+        }
+    }
+
+    Ok(Json(crate::http_support::SuccessResponse::new(
+        AuthorizeCompleteResponse {
+            redirect_url: redirect_url.to_string(),
+        },
+    )))
+}
+
+#[utoipa::path(
+    post,
     path = "/api/v1/auth/token",
     tag = "Identity",
     responses(
@@ -290,6 +406,116 @@ pub async fn token<
 
             let code_verifier = params.code_verifier;
 
+            // ===== Auth9-OIDC backend: consume local authorization code =====
+            if state.config().identity_backend == IdentityBackend::Auth9Oidc {
+                let code_data_json = state
+                    .cache()
+                    .consume_authorization_code(&code)
+                    .await?
+                    .ok_or_else(|| {
+                        AppError::BadRequest(
+                            "Invalid or expired authorization code".to_string(),
+                        )
+                    })?;
+                let code_data: AuthorizationCodeData =
+                    serde_json::from_str(&code_data_json)
+                        .map_err(|e| AppError::Internal(e.into()))?;
+
+                // Validate client_id and redirect_uri match
+                if code_data.client_id != client_id {
+                    return Err(AppError::BadRequest(
+                        "client_id does not match authorization code".to_string(),
+                    ));
+                }
+                if code_data.redirect_uri != redirect_uri {
+                    return Err(AppError::BadRequest(
+                        "redirect_uri does not match authorization code".to_string(),
+                    ));
+                }
+
+                // PKCE validation
+                if let Some(ref challenge) = code_data.code_challenge {
+                    let verifier = code_verifier.ok_or_else(|| {
+                        AppError::BadRequest(
+                            "code_verifier is required when code_challenge was set".to_string(),
+                        )
+                    })?;
+                    let method = code_data
+                        .code_challenge_method
+                        .as_deref()
+                        .unwrap_or("S256");
+                    if method != "S256" {
+                        return Err(AppError::BadRequest(format!(
+                            "Unsupported code_challenge_method: {}",
+                            method
+                        )));
+                    }
+                    if !verify_pkce_s256(&verifier, challenge) {
+                        return Err(AppError::BadRequest(
+                            "PKCE verification failed".to_string(),
+                        ));
+                    }
+                }
+
+                let user_id: uuid::Uuid = code_data
+                    .user_id
+                    .parse()
+                    .map_err(|_| AppError::Internal(anyhow::anyhow!("Invalid user_id in auth code")))?;
+                let session_id: uuid::Uuid = code_data
+                    .session_id
+                    .parse()
+                    .map_err(|_| AppError::Internal(anyhow::anyhow!("Invalid session_id in auth code")))?;
+
+                // Create identity token
+                let identity_token = jwt_manager.create_identity_token_with_session(
+                    user_id,
+                    &code_data.email,
+                    code_data.display_name.as_deref(),
+                    Some(session_id),
+                )?;
+
+                // Create id_token (OIDC spec)
+                let id_token = jwt_manager.create_id_token(
+                    user_id,
+                    &code_data.email,
+                    code_data.display_name.as_deref(),
+                    code_data.nonce.as_deref(),
+                    &client_id,
+                    Some(session_id),
+                    &identity_token,
+                )?;
+
+                // Create OIDC refresh token
+                let refresh_token = jwt_manager.create_oidc_refresh_token(
+                    user_id,
+                    &client_id,
+                    session_id,
+                )?;
+
+                // Bind refresh token to session
+                let refresh_ttl = state.config().jwt.refresh_token_ttl_secs.max(1) as u64;
+                state
+                    .cache()
+                    .bind_refresh_token_session(
+                        &refresh_token,
+                        &session_id.to_string(),
+                        refresh_ttl,
+                    )
+                    .await?;
+
+                metrics::counter!("auth9_auth_login_total", "result" => "success", "backend" => "auth9_oidc").increment(1);
+
+                return Ok(Json(TokenResponse {
+                    access_token: identity_token,
+                    token_type: "Bearer".to_string(),
+                    expires_in: jwt_manager.access_token_ttl(),
+                    refresh_token: Some(refresh_token),
+                    id_token: Some(id_token),
+                })
+                .into_response());
+            }
+
+            // ===== Keycloak backend: exchange code with Keycloak =====
             let state_payload = CallbackState {
                 redirect_uri,
                 client_id,
@@ -586,6 +812,85 @@ pub async fn token<
                 .client_id
                 .ok_or_else(|| AppError::BadRequest("Missing client_id".to_string()))?;
 
+            // ===== Auth9-OIDC backend: validate Auth9 OIDC refresh token =====
+            if state.config().identity_backend == IdentityBackend::Auth9Oidc {
+                let refresh_claims = jwt_manager
+                    .verify_oidc_refresh_token(&refresh_token, &client_id)
+                    .map_err(|e| {
+                        AppError::Unauthorized(format!("Invalid refresh token: {}", e))
+                    })?;
+
+                // Verify session binding
+                let session_id_str = state
+                    .cache()
+                    .get_refresh_token_session(&refresh_token)
+                    .await?
+                    .ok_or_else(|| {
+                        AppError::Unauthorized(
+                            "Refresh token is not bound to an active session".to_string(),
+                        )
+                    })?;
+                let session_id = uuid::Uuid::parse_str(&session_id_str).map_err(|_| {
+                    AppError::Internal(anyhow::anyhow!("Invalid session_id in refresh binding"))
+                })?;
+
+                let user_id: crate::models::common::StringUuid = refresh_claims
+                    .sub
+                    .parse()
+                    .map_err(|_| AppError::Internal(anyhow::anyhow!("Invalid user_id in refresh token")))?;
+
+                let user = state.user_service().get(user_id).await?;
+
+                // Issue new tokens (rotation)
+                let new_identity_token = jwt_manager.create_identity_token_with_session(
+                    *user.id,
+                    &user.email,
+                    user.display_name.as_deref(),
+                    Some(session_id),
+                )?;
+
+                let new_id_token = jwt_manager.create_id_token(
+                    *user.id,
+                    &user.email,
+                    user.display_name.as_deref(),
+                    None, // nonce is only for initial token issuance
+                    &client_id,
+                    Some(session_id),
+                    &new_identity_token,
+                )?;
+
+                let new_refresh_token = jwt_manager.create_oidc_refresh_token(
+                    *user.id,
+                    &client_id,
+                    session_id,
+                )?;
+
+                // Rotate: unbind old, bind new
+                let refresh_ttl = state.config().jwt.refresh_token_ttl_secs.max(1) as u64;
+                state
+                    .cache()
+                    .remove_refresh_token_session(&refresh_token)
+                    .await?;
+                state
+                    .cache()
+                    .bind_refresh_token_session(
+                        &new_refresh_token,
+                        &session_id_str,
+                        refresh_ttl,
+                    )
+                    .await?;
+
+                return Ok(Json(TokenResponse {
+                    access_token: new_identity_token,
+                    token_type: "Bearer".to_string(),
+                    expires_in: jwt_manager.access_token_ttl(),
+                    refresh_token: Some(new_refresh_token),
+                    id_token: Some(new_id_token),
+                })
+                .into_response());
+            }
+
+            // ===== Keycloak backend: exchange refresh token with Keycloak =====
             let state_payload = CallbackState {
                 redirect_uri: String::new(),
                 client_id,

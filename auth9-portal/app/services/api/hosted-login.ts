@@ -127,4 +127,21 @@ export const hostedLoginApi = {
     );
     return handleResponse(response);
   },
+
+  authorizeComplete: async (
+    loginChallengeId: string,
+    accessToken: string
+  ): Promise<{ redirect_url: string }> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/auth/authorize/complete`,
+      {
+        method: "POST",
+        headers: getHeaders(accessToken),
+        body: JSON.stringify({ login_challenge_id: loginChallengeId }),
+      }
+    );
+    const result: { data?: { redirect_url: string }; redirect_url?: string } =
+      await handleResponse(response);
+    return result.data ?? (result as { redirect_url: string });
+  },
 };

@@ -29,6 +29,10 @@ where
         )
         .route("/api/v1/auth/token", post(identity_api::auth::token::<S>))
         .route(
+            "/api/v1/auth/authorize/complete",
+            post(identity_api::auth::authorize_complete::<S>),
+        )
+        .route(
             "/api/v1/auth/logout",
             get(identity_api::auth::logout_redirect::<S>).post(identity_api::auth::logout::<S>),
         )

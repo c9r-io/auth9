@@ -143,6 +143,22 @@ pub trait CacheOperations: Send + Sync {
 
     /// Consume (get + delete) MFA session data
     async fn consume_mfa_session(&self, token: &str) -> Result<Option<String>>;
+
+    // ==================== Login Challenge ====================
+
+    /// Store a login challenge (OIDC authorize → hosted login → authorize_complete)
+    async fn store_login_challenge(&self, id: &str, data: &str, ttl_secs: u64) -> Result<()>;
+
+    /// Consume (get + delete) a login challenge
+    async fn consume_login_challenge(&self, id: &str) -> Result<Option<String>>;
+
+    // ==================== Authorization Code ====================
+
+    /// Store an authorization code (authorize_complete → token endpoint)
+    async fn store_authorization_code(&self, code: &str, data: &str, ttl_secs: u64) -> Result<()>;
+
+    /// Consume (get + delete) an authorization code (one-time use)
+    async fn consume_authorization_code(&self, code: &str) -> Result<Option<String>>;
 }
 
 /// Cache key prefixes
@@ -165,6 +181,8 @@ pub(crate) mod keys {
     pub const TOTP_SETUP: &str = "auth9:totp_setup";
     pub const TOTP_USED: &str = "auth9:totp_used";
     pub const MFA_SESSION: &str = "auth9:mfa_session";
+    pub const LOGIN_CHALLENGE: &str = "auth9:login_challenge";
+    pub const AUTH_CODE: &str = "auth9:auth_code";
 }
 
 /// Default TTLs

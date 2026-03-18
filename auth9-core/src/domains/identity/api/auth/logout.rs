@@ -2,6 +2,7 @@
 
 use super::helpers::build_keycloak_logout_url;
 use crate::cache::CacheOperations;
+use crate::config::IdentityBackend;
 use crate::error::{AppError, Result};
 use crate::state::{HasCache, HasServices, HasSessionManagement};
 use axum::{
@@ -52,6 +53,15 @@ pub async fn logout_redirect<S: HasServices>(
                 "client_id is required when post_logout_redirect_uri is specified".to_string(),
             ));
         }
+    }
+
+    // Auth9-OIDC backend: redirect directly to post_logout_redirect_uri
+    if state.config().identity_backend == IdentityBackend::Auth9Oidc {
+        return if let Some(ref redirect_uri) = params.post_logout_redirect_uri {
+            Ok(Redirect::temporary(redirect_uri).into_response())
+        } else {
+            Ok(axum::http::StatusCode::OK.into_response())
+        };
     }
 
     let logout_url = build_keycloak_logout_url(
@@ -185,6 +195,15 @@ pub async fn logout<S: HasServices + HasSessionManagement + HasCache>(
                 "client_id is required when post_logout_redirect_uri is specified".to_string(),
             ));
         }
+    }
+
+    // Auth9-OIDC backend: redirect directly to post_logout_redirect_uri
+    if state.config().identity_backend == IdentityBackend::Auth9Oidc {
+        return if let Some(ref redirect_uri) = params.post_logout_redirect_uri {
+            Ok(Redirect::temporary(redirect_uri).into_response())
+        } else {
+            Ok(axum::http::StatusCode::OK.into_response())
+        };
     }
 
     let logout_url = build_keycloak_logout_url(

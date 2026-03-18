@@ -194,4 +194,24 @@ impl CacheOperations for CacheManager {
     async fn consume_mfa_session(&self, token: &str) -> Result<Option<String>> {
         CacheManager::consume_mfa_session(self, token).await
     }
+
+    // ==================== Login Challenge ====================
+
+    async fn store_login_challenge(&self, id: &str, data: &str, ttl_secs: u64) -> Result<()> {
+        CacheManager::store_login_challenge(self, id, data, ttl_secs).await
+    }
+
+    async fn consume_login_challenge(&self, id: &str) -> Result<Option<String>> {
+        CacheManager::consume_login_challenge(self, id).await
+    }
+
+    // ==================== Authorization Code ====================
+
+    async fn store_authorization_code(&self, code: &str, data: &str, ttl_secs: u64) -> Result<()> {
+        CacheManager::store_authorization_code(self, code, data, ttl_secs).await
+    }
+
+    async fn consume_authorization_code(&self, code: &str) -> Result<Option<String>> {
+        CacheManager::consume_authorization_code(self, code).await
+    }
 }

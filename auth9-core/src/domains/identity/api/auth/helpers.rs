@@ -4,7 +4,9 @@ use crate::error::{AppError, Result};
 use crate::jwt::IdentityClaims;
 use crate::state::HasServices;
 use axum::http::HeaderMap;
+use base64::Engine;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use url::Url;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -12,6 +14,47 @@ pub(super) struct CallbackState {
     pub redirect_uri: String,
     pub client_id: String,
     pub original_state: Option<String>,
+}
+
+/// Login challenge data stored during authorize → consumed by authorize_complete
+#[derive(Debug, Serialize, Deserialize)]
+pub(super) struct LoginChallengeData {
+    pub client_id: String,
+    pub redirect_uri: String,
+    pub scope: String,
+    pub original_state: Option<String>,
+    pub nonce: Option<String>,
+    pub code_challenge: Option<String>,
+    pub code_challenge_method: Option<String>,
+}
+
+/// Authorization code data stored during authorize_complete → consumed by token endpoint
+#[derive(Debug, Serialize, Deserialize)]
+pub(super) struct AuthorizationCodeData {
+    pub user_id: String,
+    pub email: String,
+    pub display_name: Option<String>,
+    pub session_id: String,
+    pub client_id: String,
+    pub redirect_uri: String,
+    pub scope: String,
+    pub nonce: Option<String>,
+    pub code_challenge: Option<String>,
+    pub code_challenge_method: Option<String>,
+}
+
+/// Authorization code TTL (2 minutes, per OIDC spec recommendation)
+pub(super) const AUTH_CODE_TTL_SECS: u64 = 120;
+
+/// Login challenge TTL (10 minutes, generous for password + MFA flow)
+pub(super) const LOGIN_CHALLENGE_TTL_SECS: u64 = 600;
+
+/// Verify PKCE S256 code_verifier against stored code_challenge.
+/// Returns true if BASE64URL(SHA256(code_verifier)) == code_challenge.
+pub(super) fn verify_pkce_s256(code_verifier: &str, code_challenge: &str) -> bool {
+    let hash = Sha256::digest(code_verifier.as_bytes());
+    let computed = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hash);
+    computed == code_challenge
 }
 
 /// Validate that a redirect URI is allowed for the service
@@ -692,5 +735,98 @@ mod tests {
 
         assert!(!url.contains("code_challenge"));
         assert!(!url.contains("code_challenge_method"));
+    }
+
+    // ==================== PKCE Tests ====================
+
+    #[test]
+    fn test_verify_pkce_s256_correct_verifier() {
+        // RFC 7636 Appendix B test vector
+        let code_verifier = "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"; // pragma: allowlist secret
+        // SHA256 of verifier, base64url-encoded
+        use sha2::{Digest, Sha256};
+        let hash = Sha256::digest(code_verifier.as_bytes());
+        let code_challenge =
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hash);
+
+        assert!(verify_pkce_s256(code_verifier, &code_challenge));
+    }
+
+    #[test]
+    fn test_verify_pkce_s256_wrong_verifier() {
+        let code_verifier = "correct-verifier"; // pragma: allowlist secret
+        use sha2::{Digest, Sha256};
+        let hash = Sha256::digest(code_verifier.as_bytes());
+        let code_challenge =
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(hash);
+
+        assert!(!verify_pkce_s256("wrong-verifier", &code_challenge));
+    }
+
+    #[test]
+    fn test_verify_pkce_s256_empty_verifier() {
+        assert!(!verify_pkce_s256("", "some-challenge"));
+    }
+
+    // ==================== LoginChallengeData / AuthorizationCodeData Tests ====================
+
+    #[test]
+    fn test_login_challenge_data_roundtrip() {
+        let data = LoginChallengeData {
+            client_id: "my-app".to_string(),
+            redirect_uri: "https://app.example.com/callback".to_string(),
+            scope: "openid profile".to_string(),
+            original_state: Some("csrf-state".to_string()),
+            nonce: Some("nonce-123".to_string()),
+            code_challenge: Some("challenge".to_string()),
+            code_challenge_method: Some("S256".to_string()),
+        };
+
+        let json = serde_json::to_string(&data).unwrap();
+        let decoded: LoginChallengeData = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.client_id, "my-app");
+        assert_eq!(decoded.nonce, Some("nonce-123".to_string()));
+        assert_eq!(decoded.code_challenge_method, Some("S256".to_string()));
+    }
+
+    #[test]
+    fn test_login_challenge_data_without_optionals() {
+        let data = LoginChallengeData {
+            client_id: "app".to_string(),
+            redirect_uri: "https://app.example.com/cb".to_string(),
+            scope: "openid".to_string(),
+            original_state: None,
+            nonce: None,
+            code_challenge: None,
+            code_challenge_method: None,
+        };
+
+        let json = serde_json::to_string(&data).unwrap();
+        let decoded: LoginChallengeData = serde_json::from_str(&json).unwrap();
+        assert!(decoded.nonce.is_none());
+        assert!(decoded.code_challenge.is_none());
+    }
+
+    #[test]
+    fn test_authorization_code_data_roundtrip() {
+        let data = AuthorizationCodeData {
+            user_id: "user-123".to_string(),
+            email: "test@example.com".to_string(),
+            display_name: Some("Test User".to_string()),
+            session_id: "session-456".to_string(),
+            client_id: "my-app".to_string(),
+            redirect_uri: "https://app.example.com/callback".to_string(),
+            scope: "openid profile".to_string(),
+            nonce: Some("nonce-789".to_string()),
+            code_challenge: Some("challenge-abc".to_string()),
+            code_challenge_method: Some("S256".to_string()),
+        };
+
+        let json = serde_json::to_string(&data).unwrap();
+        let decoded: AuthorizationCodeData = serde_json::from_str(&json).unwrap();
+        assert_eq!(decoded.user_id, "user-123");
+        assert_eq!(decoded.email, "test@example.com");
+        assert_eq!(decoded.session_id, "session-456");
+        assert_eq!(decoded.nonce, Some("nonce-789".to_string()));
     }
 }

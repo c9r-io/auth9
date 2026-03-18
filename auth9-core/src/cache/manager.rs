@@ -583,6 +583,54 @@ impl CacheManager {
             .map_err(AppError::from)
     }
 
+    // ==================== Login Challenge ====================
+
+    pub async fn store_login_challenge(
+        &self,
+        id: &str,
+        data: &str,
+        ttl_secs: u64,
+    ) -> Result<()> {
+        let key = format!("{}:{}", keys::LOGIN_CHALLENGE, id);
+        let mut conn = self.conn.clone();
+        let _: () = conn.set_ex(&key, data, ttl_secs).await?;
+        Ok(())
+    }
+
+    pub async fn consume_login_challenge(&self, id: &str) -> Result<Option<String>> {
+        let key = format!("{}:{}", keys::LOGIN_CHALLENGE, id);
+        let mut conn = self.conn.clone();
+        redis::cmd("GETDEL")
+            .arg(&key)
+            .query_async(&mut conn)
+            .await
+            .map_err(AppError::from)
+    }
+
+    // ==================== Authorization Code ====================
+
+    pub async fn store_authorization_code(
+        &self,
+        code: &str,
+        data: &str,
+        ttl_secs: u64,
+    ) -> Result<()> {
+        let key = format!("{}:{}", keys::AUTH_CODE, code);
+        let mut conn = self.conn.clone();
+        let _: () = conn.set_ex(&key, data, ttl_secs).await?;
+        Ok(())
+    }
+
+    pub async fn consume_authorization_code(&self, code: &str) -> Result<Option<String>> {
+        let key = format!("{}:{}", keys::AUTH_CODE, code);
+        let mut conn = self.conn.clone();
+        redis::cmd("GETDEL")
+            .arg(&key)
+            .query_async(&mut conn)
+            .await
+            .map_err(AppError::from)
+    }
+
     /// Atomically check if a webhook event key exists and set it if not (SETNX).
     /// Returns true if the event was already processed (duplicate).
     pub async fn check_and_mark_webhook_event(
