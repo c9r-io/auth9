@@ -69,6 +69,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
         config.clientSecret = String(formData.get("client_secret") || "").trim();
         config.authorizationUrl = String(formData.get("authorization_url") || "").trim();
         config.tokenUrl = String(formData.get("token_url") || "").trim();
+        config.userInfoUrl = String(formData.get("userinfo_url") || "").trim();
       }
 
       await tenantSsoApi.create(
@@ -213,6 +214,10 @@ export default function TenantSsoPage() {
                 <div className="space-y-2">
                   <Label htmlFor="token_url">{t("tenants.sso.oidcTokenUrl")}</Label>
                   <Input id="token_url" name="token_url" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="userinfo_url">{t("tenants.sso.oidcUserInfoUrl")}</Label>
+                  <Input id="userinfo_url" name="userinfo_url" />
                 </div>
               </>
             )}

@@ -246,6 +246,14 @@ documents:
     has_entry_visibility: false
     has_checklist: true
     last_reviewed: 2026-03-17
+  - id: auth/26-enterprise-oidc-broker
+    path: docs/qa/auth/26-enterprise-oidc-broker.md
+    module: auth
+    scenarios: 5
+    has_ui_flow: false
+    has_entry_visibility: false
+    has_checklist: true
+    last_reviewed: 2026-03-18
   - id: identity-provider/01-crud
     path: docs/qa/identity-provider/01-crud.md
     module: identity-provider

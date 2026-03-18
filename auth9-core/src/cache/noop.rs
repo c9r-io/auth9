@@ -368,6 +368,29 @@ impl NoOpCacheManager {
             .remove(&format!("social_state:{}", id)))
     }
 
+    // ==================== Enterprise SSO State ====================
+
+    pub async fn store_enterprise_sso_state(
+        &self,
+        id: &str,
+        data: &str,
+        _ttl_secs: u64,
+    ) -> Result<()> {
+        self.oidc_states
+            .write()
+            .await
+            .insert(format!("enterprise_sso_state:{}", id), data.to_string());
+        Ok(())
+    }
+
+    pub async fn consume_enterprise_sso_state(&self, id: &str) -> Result<Option<String>> {
+        Ok(self
+            .oidc_states
+            .write()
+            .await
+            .remove(&format!("enterprise_sso_state:{}", id)))
+    }
+
     // ==================== Audience Validation ====================
 
     pub async fn is_valid_audience(&self, client_id: &str) -> Result<bool> {

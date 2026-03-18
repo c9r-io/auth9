@@ -906,6 +906,7 @@ export default {
       oidcClientSecret: "OIDC Client Secret", // pragma: allowlist secret
       oidcAuthorizationUrl: "OIDC Authorization URL",
       oidcTokenUrl: "OIDC Token URL",
+      oidcUserInfoUrl: "OIDC UserInfo URL",
       createConnector: "Create Connector",
       configuredTitle: "Configured Connectors",
       configuredDescription: "Manage availability and validate tenant routing connectors.",

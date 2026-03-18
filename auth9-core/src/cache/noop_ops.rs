@@ -235,6 +235,21 @@ impl CacheOperations for NoOpCacheManager {
         NoOpCacheManager::consume_social_login_state(self, id).await
     }
 
+    // ==================== Enterprise SSO State ====================
+
+    async fn store_enterprise_sso_state(
+        &self,
+        id: &str,
+        data: &str,
+        ttl_secs: u64,
+    ) -> Result<()> {
+        NoOpCacheManager::store_enterprise_sso_state(self, id, data, ttl_secs).await
+    }
+
+    async fn consume_enterprise_sso_state(&self, id: &str) -> Result<Option<String>> {
+        NoOpCacheManager::consume_enterprise_sso_state(self, id).await
+    }
+
     // ==================== Audience Validation ====================
 
     async fn is_valid_audience(&self, client_id: &str) -> Result<bool> {

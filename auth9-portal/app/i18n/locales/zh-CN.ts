@@ -903,6 +903,7 @@ export default {
       oidcClientSecret: "OIDC Client Secret", // pragma: allowlist secret
       oidcAuthorizationUrl: "OIDC Authorization URL",
       oidcTokenUrl: "OIDC Token URL",
+      oidcUserInfoUrl: "OIDC UserInfo URL",
       createConnector: "创建连接器",
       configuredTitle: "已配置连接器",
       configuredDescription: "管理可用性并验证租户路由连接器。",

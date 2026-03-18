@@ -173,6 +173,19 @@ pub trait CacheOperations: Send + Sync {
     /// Consume (get + delete) a social login state
     async fn consume_social_login_state(&self, id: &str) -> Result<Option<String>>;
 
+    // ==================== Enterprise SSO State ====================
+
+    /// Store enterprise SSO login state (enterprise authorize → IdP → callback)
+    async fn store_enterprise_sso_state(
+        &self,
+        id: &str,
+        data: &str,
+        ttl_secs: u64,
+    ) -> Result<()>;
+
+    /// Consume (get + delete) an enterprise SSO login state
+    async fn consume_enterprise_sso_state(&self, id: &str) -> Result<Option<String>>;
+
     // ==================== Audience Validation ====================
 
     /// Check if a client_id is a registered audience (SISMEMBER on Redis SET).
@@ -211,6 +224,7 @@ pub(crate) mod keys {
     pub const LOGIN_CHALLENGE: &str = "auth9:login_challenge";
     pub const AUTH_CODE: &str = "auth9:auth_code";
     pub const SOCIAL_STATE: &str = "auth9:social_state";
+    pub const ENTERPRISE_SSO_STATE: &str = "auth9:enterprise_sso_state";
     pub const VALID_AUDIENCES: &str = "auth9:valid_audiences";
 }
 

@@ -88,7 +88,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (22 个文档, 102 个场景)
+### 认证流程 (23 个文档, 107 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 4 |
@@ -116,6 +116,7 @@
 | [auth/23-required-actions.md](./auth/23-required-actions.md) | Required Actions 与登录后跳转（Pending Actions API、Force Password、Complete Profile） | 5 |
 | [auth/24-mfa-totp-recovery.md](./auth/24-mfa-totp-recovery.md) | MFA 本地化（TOTP 注册/验证/重放防护、Recovery Code 生成/消费、MFA 登录挑战、Session 过期） | 5 |
 | [auth/25-auth9-oidc-local-token-issuance.md](./auth/25-auth9-oidc-local-token-issuance.md) | Auth9 本地 OIDC Token 签发（授权码流程、Code Replay、PKCE 验证、Refresh 轮转、ID Token Claims） | 5 |
+| [auth/26-enterprise-oidc-broker.md](./auth/26-enterprise-oidc-broker.md) | 企业 OIDC Broker 原生登录（OIDC 连接器 CRUD 不触发 Keycloak、userInfoUrl 必填、Auth9 broker 路由、claim mapping） | 5 |
 
 ### 系统设置 (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
@@ -252,6 +253,7 @@
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-03-18 | 5.23.0 | **Phase 4 FR2 Enterprise OIDC Connector**：新增 `auth/26-enterprise-oidc-broker.md`（5 场景），覆盖 OIDC 连接器 CRUD 不触发 Keycloak IDP、userInfoUrl 必填验证、Auth9 原生 broker 路由、endpoint 可达性测试、Discovery 返回 Auth9 broker URL；更新 `auth/09-enterprise-sso-discovery.md` 的场景 1/5 预期（OIDC 使用 Auth9 broker 而非 Keycloak kc_idp_hint）；认证 23 文档 107 场景；总计 123 文档 578 场景 |
 | 2026-03-18 | 5.22.0 | **Phase 3 总控 FR 文档治理与闭环**：跨文档修复 `security/authentication/03-mfa-security.md` 背景说明（Keycloak→Auth9 本地 MFA）及 Recovery Code 检查清单；修复 `security/authentication/04-password-security.md` 背景说明（Keycloak→Auth9 本地密码管理）；修复 `integration/20-local-credential-store.md` migration 文件数（3→4）和测试数（32→39）；修复 `auth/20-hosted-login-api.md` 场景 5 auth9_oidc 预期（501→200 正常响应）；总计 122 文档 573 场景 |
 | 2026-03-18 | 5.21.0 | **Phase 3 FR5 Token Issuance 与 FR4 MFA 本地化**：新增 `auth/24-mfa-totp-recovery.md`（5 场景）、`auth/25-auth9-oidc-local-token-issuance.md`（5 场景），覆盖 TOTP 注册/验证/重放防护、Recovery Code 生成/消费、MFA 登录挑战、授权码完整流程、Code Replay、PKCE 验证、Refresh 轮转、ID Token Claims；认证 22 文档 102 场景；总计 122 文档 573 场景 |
 | 2026-03-18 | 5.20.0 | **Phase 3 FR3 邮箱验证与 Required Actions 本地化**：新增 `auth/22-email-verification.md`（5 场景）、`auth/23-required-actions.md`（5 场景）、`integration/21-email-verification-required-actions.md`（5 场景）；跨文档更新 `auth/20-hosted-login-api.md` 端点列表；修复 Identity Token 白名单缺失 pending-actions/complete-action 端点 bug；修复 auth9-oidc 启动时自动建表（Dockerfile + db.rs）；认证 22 文档 102 场景、集成 20 文档 91 场景；总计 122 文档 573 场景 |

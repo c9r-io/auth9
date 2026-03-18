@@ -95,6 +95,15 @@ where
             "/api/v1/hosted-login/verify-email",
             post(identity_api::email_verification::verify_email::<S>),
         )
+        // Enterprise SSO OIDC broker
+        .route(
+            "/api/v1/enterprise-sso/authorize/{alias}",
+            get(identity_api::enterprise_broker::authorize::<S>),
+        )
+        .route(
+            "/api/v1/enterprise-sso/callback",
+            get(identity_api::enterprise_broker::callback::<S>),
+        )
         // Social login broker
         .route(
             "/api/v1/social-login/providers",

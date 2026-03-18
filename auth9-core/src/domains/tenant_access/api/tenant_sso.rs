@@ -77,23 +77,26 @@ pub async fn create_connector<S: HasServices + HasDbPool>(
     let alias = input.alias.trim().to_lowercase();
     let provider_alias = format!("{}--{}", tenant.slug, alias);
 
-    let identity_provider = IdentityProviderRepresentation {
-        alias: provider_alias.clone(),
-        display_name: input.display_name.clone(),
-        provider_id: provider_type.clone(),
-        enabled: input.enabled,
-        trust_email: false,
-        store_token: false,
-        link_only: false,
-        first_broker_login_flow_alias: None,
-        config: config.clone(),
-        extra: HashMap::new(),
-    };
-    state
-        .identity_engine()
-        .federation_broker()
-        .create_identity_provider(&identity_provider)
-        .await?;
+    // Only create Keycloak IDP for SAML connectors; OIDC connectors are handled natively by Auth9
+    if provider_type == "saml" {
+        let identity_provider = IdentityProviderRepresentation {
+            alias: provider_alias.clone(),
+            display_name: input.display_name.clone(),
+            provider_id: provider_type.clone(),
+            enabled: input.enabled,
+            trust_email: false,
+            store_token: false,
+            link_only: false,
+            first_broker_login_flow_alias: None,
+            config: config.clone(),
+            extra: HashMap::new(),
+        };
+        state
+            .identity_engine()
+            .federation_broker()
+            .create_identity_provider(&identity_provider)
+            .await?;
+    }
 
     let connector_id = StringUuid::new_v4();
     let insert_result = insert_connector(
@@ -112,11 +115,13 @@ pub async fn create_connector<S: HasServices + HasDbPool>(
     .await;
 
     if let Err(e) = insert_result {
-        let _ = state
-            .identity_engine()
-            .federation_broker()
-            .delete_identity_provider(&provider_alias)
-            .await;
+        if provider_type == "saml" {
+            let _ = state
+                .identity_engine()
+                .federation_broker()
+                .delete_identity_provider(&provider_alias)
+                .await;
+        }
         return Err(e);
     }
 
@@ -173,23 +178,26 @@ pub async fn update_connector<S: HasServices + HasDbPool>(
     let priority = input.priority.unwrap_or(before.priority);
     let display_name = input.display_name.or(before.display_name.clone());
 
-    let identity_provider = IdentityProviderRepresentation {
-        alias: before.provider_alias.clone(),
-        display_name: display_name.clone(),
-        provider_id: before.provider_type.clone(),
-        enabled,
-        trust_email: false,
-        store_token: false,
-        link_only: false,
-        first_broker_login_flow_alias: None,
-        config: config.clone(),
-        extra: HashMap::new(),
-    };
-    state
-        .identity_engine()
-        .federation_broker()
-        .update_identity_provider(&before.provider_alias, &identity_provider)
-        .await?;
+    // Only update Keycloak IDP for SAML connectors; OIDC connectors are handled natively
+    if before.provider_type == "saml" {
+        let identity_provider = IdentityProviderRepresentation {
+            alias: before.provider_alias.clone(),
+            display_name: display_name.clone(),
+            provider_id: before.provider_type.clone(),
+            enabled,
+            trust_email: false,
+            store_token: false,
+            link_only: false,
+            first_broker_login_flow_alias: None,
+            config: config.clone(),
+            extra: HashMap::new(),
+        };
+        state
+            .identity_engine()
+            .federation_broker()
+            .update_identity_provider(&before.provider_alias, &identity_provider)
+            .await?;
+    }
 
     let mut tx = state.db_pool().begin().await?;
     sqlx::query(
@@ -266,11 +274,14 @@ pub async fn delete_connector<S: HasServices + HasDbPool>(
     let before =
         get_connector_by_id(state.db_pool(), tenant_id, StringUuid::from(connector_id)).await?;
 
-    state
-        .identity_engine()
-        .federation_broker()
-        .delete_identity_provider(&before.provider_alias)
-        .await?;
+    // Only delete Keycloak IDP for SAML connectors; OIDC connectors have no Keycloak IDP
+    if before.provider_type == "saml" {
+        state
+            .identity_engine()
+            .federation_broker()
+            .delete_identity_provider(&before.provider_alias)
+            .await?;
+    }
 
     let mut tx = state.db_pool().begin().await?;
     sqlx::query("DELETE FROM scim_group_role_mappings WHERE connector_id = ?")
@@ -326,20 +337,58 @@ pub async fn test_connector<S: HasServices + HasDbPool>(
     let connector =
         get_connector_by_id(state.db_pool(), tenant_id, StringUuid::from(connector_id)).await?;
 
-    let result = match state
-        .identity_engine()
-        .federation_broker()
-        .get_identity_provider(&connector.provider_alias)
-        .await
-    {
-        Ok(_) => ConnectorTestResult {
-            ok: true,
-            message: "Connector is available in Keycloak.".to_string(),
-        },
-        Err(err) => ConnectorTestResult {
-            ok: false,
-            message: format!("Connector check failed: {}", err),
-        },
+    let result = if connector.provider_type == "oidc" {
+        // OIDC: test actual endpoint reachability
+        let auth_url = connector.config.get("authorizationUrl").cloned().unwrap_or_default();
+        if auth_url.is_empty() {
+            ConnectorTestResult {
+                ok: false,
+                message: "Missing authorizationUrl in connector config.".to_string(),
+            }
+        } else {
+            match reqwest::Client::new()
+                .get(&auth_url)
+                .timeout(std::time::Duration::from_secs(10))
+                .send()
+                .await
+            {
+                Ok(resp) if resp.status().is_success() || resp.status().is_redirection() || resp.status().as_u16() == 400 => {
+                    // 400 is expected when hitting an OIDC authorize endpoint without params
+                    ConnectorTestResult {
+                        ok: true,
+                        message: "OIDC authorization endpoint is reachable.".to_string(),
+                    }
+                }
+                Ok(resp) => ConnectorTestResult {
+                    ok: false,
+                    message: format!(
+                        "OIDC authorization endpoint returned unexpected status: {}",
+                        resp.status()
+                    ),
+                },
+                Err(err) => ConnectorTestResult {
+                    ok: false,
+                    message: format!("OIDC authorization endpoint unreachable: {}", err),
+                },
+            }
+        }
+    } else {
+        // SAML: check Keycloak IDP
+        match state
+            .identity_engine()
+            .federation_broker()
+            .get_identity_provider(&connector.provider_alias)
+            .await
+        {
+            Ok(_) => ConnectorTestResult {
+                ok: true,
+                message: "Connector is available in Keycloak.".to_string(),
+            },
+            Err(err) => ConnectorTestResult {
+                ok: false,
+                message: format!("Connector check failed: {}", err),
+            },
+        }
     };
 
     let _ = write_audit_log_generic(
@@ -544,7 +593,7 @@ fn normalize_config(
 fn validate_required_config(provider_type: &str, config: &HashMap<String, String>) -> Result<()> {
     let required: &[&str] = match provider_type {
         "saml" => &["entityId", "singleSignOnServiceUrl", "signingCertificate"],
-        "oidc" => &["clientId", "clientSecret", "authorizationUrl", "tokenUrl"],
+        "oidc" => &["clientId", "clientSecret", "authorizationUrl", "tokenUrl", "userInfoUrl"],
         _ => &[],
     };
     let missing: Vec<&str> = required
@@ -824,6 +873,10 @@ mod tests {
                 "tokenUrl".to_string(),
                 "https://idp.example.com/token".to_string(),
             ),
+            (
+                "userInfoUrl".to_string(),
+                "https://idp.example.com/userinfo".to_string(),
+            ),
         ]);
         assert!(validate_required_config("oidc", &config).is_ok());
     }
@@ -837,6 +890,7 @@ mod tests {
                 assert!(msg.contains("clientSecret"));
                 assert!(msg.contains("authorizationUrl"));
                 assert!(msg.contains("tokenUrl"));
+                assert!(msg.contains("userInfoUrl"));
             }
             _ => panic!("Expected Validation error"),
         }
