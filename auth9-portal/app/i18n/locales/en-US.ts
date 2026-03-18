@@ -21,6 +21,9 @@ export default {
       back: "Back",
       edit: "Edit",
       close: "Close",
+      updatePassword: "Update password", // pragma: allowlist secret
+      updating: "Updating...",
+      saving: "Saving...",
     },
     labels: {
       email: "Email",
@@ -232,6 +235,35 @@ export default {
       pendingIntegration: "Hosted MFA verification is not connected yet. Use the compatibility flow if your tenant still prompts through Keycloak.",
       submit: "Continue",
       verifying: "Checking...",
+    },
+    verifyEmail: {
+      metaTitle: "Verify Email - Auth9",
+      panelTitle: "Verify your email address",
+      panelDescription: "Click the link in the email we sent to verify your account.",
+      successTitle: "Email verified",
+      successDescription: "Your email address has been verified. You can now sign in.",
+      errorTitle: "Verification failed",
+      invalidToken: "Invalid or missing verification token.",
+      expiredToken: "This verification link has expired or has already been used.",
+    },
+    forceUpdatePassword: {
+      metaTitle: "Update Password - Auth9",
+      panelTitle: "Password update required",
+      panelDescription: "Your administrator requires you to set a new password before continuing.",
+      title: "Update your password",
+      description: "Please choose a new password to continue.",
+      passwordHint: "Must be at least 12 characters with uppercase, lowercase, numbers, and symbols", // pragma: allowlist secret
+      passwordRequired: "Password is required.", // pragma: allowlist secret
+      passwordMismatch: "Passwords do not match.", // pragma: allowlist secret
+    },
+    completeProfile: {
+      metaTitle: "Complete Profile - Auth9",
+      panelTitle: "Complete your profile",
+      panelDescription: "Please provide the required information to continue.",
+      title: "Complete your profile",
+      description: "Tell us a bit about yourself to get started.",
+      nameRequired: "Display name is required.",
+      displayNamePlaceholder: "Your name",
     },
   },
   dashboard: {

@@ -9,7 +9,10 @@ use crate::cache::CacheOperations;
 use crate::error::{AppError, Result};
 use crate::http_support::{write_audit_log_generic, MessageResponse};
 use crate::models::password::{ForgotPasswordInput, ResetPasswordInput};
-use crate::state::{HasCache, HasPasswordManagement, HasServices, HasSessionManagement};
+use crate::domains::identity::service::required_actions::PendingActionResponse;
+use crate::state::{
+    HasCache, HasPasswordManagement, HasRequiredActions, HasServices, HasSessionManagement,
+};
 use axum::{extract::State, http::HeaderMap, Json};
 use axum_extra::headers::{authorization::Bearer, Authorization};
 use axum_extra::TypedHeader;
@@ -30,6 +33,8 @@ pub struct HostedLoginTokenResponse {
     pub access_token: String,
     pub token_type: String,
     pub expires_in: i64,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub pending_actions: Vec<PendingActionResponse>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -70,7 +75,7 @@ fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
 /// Authenticate with email and password, returning an identity token directly.
 ///
 /// POST /api/v1/hosted-login/password
-pub async fn password_login<S: HasServices + HasSessionManagement + HasCache>(
+pub async fn password_login<S: HasServices + HasSessionManagement + HasCache + HasRequiredActions>(
     State(state): State<S>,
     headers: HeaderMap,
     Json(input): Json<HostedLoginPasswordRequest>,
@@ -149,6 +154,19 @@ pub async fn password_login<S: HasServices + HasSessionManagement + HasCache>(
     )
     .await;
 
+    // Check for pending required actions
+    let pending_actions = match state
+        .required_actions_service()
+        .check_post_login_actions(&user.identity_subject)
+        .await
+    {
+        Ok(actions) => actions,
+        Err(e) => {
+            tracing::warn!(error = %e, "Failed to check pending actions, proceeding without");
+            Vec::new()
+        }
+    };
+
     metrics::counter!("auth9_auth_login_total", "result" => "success", "backend" => "hosted").increment(1);
     metrics::histogram!("auth9_hosted_login_duration_seconds", "method" => "password").record(start.elapsed().as_secs_f64());
 
@@ -156,6 +174,7 @@ pub async fn password_login<S: HasServices + HasSessionManagement + HasCache>(
         access_token: identity_token,
         token_type: "Bearer".to_string(),
         expires_in: jwt_manager.access_token_ttl(),
+        pending_actions,
     }))
 }
 
@@ -320,9 +339,12 @@ mod tests {
             access_token: "tok".to_string(),
             token_type: "Bearer".to_string(),
             expires_in: 3600,
+            pending_actions: Vec::new(),
         };
         let json = serde_json::to_value(&response).unwrap();
         assert_eq!(json["token_type"], "Bearer");
+        // pending_actions is skipped when empty
+        assert!(json.get("pending_actions").is_none());
     }
 
     #[test]

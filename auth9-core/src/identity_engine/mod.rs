@@ -9,7 +9,7 @@ pub use types::{
     FederatedIdentityRepresentation, IdentityCredentialInput, IdentityCredentialRepresentation,
     IdentityProtocolMapperRepresentation, IdentityProviderRepresentation,
     IdentitySamlClientRepresentation, IdentityUserCreateInput, IdentityUserRepresentation,
-    IdentityUserUpdateInput,
+    IdentityUserUpdateInput, PendingActionInfo, VerificationTokenInfo,
 };
 
 /// User lifecycle operations for an identity backend.
@@ -105,6 +105,36 @@ pub trait FederationBroker: Send + Sync {
     ) -> Result<()>;
 }
 
+/// Pending action lifecycle operations for an identity backend.
+#[async_trait]
+pub trait IdentityActionStore: Send + Sync {
+    async fn get_pending_actions(&self, user_id: &str) -> Result<Vec<PendingActionInfo>>;
+    async fn create_action(
+        &self,
+        user_id: &str,
+        action_type: &str,
+        metadata: Option<serde_json::Value>,
+    ) -> Result<String>;
+    async fn complete_action(&self, action_id: &str) -> Result<()>;
+    async fn cancel_action(&self, action_id: &str) -> Result<()>;
+}
+
+/// Email verification operations for an identity backend.
+#[async_trait]
+pub trait IdentityVerificationStore: Send + Sync {
+    async fn get_verification_status(&self, user_id: &str) -> Result<bool>;
+    async fn set_email_verified(&self, user_id: &str, verified: bool) -> Result<()>;
+    async fn create_verification_token(
+        &self,
+        user_id: &str,
+        token_hash: &str,
+        expires_at: chrono::DateTime<chrono::Utc>,
+    ) -> Result<VerificationTokenInfo>;
+    async fn find_valid_token(&self, token_hash: &str) -> Result<Option<VerificationTokenInfo>>;
+    async fn mark_token_used(&self, token_id: &str) -> Result<()>;
+    async fn invalidate_user_tokens(&self, user_id: &str) -> Result<u64>;
+}
+
 /// Event ingestion surface for an identity backend.
 #[async_trait]
 pub trait IdentityEventSource: Send + Sync {}
@@ -118,6 +148,8 @@ pub trait IdentityEngine: Send + Sync {
     fn credential_store(&self) -> &dyn IdentityCredentialStore;
     fn federation_broker(&self) -> &dyn FederationBroker;
     fn event_source(&self) -> &dyn IdentityEventSource;
+    fn action_store(&self) -> &dyn IdentityActionStore;
+    fn verification_store(&self) -> &dyn IdentityVerificationStore;
 
     async fn update_realm(&self, settings: &RealmUpdate) -> Result<()>;
 }
@@ -153,5 +185,7 @@ mod tests {
         let _ = engine.credential_store();
         let _ = engine.federation_broker();
         let _ = engine.event_source();
+        let _ = engine.action_store();
+        let _ = engine.verification_store();
     }
 }

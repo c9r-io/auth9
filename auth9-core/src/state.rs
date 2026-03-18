@@ -8,7 +8,8 @@ use crate::cache::CacheOperations;
 use crate::config::Config;
 use crate::domains::authorization::service::{ClientService, RbacService};
 use crate::domains::identity::service::{
-    IdentityProviderService, PasswordService, SessionService, WebAuthnService,
+    EmailVerificationService, IdentityProviderService, PasswordService, RequiredActionService,
+    SessionService, WebAuthnService,
 };
 use crate::domains::integration::service::{ActionService, WebhookService};
 use crate::domains::platform::service::{
@@ -337,4 +338,16 @@ pub trait HasCache: Clone + Send + Sync + 'static {
 
     /// Get the cache manager
     fn cache(&self) -> &Self::Cache;
+}
+
+/// Trait for states that provide email verification services
+pub trait HasEmailVerification: Clone + Send + Sync + 'static {
+    /// Get the email verification service
+    fn email_verification_service(&self) -> &EmailVerificationService;
+}
+
+/// Trait for states that provide required actions services
+pub trait HasRequiredActions: Clone + Send + Sync + 'static {
+    /// Get the required actions service
+    fn required_actions_service(&self) -> &RequiredActionService;
 }

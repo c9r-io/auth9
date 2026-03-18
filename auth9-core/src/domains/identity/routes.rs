@@ -73,6 +73,15 @@ where
             "/api/v1/hosted-login/complete-password-reset",
             post(identity_api::hosted_login::complete_password_reset::<S>),
         )
+        // Email verification
+        .route(
+            "/api/v1/hosted-login/send-verification",
+            post(identity_api::email_verification::send_verification::<S>),
+        )
+        .route(
+            "/api/v1/hosted-login/verify-email",
+            post(identity_api::email_verification::verify_email::<S>),
+        )
 }
 
 pub fn protected_routes<S>() -> Router<S>
@@ -152,5 +161,14 @@ where
         .route(
             "/api/v1/users/me/linked-identities/{id}",
             delete(identity_api::identity_provider::unlink_identity::<S>),
+        )
+        // Required actions
+        .route(
+            "/api/v1/hosted-login/pending-actions",
+            get(identity_api::required_actions::get_pending_actions::<S>),
+        )
+        .route(
+            "/api/v1/hosted-login/complete-action",
+            post(identity_api::required_actions::complete_action::<S>),
         )
 }

@@ -1,10 +1,10 @@
 use super::{Auth9OidcFederationBrokerAdapter, Auth9OidcSessionStoreAdapter};
 use crate::error::{AppError, Result};
 use crate::identity_engine::{
-    FederationBroker, IdentityClientStore, IdentityCredentialRepresentation,
+    FederationBroker, IdentityActionStore, IdentityClientStore, IdentityCredentialRepresentation,
     IdentityCredentialStore, IdentityEngine, IdentityEventSource, IdentitySamlClientRepresentation,
     IdentitySessionStore, IdentityUserCreateInput, IdentityUserRepresentation, IdentityUserStore,
-    IdentityUserUpdateInput,
+    IdentityUserUpdateInput, IdentityVerificationStore, PendingActionInfo, VerificationTokenInfo,
 };
 use crate::keycloak::{KeycloakOidcClient, RealmUpdate};
 use anyhow::anyhow;
@@ -13,6 +13,7 @@ use argon2::{
     Argon2,
 };
 use async_trait::async_trait;
+use chrono::{DateTime, Utc};
 use sqlx::MySqlPool;
 
 struct Auth9OidcUserStore {
@@ -278,6 +279,226 @@ impl IdentityCredentialStore for Auth9OidcCredentialStore {
     }
 }
 
+struct Auth9OidcActionStore {
+    pool: MySqlPool,
+}
+
+impl Auth9OidcActionStore {
+    fn new(pool: MySqlPool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl IdentityActionStore for Auth9OidcActionStore {
+    async fn get_pending_actions(&self, user_id: &str) -> Result<Vec<PendingActionInfo>> {
+        let rows = sqlx::query(
+            "SELECT id, action_type, metadata, created_at FROM pending_actions WHERE user_id = ? AND status = 'pending'",
+        )
+        .bind(user_id)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to query pending actions: {}", e)))?;
+
+        use sqlx::Row;
+        let mut actions = Vec::with_capacity(rows.len());
+        for row in &rows {
+            actions.push(PendingActionInfo {
+                id: row.try_get("id").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+                action_type: row.try_get("action_type").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+                metadata: row.try_get("metadata").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+                created_at: row.try_get("created_at").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+            });
+        }
+        Ok(actions)
+    }
+
+    async fn create_action(
+        &self,
+        user_id: &str,
+        action_type: &str,
+        metadata: Option<serde_json::Value>,
+    ) -> Result<String> {
+        let id = uuid::Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT INTO pending_actions (id, user_id, action_type, metadata) VALUES (?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(user_id)
+        .bind(action_type)
+        .bind(&metadata)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to create pending action: {}", e)))?;
+
+        Ok(id)
+    }
+
+    async fn complete_action(&self, action_id: &str) -> Result<()> {
+        let result = sqlx::query(
+            "UPDATE pending_actions SET status = 'completed', completed_at = NOW() WHERE id = ? AND status = 'pending'",
+        )
+        .bind(action_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to complete action: {}", e)))?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound(format!(
+                "pending action '{}' not found or already completed",
+                action_id
+            )));
+        }
+        Ok(())
+    }
+
+    async fn cancel_action(&self, action_id: &str) -> Result<()> {
+        let result = sqlx::query(
+            "UPDATE pending_actions SET status = 'cancelled', completed_at = NOW() WHERE id = ? AND status = 'pending'",
+        )
+        .bind(action_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to cancel action: {}", e)))?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound(format!(
+                "pending action '{}' not found or already completed",
+                action_id
+            )));
+        }
+        Ok(())
+    }
+}
+
+struct Auth9OidcVerificationStore {
+    pool: MySqlPool,
+}
+
+impl Auth9OidcVerificationStore {
+    fn new(pool: MySqlPool) -> Self {
+        Self { pool }
+    }
+}
+
+#[async_trait]
+impl IdentityVerificationStore for Auth9OidcVerificationStore {
+    async fn get_verification_status(&self, user_id: &str) -> Result<bool> {
+        // Upsert then read
+        sqlx::query(
+            "INSERT IGNORE INTO user_verification_status (user_id, email_verified) VALUES (?, 0)",
+        )
+        .bind(user_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to upsert verification status: {}", e)))?;
+
+        let row: (i8,) = sqlx::query_as(
+            "SELECT email_verified FROM user_verification_status WHERE user_id = ?",
+        )
+        .bind(user_id)
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to query verification status: {}", e)))?;
+
+        Ok(row.0 != 0)
+    }
+
+    async fn set_email_verified(&self, user_id: &str, verified: bool) -> Result<()> {
+        let email_verified_at = if verified { "NOW()" } else { "NULL" };
+        let query = format!(
+            "UPDATE user_verification_status SET email_verified = ?, email_verified_at = {} WHERE user_id = ?",
+            email_verified_at
+        );
+        sqlx::query(&query)
+            .bind(verified as i8)
+            .bind(user_id)
+            .execute(&self.pool)
+            .await
+            .map_err(|e| AppError::Internal(anyhow!("failed to update verification status: {}", e)))?;
+        Ok(())
+    }
+
+    async fn create_verification_token(
+        &self,
+        user_id: &str,
+        token_hash: &str,
+        expires_at: DateTime<Utc>,
+    ) -> Result<VerificationTokenInfo> {
+        let id = uuid::Uuid::new_v4().to_string();
+        sqlx::query(
+            "INSERT INTO email_verification_tokens (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)",
+        )
+        .bind(&id)
+        .bind(user_id)
+        .bind(token_hash)
+        .bind(expires_at)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to create verification token: {}", e)))?;
+
+        Ok(VerificationTokenInfo {
+            id,
+            user_id: user_id.to_string(),
+            expires_at,
+            used_at: None,
+            created_at: Utc::now(),
+        })
+    }
+
+    async fn find_valid_token(&self, token_hash: &str) -> Result<Option<VerificationTokenInfo>> {
+        use sqlx::Row;
+        let row = sqlx::query(
+            "SELECT id, user_id, expires_at, used_at, created_at FROM email_verification_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW()",
+        )
+        .bind(token_hash)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to query verification token: {}", e)))?;
+
+        match row {
+            Some(r) => Ok(Some(VerificationTokenInfo {
+                id: r.try_get("id").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+                user_id: r.try_get("user_id").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+                expires_at: r.try_get("expires_at").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+                used_at: r.try_get("used_at").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+                created_at: r.try_get("created_at").map_err(|e| AppError::Internal(anyhow!("{}", e)))?,
+            })),
+            None => Ok(None),
+        }
+    }
+
+    async fn mark_token_used(&self, token_id: &str) -> Result<()> {
+        let result = sqlx::query(
+            "UPDATE email_verification_tokens SET used_at = NOW() WHERE id = ? AND used_at IS NULL",
+        )
+        .bind(token_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to mark token used: {}", e)))?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound(format!(
+                "verification token '{}' not found or already used",
+                token_id
+            )));
+        }
+        Ok(())
+    }
+
+    async fn invalidate_user_tokens(&self, user_id: &str) -> Result<u64> {
+        let result = sqlx::query(
+            "UPDATE email_verification_tokens SET used_at = NOW() WHERE user_id = ? AND used_at IS NULL",
+        )
+        .bind(user_id)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| AppError::Internal(anyhow!("failed to invalidate user tokens: {}", e)))?;
+
+        Ok(result.rows_affected())
+    }
+}
+
 #[derive(Default)]
 struct Auth9OidcEventSource;
 
@@ -291,17 +512,21 @@ pub struct Auth9OidcIdentityEngineAdapter {
     credential_store: Auth9OidcCredentialStore,
     federation_broker: Auth9OidcFederationBrokerAdapter,
     event_source: Auth9OidcEventSource,
+    action_store: Auth9OidcActionStore,
+    verification_store: Auth9OidcVerificationStore,
 }
 
 impl Auth9OidcIdentityEngineAdapter {
     pub fn new(pool: MySqlPool) -> Self {
         Self {
-            user_store: Auth9OidcUserStore::new(pool),
+            user_store: Auth9OidcUserStore::new(pool.clone()),
             client_store: Auth9OidcClientStore,
             session_store: Auth9OidcSessionStoreAdapter::new(),
             credential_store: Auth9OidcCredentialStore,
             federation_broker: Auth9OidcFederationBrokerAdapter::new(),
             event_source: Auth9OidcEventSource,
+            action_store: Auth9OidcActionStore::new(pool.clone()),
+            verification_store: Auth9OidcVerificationStore::new(pool),
         }
     }
 }
@@ -330,6 +555,14 @@ impl IdentityEngine for Auth9OidcIdentityEngineAdapter {
 
     fn event_source(&self) -> &dyn IdentityEventSource {
         &self.event_source
+    }
+
+    fn action_store(&self) -> &dyn IdentityActionStore {
+        &self.action_store
+    }
+
+    fn verification_store(&self) -> &dyn IdentityVerificationStore {
+        &self.verification_store
     }
 
     async fn update_realm(&self, _settings: &RealmUpdate) -> Result<()> {

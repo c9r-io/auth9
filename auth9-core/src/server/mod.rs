@@ -12,7 +12,8 @@ use crate::grpc::TokenExchangeService;
 pub const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("auth9_descriptor");
 use crate::domains::authorization::service::{ClientService, RbacService};
 use crate::domains::identity::service::{
-    IdentityProviderService, PasswordService, SessionService, WebAuthnService,
+    EmailVerificationService, IdentityProviderService, PasswordService, RequiredActionService,
+    SessionService, WebAuthnService,
 };
 use crate::domains::integration::service::{ActionEngine, ActionService, WebhookService};
 use crate::domains::platform::service::{
@@ -190,6 +191,8 @@ pub struct AppState {
     pub scim_group_mapping_repo: Arc<ScimGroupRoleMappingRepositoryImpl>,
     pub scim_log_repo: Arc<ScimProvisioningLogRepositoryImpl>,
     pub saml_application_service: Arc<SamlApplicationService<SamlApplicationRepositoryImpl>>,
+    pub email_verification_service: Arc<EmailVerificationService>,
+    pub required_actions_service: Arc<RequiredActionService>,
 }
 
 /// Implement HasServices trait for production AppState
@@ -441,6 +444,18 @@ impl HasCache for AppState {
 
     fn cache(&self) -> &Self::Cache {
         &self.cache_manager
+    }
+}
+
+impl crate::state::HasEmailVerification for AppState {
+    fn email_verification_service(&self) -> &EmailVerificationService {
+        &self.email_verification_service
+    }
+}
+
+impl crate::state::HasRequiredActions for AppState {
+    fn required_actions_service(&self) -> &RequiredActionService {
+        &self.required_actions_service
     }
 }
 
@@ -732,6 +747,13 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         identity_engine.clone(),
     ));
 
+    // Create email verification and required actions services
+    let email_verification_service = Arc::new(EmailVerificationService::new(
+        identity_engine.clone(),
+        app_base_url.clone(),
+    ));
+    let required_actions_service = Arc::new(RequiredActionService::new(identity_engine.clone()));
+
     // Create app state
     let state = AppState {
         config: Arc::new(config.clone()),
@@ -765,6 +787,8 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         scim_group_mapping_repo,
         scim_log_repo,
         saml_application_service,
+        email_verification_service,
+        required_actions_service,
     };
 
     // Create rate limit state for middleware

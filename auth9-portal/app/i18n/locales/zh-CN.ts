@@ -21,6 +21,9 @@ export default {
       back: "返回",
       edit: "编辑",
       close: "关闭",
+      updatePassword: "更新密码",
+      updating: "更新中...",
+      saving: "保存中...",
     },
     labels: {
       email: "邮箱",
@@ -232,6 +235,35 @@ export default {
       pendingIntegration: "Hosted MFA 验证尚未接入，请在仍使用 Keycloak 的租户中继续走兼容流程。",
       submit: "继续",
       verifying: "校验中...",
+    },
+    verifyEmail: {
+      metaTitle: "验证邮箱 - Auth9",
+      panelTitle: "验证你的邮箱地址",
+      panelDescription: "点击我们发送的邮件中的链接来验证你的账户。",
+      successTitle: "邮箱已验证",
+      successDescription: "你的邮箱地址已验证成功，现在可以登录了。",
+      errorTitle: "验证失败",
+      invalidToken: "无效或缺失的验证令牌。",
+      expiredToken: "此验证链接已过期或已被使用。",
+    },
+    forceUpdatePassword: {
+      metaTitle: "更新密码 - Auth9",
+      panelTitle: "需要更新密码",
+      panelDescription: "管理员要求你在继续之前设置新密码。",
+      title: "更新你的密码",
+      description: "请选择一个新密码以继续。",
+      passwordHint: "至少 12 个字符，包含大写、小写字母、数字和符号", // pragma: allowlist secret
+      passwordRequired: "密码是必填项。", // pragma: allowlist secret
+      passwordMismatch: "两次输入的密码不一致。", // pragma: allowlist secret
+    },
+    completeProfile: {
+      metaTitle: "完善资料 - Auth9",
+      panelTitle: "完善你的资料",
+      panelDescription: "请提供必要信息以继续。",
+      title: "完善你的资料",
+      description: "告诉我们一些关于你的信息。",
+      nameRequired: "显示名称是必填项。",
+      displayNamePlaceholder: "你的名字",
     },
   },
   dashboard: {

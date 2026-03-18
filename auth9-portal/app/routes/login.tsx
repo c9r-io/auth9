@@ -210,11 +210,18 @@ export async function action({ request }: ActionFunctionArgs) {
         expiresAt: Date.now() + result.expires_in * 1000,
         identityExpiresAt: Date.now() + result.expires_in * 1000,
       };
-      return redirect("/tenant/select", {
-        headers: {
-          "Set-Cookie": await commitSession(session),
-        },
-      });
+      const cookie = await commitSession(session);
+
+      // Redirect to first pending action if any, otherwise tenant select
+      if (result.pending_actions && result.pending_actions.length > 0) {
+        const first = result.pending_actions[0];
+        const actionUrl = first.redirect_url.includes("?")
+          ? `${first.redirect_url}&action_id=${first.id}`
+          : `${first.redirect_url}?action_id=${first.id}`;
+        return redirect(actionUrl, { headers: { "Set-Cookie": cookie } });
+      }
+
+      return redirect("/tenant/select", { headers: { "Set-Cookie": cookie } });
     } catch (error) {
       const message = mapApiError(error, locale);
       return { error: message };

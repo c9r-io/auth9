@@ -27,7 +27,8 @@ use auth9_core::config::{
 };
 use auth9_core::domains::authorization::service::{ClientService, RbacService};
 use auth9_core::domains::identity::service::{
-    IdentityProviderService, PasswordService, SessionService, WebAuthnService,
+    EmailVerificationService, IdentityProviderService, PasswordService, RequiredActionService,
+    SessionService, WebAuthnService,
 };
 use auth9_core::domains::integration::service::{ActionService, WebhookService};
 use auth9_core::domains::platform::service::{
@@ -233,6 +234,8 @@ pub struct TestAppState {
     pub scim_group_mapping_repo: Arc<TestScimGroupMappingRepository>,
     pub scim_log_repo: Arc<TestScimLogRepository>,
     pub saml_application_service: Arc<SamlApplicationService<TestSamlApplicationRepository>>,
+    pub email_verification_service: Arc<EmailVerificationService>,
+    pub required_actions_service: Arc<RequiredActionService>,
 }
 
 impl TestAppState {
@@ -393,6 +396,13 @@ impl TestAppState {
             None, // No identity backend in tests
         ));
 
+        let email_verification_service = Arc::new(EmailVerificationService::new(
+            identity_engine.clone(),
+            "http://localhost:3000".to_string(),
+        ));
+        let required_actions_service =
+            Arc::new(RequiredActionService::new(identity_engine.clone()));
+
         Self {
             config,
             tenant_service,
@@ -436,6 +446,8 @@ impl TestAppState {
             scim_group_mapping_repo,
             scim_log_repo,
             saml_application_service,
+            email_verification_service,
+            required_actions_service,
         }
     }
 
@@ -705,6 +717,18 @@ impl HasCache for TestAppState {
 
     fn cache(&self) -> &Self::Cache {
         &self.cache_manager
+    }
+}
+
+impl auth9_core::state::HasEmailVerification for TestAppState {
+    fn email_verification_service(&self) -> &EmailVerificationService {
+        &self.email_verification_service
+    }
+}
+
+impl auth9_core::state::HasRequiredActions for TestAppState {
+    fn required_actions_service(&self) -> &RequiredActionService {
+        &self.required_actions_service
     }
 }
 

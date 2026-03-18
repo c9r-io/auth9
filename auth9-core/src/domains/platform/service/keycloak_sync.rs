@@ -407,6 +407,74 @@ mod tests {
     }
 
     #[async_trait]
+    impl crate::identity_engine::IdentityActionStore for FakeIdentityEngine {
+        async fn get_pending_actions(
+            &self,
+            _user_id: &str,
+        ) -> Result<Vec<crate::identity_engine::PendingActionInfo>> {
+            Ok(Vec::new())
+        }
+
+        async fn create_action(
+            &self,
+            _user_id: &str,
+            _action_type: &str,
+            _metadata: Option<serde_json::Value>,
+        ) -> Result<String> {
+            Ok("fake-action".to_string())
+        }
+
+        async fn complete_action(&self, _action_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn cancel_action(&self, _action_id: &str) -> Result<()> {
+            Ok(())
+        }
+    }
+
+    #[async_trait]
+    impl crate::identity_engine::IdentityVerificationStore for FakeIdentityEngine {
+        async fn get_verification_status(&self, _user_id: &str) -> Result<bool> {
+            Ok(true)
+        }
+
+        async fn set_email_verified(&self, _user_id: &str, _verified: bool) -> Result<()> {
+            Ok(())
+        }
+
+        async fn create_verification_token(
+            &self,
+            _user_id: &str,
+            _token_hash: &str,
+            _expires_at: chrono::DateTime<chrono::Utc>,
+        ) -> Result<crate::identity_engine::VerificationTokenInfo> {
+            Ok(crate::identity_engine::VerificationTokenInfo {
+                id: "fake-token".to_string(),
+                user_id: "fake-user".to_string(),
+                expires_at: chrono::Utc::now() + chrono::Duration::hours(24),
+                used_at: None,
+                created_at: chrono::Utc::now(),
+            })
+        }
+
+        async fn find_valid_token(
+            &self,
+            _token_hash: &str,
+        ) -> Result<Option<crate::identity_engine::VerificationTokenInfo>> {
+            Ok(None)
+        }
+
+        async fn mark_token_used(&self, _token_id: &str) -> Result<()> {
+            Ok(())
+        }
+
+        async fn invalidate_user_tokens(&self, _user_id: &str) -> Result<u64> {
+            Ok(0)
+        }
+    }
+
+    #[async_trait]
     impl IdentityEngine for FakeIdentityEngine {
         fn user_store(&self) -> &dyn IdentityUserStore {
             self
@@ -429,6 +497,14 @@ mod tests {
         }
 
         fn event_source(&self) -> &dyn IdentityEventSource {
+            self
+        }
+
+        fn action_store(&self) -> &dyn crate::identity_engine::IdentityActionStore {
+            self
+        }
+
+        fn verification_store(&self) -> &dyn crate::identity_engine::IdentityVerificationStore {
             self
         }
 

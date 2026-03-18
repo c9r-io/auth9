@@ -21,6 +21,9 @@ export default {
       back: "戻る",
       edit: "編集",
       close: "閉じる",
+      updatePassword: "パスワードを更新",
+      updating: "更新中...",
+      saving: "保存中...",
     },
     labels: {
       email: "メールアドレス",
@@ -232,6 +235,35 @@ export default {
       pendingIntegration: "Hosted MFA 検証はまだ接続されていません。Keycloak を使うテナントでは互換フローを利用してください。",
       submit: "続行",
       verifying: "確認中...",
+    },
+    verifyEmail: {
+      metaTitle: "メール確認 - Auth9",
+      panelTitle: "メールアドレスを確認",
+      panelDescription: "送信されたメール内のリンクをクリックしてアカウントを確認してください。",
+      successTitle: "メール確認完了",
+      successDescription: "メールアドレスが確認されました。サインインできます。",
+      errorTitle: "確認に失敗しました",
+      invalidToken: "無効または欠落した確認トークンです。",
+      expiredToken: "この確認リンクは期限切れか、すでに使用されています。",
+    },
+    forceUpdatePassword: {
+      metaTitle: "パスワード更新 - Auth9",
+      panelTitle: "パスワードの更新が必要です",
+      panelDescription: "管理者により、続行する前に新しいパスワードの設定が求められています。",
+      title: "パスワードを更新",
+      description: "続行するには新しいパスワードを設定してください。",
+      passwordHint: "大文字・小文字・数字・記号を含む12文字以上", // pragma: allowlist secret
+      passwordRequired: "パスワードは必須です。", // pragma: allowlist secret
+      passwordMismatch: "パスワードが一致しません。", // pragma: allowlist secret
+    },
+    completeProfile: {
+      metaTitle: "プロフィール完成 - Auth9",
+      panelTitle: "プロフィールを完成させてください",
+      panelDescription: "続行するために必要な情報を入力してください。",
+      title: "プロフィールを完成させる",
+      description: "あなたについて教えてください。",
+      nameRequired: "表示名は必須です。",
+      displayNamePlaceholder: "あなたの名前",
     },
   },
   dashboard: {

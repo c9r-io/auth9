@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -86,6 +87,25 @@ pub struct IdentityProtocolMapperRepresentation {
     pub protocol: String,
     pub protocol_mapper: String,
     pub config: HashMap<String, String>,
+}
+
+/// Neutral pending action information exposed to business services.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct PendingActionInfo {
+    pub id: String,
+    pub action_type: String,
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// Neutral email verification token info exposed to business services.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerificationTokenInfo {
+    pub id: String,
+    pub user_id: String,
+    pub expires_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
 }
 
 /// Neutral SAML client representation exposed to business services.
