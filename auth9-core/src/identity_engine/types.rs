@@ -1,3 +1,4 @@
+use crate::models::email::SmtpServerConfig;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -105,6 +106,37 @@ pub struct VerificationTokenInfo {
     pub expires_at: DateTime<Utc>,
     pub used_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+}
+
+/// Neutral OIDC client representation for IdentityClientStore operations.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct OidcClientRepresentation {
+    pub id: Option<String>,
+    pub client_id: String,
+    pub name: Option<String>,
+    pub enabled: bool,
+    pub public_client: bool,
+    pub redirect_uris: Vec<String>,
+    pub web_origins: Vec<String>,
+    pub secret: Option<String>,
+    pub protocol: Option<String>,
+    pub base_url: Option<String>,
+    pub root_url: Option<String>,
+    pub admin_url: Option<String>,
+    pub attributes: Option<HashMap<String, String>>,
+}
+
+/// Neutral realm settings update for IdentityEngine::update_realm().
+#[derive(Debug, Clone, Default)]
+pub struct RealmSettingsUpdate {
+    pub registration_allowed: Option<bool>,
+    pub reset_password_allowed: Option<bool>,
+    pub smtp_server: Option<SmtpServerConfig>,
+    pub password_policy: Option<String>,
+    pub brute_force_protected: Option<bool>,
+    pub max_failure_wait_seconds: Option<i32>,
+    pub failure_factor: Option<i32>,
+    pub wait_increment_seconds: Option<i32>,
 }
 
 /// Neutral SAML client representation exposed to business services.

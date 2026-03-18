@@ -1,5 +1,4 @@
 use crate::error::Result;
-use crate::keycloak::{KeycloakOidcClient, RealmUpdate};
 use async_trait::async_trait;
 
 pub mod adapters;
@@ -9,7 +8,8 @@ pub use types::{
     IdentityCredentialInput, IdentityCredentialRepresentation,
     IdentityProtocolMapperRepresentation, IdentityProviderRepresentation,
     IdentitySamlClientRepresentation, IdentityUserCreateInput, IdentityUserRepresentation,
-    IdentityUserUpdateInput, PendingActionInfo, VerificationTokenInfo,
+    IdentityUserUpdateInput, OidcClientRepresentation, PendingActionInfo, RealmSettingsUpdate,
+    VerificationTokenInfo,
 };
 
 /// User lifecycle operations for an identity backend.
@@ -33,15 +33,15 @@ pub trait IdentityUserStore: Send + Sync {
 /// OIDC/SAML client lifecycle operations for an identity backend.
 #[async_trait]
 pub trait IdentityClientStore: Send + Sync {
-    async fn create_oidc_client(&self, client: &KeycloakOidcClient) -> Result<String>;
+    async fn create_oidc_client(&self, client: &OidcClientRepresentation) -> Result<String>;
     async fn get_client_secret(&self, client_uuid: &str) -> Result<String>;
     async fn regenerate_client_secret(&self, client_uuid: &str) -> Result<String>;
     async fn get_client_uuid_by_client_id(&self, client_id: &str) -> Result<String>;
-    async fn get_client_by_client_id(&self, client_id: &str) -> Result<KeycloakOidcClient>;
+    async fn get_client_by_client_id(&self, client_id: &str) -> Result<OidcClientRepresentation>;
     async fn update_oidc_client(
         &self,
         client_uuid: &str,
-        client: &KeycloakOidcClient,
+        client: &OidcClientRepresentation,
     ) -> Result<()>;
     async fn delete_oidc_client(&self, client_uuid: &str) -> Result<()>;
     async fn create_saml_client(&self, client: &IdentitySamlClientRepresentation)
@@ -145,7 +145,7 @@ pub trait IdentityEngine: Send + Sync {
     fn action_store(&self) -> &dyn IdentityActionStore;
     fn verification_store(&self) -> &dyn IdentityVerificationStore;
 
-    async fn update_realm(&self, settings: &RealmUpdate) -> Result<()>;
+    async fn update_realm(&self, settings: &RealmSettingsUpdate) -> Result<()>;
 }
 
 #[cfg(test)]

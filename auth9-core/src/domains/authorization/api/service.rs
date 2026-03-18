@@ -6,7 +6,7 @@ use crate::http_support::{
     deserialize_page, deserialize_per_page, extract_actor_id_generic, extract_ip,
     write_audit_log_generic, MessageResponse, PaginatedResponse, SuccessResponse,
 };
-use crate::keycloak::KeycloakOidcClient;
+use crate::identity_engine::OidcClientRepresentation;
 use crate::middleware::auth::AuthUser;
 use crate::models::common::StringUuid;
 use crate::models::service::{
@@ -51,17 +51,17 @@ pub fn build_logout_attributes(logout_uris: &[String]) -> Option<HashMap<String,
     }
 }
 
-/// Build KeycloakOidcClient from CreateServiceInput
-pub fn build_keycloak_client_from_create_input(input: &CreateServiceInput) -> KeycloakOidcClient {
+/// Build OidcClientRepresentation from CreateServiceInput
+pub fn build_oidc_client_from_create_input(input: &CreateServiceInput) -> OidcClientRepresentation {
     let logout_uris = input.logout_uris.clone().unwrap_or_default();
     let attributes = build_logout_attributes(&logout_uris);
 
-    KeycloakOidcClient {
+    OidcClientRepresentation {
         id: None,
         client_id: input.client_id.clone(),
         name: Some(input.name.clone()),
         enabled: true,
-        protocol: "openid-connect".to_string(),
+        protocol: Some("openid-connect".to_string()),
         base_url: input.base_url.clone(),
         root_url: input.base_url.clone(),
         admin_url: input.base_url.clone(),
@@ -102,19 +102,19 @@ pub fn merge_service_update(before: &Service, input: &UpdateServiceInput) -> Mer
     }
 }
 
-/// Build KeycloakOidcClient for update from merged values
-pub fn build_keycloak_client_for_update(
+/// Build OidcClientRepresentation for update from merged values
+pub fn build_oidc_client_for_update(
     client_id: &str,
     merged: &MergedServiceUpdate,
-) -> KeycloakOidcClient {
+) -> OidcClientRepresentation {
     let attributes = build_logout_attributes(&merged.logout_uris);
 
-    KeycloakOidcClient {
+    OidcClientRepresentation {
         id: None,
         client_id: client_id.to_string(),
         name: Some(merged.name.clone()),
         enabled: true,
-        protocol: "openid-connect".to_string(),
+        protocol: Some("openid-connect".to_string()),
         base_url: merged.base_url.clone(),
         root_url: merged.base_url.clone(),
         admin_url: merged.base_url.clone(),
@@ -309,7 +309,7 @@ pub async fn create<S: HasServices>(
     input.client_id = uuid::Uuid::new_v4().to_string();
     input.validate()?;
     require_service_access(state.config(), &auth, input.tenant_id)?;
-    let keycloak_client = build_keycloak_client_from_create_input(&input);
+    let keycloak_client = build_oidc_client_from_create_input(&input);
 
     let client_uuid = state
         .identity_engine()
@@ -372,7 +372,7 @@ pub async fn update<S: HasServices>(
     // Update all associated Keycloak clients with new service settings
     let keycloak_clients = state.client_service().list_clients(id).await?;
     for client in keycloak_clients {
-        let keycloak_client = build_keycloak_client_for_update(&client.client_id, &merged);
+        let keycloak_client = build_oidc_client_for_update(&client.client_id, &merged);
         if let Ok(kc_uuid) = state
             .identity_engine()
             .client_store()
@@ -469,7 +469,7 @@ pub async fn create_client<S: HasServices>(
         Some(attrs)
     };
 
-    let keycloak_client = KeycloakOidcClient {
+    let keycloak_client = OidcClientRepresentation {
         id: None,
         client_id: new_client_id.clone(),
         name: Some(format!(
@@ -478,7 +478,7 @@ pub async fn create_client<S: HasServices>(
             input.name.clone().unwrap_or("Client".to_string())
         )),
         enabled: service.status == crate::models::service::ServiceStatus::Active,
-        protocol: "openid-connect".to_string(),
+        protocol: Some("openid-connect".to_string()),
         base_url: service.base_url.clone(),
         root_url: service.base_url.clone(),
         admin_url: service.base_url.clone(),
@@ -490,7 +490,7 @@ pub async fn create_client<S: HasServices>(
             .unwrap_or_default(),
         attributes,
         public_client: false,
-        secret: None, // Keycloak will generate
+        secret: None,
     };
 
     let kc_uuid = state
@@ -1408,7 +1408,7 @@ mod tests {
     }
 
     #[test]
-    fn test_build_keycloak_client_from_create_input() {
+    fn test_build_oidc_client_from_create_input() {
         let input = CreateServiceInput {
             tenant_id: Some(uuid::Uuid::new_v4()),
             name: "Test Service".to_string(),
@@ -1418,12 +1418,12 @@ mod tests {
             logout_uris: Some(vec!["https://test.example.com/logout".to_string()]),
         };
 
-        let kc_client = build_keycloak_client_from_create_input(&input);
+        let kc_client = build_oidc_client_from_create_input(&input);
 
         assert_eq!(kc_client.client_id, "test-client");
         assert_eq!(kc_client.name, Some("Test Service".to_string()));
         assert!(kc_client.enabled);
-        assert_eq!(kc_client.protocol, "openid-connect");
+        assert_eq!(kc_client.protocol, Some("openid-connect".to_string()));
         assert_eq!(
             kc_client.base_url,
             Some("https://test.example.com".to_string())
@@ -1434,7 +1434,7 @@ mod tests {
     }
 
     #[test]
-    fn test_build_keycloak_client_from_create_input_minimal() {
+    fn test_build_oidc_client_from_create_input_minimal() {
         let input = CreateServiceInput {
             tenant_id: Some(uuid::Uuid::new_v4()),
             name: "Minimal".to_string(),
@@ -1444,7 +1444,7 @@ mod tests {
             logout_uris: None,
         };
 
-        let kc_client = build_keycloak_client_from_create_input(&input);
+        let kc_client = build_oidc_client_from_create_input(&input);
 
         assert_eq!(kc_client.client_id, "minimal");
         assert!(kc_client.base_url.is_none());
@@ -1518,7 +1518,7 @@ mod tests {
     }
 
     #[test]
-    fn test_build_keycloak_client_for_update() {
+    fn test_build_oidc_client_for_update() {
         let merged = MergedServiceUpdate {
             name: "Updated Service".to_string(),
             base_url: Some("https://updated.example.com".to_string()),
@@ -1527,7 +1527,7 @@ mod tests {
             status: ServiceStatus::Active,
         };
 
-        let kc_client = build_keycloak_client_for_update("my-client-id", &merged);
+        let kc_client = build_oidc_client_for_update("my-client-id", &merged);
 
         assert_eq!(kc_client.client_id, "my-client-id");
         assert_eq!(kc_client.name, Some("Updated Service".to_string()));

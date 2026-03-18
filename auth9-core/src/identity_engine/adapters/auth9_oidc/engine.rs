@@ -4,9 +4,9 @@ use crate::identity_engine::{
     FederationBroker, IdentityActionStore, IdentityClientStore, IdentityCredentialRepresentation,
     IdentityCredentialStore, IdentityEngine, IdentityEventSource, IdentitySamlClientRepresentation,
     IdentitySessionStore, IdentityUserCreateInput, IdentityUserRepresentation, IdentityUserStore,
-    IdentityUserUpdateInput, IdentityVerificationStore, PendingActionInfo, VerificationTokenInfo,
+    IdentityUserUpdateInput, IdentityVerificationStore, OidcClientRepresentation, PendingActionInfo,
+    RealmSettingsUpdate, VerificationTokenInfo,
 };
-use crate::keycloak::{KeycloakOidcClient, RealmUpdate};
 use crate::repository::social_provider::SocialProviderRepository;
 use anyhow::anyhow;
 use argon2::{
@@ -248,7 +248,7 @@ impl Auth9OidcClientStore {
 
 #[async_trait]
 impl IdentityClientStore for Auth9OidcClientStore {
-    async fn create_oidc_client(&self, _client: &KeycloakOidcClient) -> Result<String> {
+    async fn create_oidc_client(&self, _client: &OidcClientRepresentation) -> Result<String> {
         // Auth9 OIDC: return a placeholder UUID. The actual client record is
         // created by ClientService at the application layer.
         Ok(uuid::Uuid::new_v4().to_string())
@@ -274,7 +274,7 @@ impl IdentityClientStore for Auth9OidcClientStore {
         )))
     }
 
-    async fn get_client_by_client_id(&self, client_id: &str) -> Result<KeycloakOidcClient> {
+    async fn get_client_by_client_id(&self, client_id: &str) -> Result<OidcClientRepresentation> {
         // Auth9 OIDC manages clients in its own DB. Returning NotFound causes
         // list-clients enrichment to use the DB-managed path.
         Err(AppError::NotFound(format!(
@@ -286,7 +286,7 @@ impl IdentityClientStore for Auth9OidcClientStore {
     async fn update_oidc_client(
         &self,
         _client_uuid: &str,
-        _client: &KeycloakOidcClient,
+        _client: &OidcClientRepresentation,
     ) -> Result<()> {
         // No-op: application layer handles client updates in auth9 DB
         Ok(())
@@ -729,7 +729,7 @@ impl IdentityEngine for Auth9OidcIdentityEngineAdapter {
         &self.verification_store
     }
 
-    async fn update_realm(&self, _settings: &RealmUpdate) -> Result<()> {
+    async fn update_realm(&self, _settings: &RealmSettingsUpdate) -> Result<()> {
         Ok(())
     }
 }

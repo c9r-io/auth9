@@ -5,9 +5,8 @@
 //! ensures the corresponding Keycloak realm settings are updated.
 
 use crate::error::Result;
-use crate::identity_engine::IdentityEngine;
-use crate::keycloak::RealmUpdate;
-use crate::keycloak::SmtpServerConfig;
+use crate::identity_engine::{IdentityEngine, RealmSettingsUpdate};
+use crate::models::email::SmtpServerConfig;
 use crate::models::branding::BrandingConfig;
 use crate::models::password::PasswordPolicy;
 use std::sync::Arc;
@@ -28,7 +27,7 @@ impl KeycloakSyncService {
     ///
     /// This method updates the Keycloak realm configuration to match the
     /// provided settings. Only non-None fields in the update will be applied.
-    pub async fn sync_realm_settings(&self, settings: RealmUpdate) -> Result<()> {
+    pub async fn sync_realm_settings(&self, settings: RealmSettingsUpdate) -> Result<()> {
         info!("Syncing realm settings to Keycloak: {:?}", settings);
         self.identity_engine.update_realm(&settings).await?;
         info!("Successfully synced realm settings");
@@ -39,8 +38,8 @@ impl KeycloakSyncService {
     ///
     /// This method extracts the Keycloak realm settings that should be
     /// synchronized based on the Auth9 branding configuration.
-    pub fn extract_realm_settings(config: &BrandingConfig) -> RealmUpdate {
-        RealmUpdate {
+    pub fn extract_realm_settings(config: &BrandingConfig) -> RealmSettingsUpdate {
+        RealmSettingsUpdate {
             registration_allowed: Some(config.allow_registration),
             ..Default::default()
         }
@@ -104,7 +103,7 @@ impl KeycloakSyncService {
         let policy_string = Self::to_keycloak_policy_string(policy);
         info!("Syncing password policy to Keycloak: {}", policy_string);
 
-        let mut realm_update = RealmUpdate {
+        let mut realm_update = RealmSettingsUpdate {
             password_policy: Some(policy_string),
             ..Default::default()
         };
@@ -136,7 +135,7 @@ impl KeycloakSyncService {
             return;
         };
 
-        let realm_update = RealmUpdate {
+        let realm_update = RealmSettingsUpdate {
             smtp_server: Some(smtp),
             ..Default::default()
         };
@@ -158,14 +157,14 @@ mod tests {
         IdentitySamlClientRepresentation, IdentitySessionStore, IdentityUserCreateInput,
         IdentityUserRepresentation, IdentityUserStore, IdentityUserUpdateInput,
     };
-    use crate::keycloak::KeycloakOidcClient;
+    use crate::identity_engine::OidcClientRepresentation;
     use async_trait::async_trait;
     use std::collections::HashMap;
     use std::sync::Mutex;
 
     struct FakeIdentityEngine {
         failure: Option<String>,
-        updates: Mutex<Vec<RealmUpdate>>,
+        updates: Mutex<Vec<RealmSettingsUpdate>>,
     }
 
     impl FakeIdentityEngine {
@@ -240,7 +239,7 @@ mod tests {
 
     #[async_trait]
     impl IdentityClientStore for FakeIdentityEngine {
-        async fn create_oidc_client(&self, _client: &KeycloakOidcClient) -> Result<String> {
+        async fn create_oidc_client(&self, _client: &OidcClientRepresentation) -> Result<String> {
             Ok("client-1".to_string())
         }
 
@@ -256,13 +255,13 @@ mod tests {
             Ok(format!("uuid-{client_id}"))
         }
 
-        async fn get_client_by_client_id(&self, client_id: &str) -> Result<KeycloakOidcClient> {
-            Ok(KeycloakOidcClient {
+        async fn get_client_by_client_id(&self, client_id: &str) -> Result<OidcClientRepresentation> {
+            Ok(OidcClientRepresentation {
                 id: Some(format!("uuid-{client_id}")),
                 client_id: client_id.to_string(),
                 name: None,
                 enabled: true,
-                protocol: "openid-connect".to_string(),
+                protocol: Some("openid-connect".to_string()),
                 base_url: None,
                 root_url: None,
                 admin_url: None,
@@ -277,7 +276,7 @@ mod tests {
         async fn update_oidc_client(
             &self,
             _client_uuid: &str,
-            _client: &KeycloakOidcClient,
+            _client: &OidcClientRepresentation,
         ) -> Result<()> {
             Ok(())
         }
@@ -492,7 +491,7 @@ mod tests {
             self
         }
 
-        async fn update_realm(&self, settings: &RealmUpdate) -> Result<()> {
+        async fn update_realm(&self, settings: &RealmSettingsUpdate) -> Result<()> {
             self.updates.lock().unwrap().push(settings.clone());
 
             if let Some(message) = &self.failure {
@@ -532,7 +531,7 @@ mod tests {
         let settings = KeycloakSyncService::extract_realm_settings(&config);
         assert_eq!(settings.registration_allowed, Some(false));
         assert_eq!(settings.reset_password_allowed, None);
-        assert_eq!(settings.ssl_required, None);
+        assert_eq!(settings.reset_password_allowed, None);
     }
 
     #[tokio::test]
@@ -540,7 +539,7 @@ mod tests {
         let engine = Arc::new(FakeIdentityEngine::succeeds());
         let service = KeycloakSyncService::new(engine.clone());
 
-        let settings = RealmUpdate {
+        let settings = RealmSettingsUpdate {
             registration_allowed: Some(true),
             ..Default::default()
         };
@@ -556,7 +555,7 @@ mod tests {
             crate::error::AppError::Keycloak("access_denied".to_string()),
         )));
 
-        let settings = RealmUpdate {
+        let settings = RealmSettingsUpdate {
             registration_allowed: Some(true),
             ..Default::default()
         };

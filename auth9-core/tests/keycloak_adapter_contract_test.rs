@@ -5,8 +5,9 @@ use auth9_core::identity_engine::adapters::keycloak::{
 use auth9_core::identity_engine::{
     FederationBroker, IdentityCredentialInput, IdentityEngine, IdentityProviderRepresentation,
     IdentitySessionStore, IdentityUserCreateInput, IdentityUserUpdateInput,
+    OidcClientRepresentation, RealmSettingsUpdate,
 };
-use auth9_core::keycloak::{KeycloakClient, KeycloakOidcClient};
+use auth9_core::keycloak::KeycloakClient;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -202,7 +203,7 @@ async fn keycloak_identity_engine_adapter_updates_realm_through_wrapped_client()
 
     let adapter = KeycloakIdentityEngineAdapter::new(create_test_client(&server.uri()));
     adapter
-        .update_realm(&auth9_core::keycloak::RealmUpdate {
+        .update_realm(&RealmSettingsUpdate {
             registration_allowed: Some(true),
             ..Default::default()
         })
@@ -384,12 +385,12 @@ async fn keycloak_identity_engine_adapter_supports_user_client_and_credential_st
 
     let client_uuid = adapter
         .client_store()
-        .create_oidc_client(&KeycloakOidcClient {
+        .create_oidc_client(&OidcClientRepresentation {
             id: None,
             client_id: "svc-123".to_string(),
             name: Some("Service 123".to_string()),
             enabled: true,
-            protocol: "openid-connect".to_string(),
+            protocol: Some("openid-connect".to_string()),
             base_url: None,
             root_url: None,
             admin_url: None,
@@ -439,12 +440,12 @@ async fn keycloak_identity_engine_adapter_supports_user_client_and_credential_st
         .client_store()
         .update_oidc_client(
             &client_uuid,
-            &KeycloakOidcClient {
+            &OidcClientRepresentation {
                 id: Some(client_uuid.clone()),
                 client_id: "svc-123".to_string(),
                 name: Some("Service 123 Updated".to_string()),
                 enabled: true,
-                protocol: "openid-connect".to_string(),
+                protocol: Some("openid-connect".to_string()),
                 base_url: None,
                 root_url: None,
                 admin_url: None,

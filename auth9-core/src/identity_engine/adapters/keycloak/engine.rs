@@ -6,7 +6,7 @@ use crate::error::{AppError, Result};
 use crate::identity_engine::{
     FederationBroker, IdentityActionStore, IdentityClientStore, IdentityCredentialStore,
     IdentityEngine, IdentityEventSource, IdentitySessionStore, IdentityUserStore,
-    IdentityVerificationStore, PendingActionInfo, VerificationTokenInfo,
+    IdentityVerificationStore, PendingActionInfo, RealmSettingsUpdate, VerificationTokenInfo,
 };
 use crate::keycloak::{KeycloakClient, RealmUpdate};
 use anyhow::anyhow;
@@ -149,7 +149,19 @@ impl IdentityEngine for KeycloakIdentityEngineAdapter {
         &self.verification_store
     }
 
-    async fn update_realm(&self, settings: &RealmUpdate) -> Result<()> {
-        self.client.update_realm(settings).await
+    async fn update_realm(&self, settings: &RealmSettingsUpdate) -> Result<()> {
+        let kc_update = RealmUpdate {
+            registration_allowed: settings.registration_allowed,
+            reset_password_allowed: settings.reset_password_allowed,
+            ssl_required: None,
+            login_theme: None,
+            smtp_server: settings.smtp_server.clone(),
+            password_policy: settings.password_policy.clone(),
+            brute_force_protected: settings.brute_force_protected,
+            max_failure_wait_seconds: settings.max_failure_wait_seconds,
+            failure_factor: settings.failure_factor,
+            wait_increment_seconds: settings.wait_increment_seconds,
+        };
+        self.client.update_realm(&kc_update).await
     }
 }

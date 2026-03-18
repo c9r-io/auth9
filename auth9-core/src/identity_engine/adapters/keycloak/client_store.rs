@@ -1,6 +1,7 @@
 use crate::error::Result;
 use crate::identity_engine::{
     IdentityClientStore, IdentityProtocolMapperRepresentation, IdentitySamlClientRepresentation,
+    OidcClientRepresentation,
 };
 use crate::keycloak::{
     KeycloakClient, KeycloakOidcClient, KeycloakProtocolMapper, KeycloakSamlClient,
@@ -16,6 +17,46 @@ pub struct KeycloakClientStoreAdapter {
 impl KeycloakClientStoreAdapter {
     pub fn new(client: Arc<KeycloakClient>) -> Self {
         Self { client }
+    }
+}
+
+impl From<&OidcClientRepresentation> for KeycloakOidcClient {
+    fn from(value: &OidcClientRepresentation) -> Self {
+        Self {
+            id: value.id.clone(),
+            client_id: value.client_id.clone(),
+            name: value.name.clone(),
+            enabled: value.enabled,
+            protocol: value.protocol.clone().unwrap_or_else(|| "openid-connect".to_string()),
+            base_url: value.base_url.clone(),
+            root_url: value.root_url.clone(),
+            admin_url: value.admin_url.clone(),
+            redirect_uris: value.redirect_uris.clone(),
+            web_origins: value.web_origins.clone(),
+            attributes: value.attributes.clone(),
+            public_client: value.public_client,
+            secret: value.secret.clone(),
+        }
+    }
+}
+
+impl From<KeycloakOidcClient> for OidcClientRepresentation {
+    fn from(value: KeycloakOidcClient) -> Self {
+        Self {
+            id: value.id,
+            client_id: value.client_id,
+            name: value.name,
+            enabled: value.enabled,
+            public_client: value.public_client,
+            redirect_uris: value.redirect_uris,
+            web_origins: value.web_origins,
+            secret: value.secret,
+            protocol: Some(value.protocol),
+            base_url: value.base_url,
+            root_url: value.root_url,
+            admin_url: value.admin_url,
+            attributes: value.attributes,
+        }
     }
 }
 
@@ -48,8 +89,9 @@ impl From<IdentitySamlClientRepresentation> for KeycloakSamlClient {
 
 #[async_trait]
 impl IdentityClientStore for KeycloakClientStoreAdapter {
-    async fn create_oidc_client(&self, client: &KeycloakOidcClient) -> Result<String> {
-        self.client.create_oidc_client(client).await
+    async fn create_oidc_client(&self, client: &OidcClientRepresentation) -> Result<String> {
+        let kc_client: KeycloakOidcClient = client.into();
+        self.client.create_oidc_client(&kc_client).await
     }
 
     async fn get_client_secret(&self, client_uuid: &str) -> Result<String> {
@@ -64,16 +106,18 @@ impl IdentityClientStore for KeycloakClientStoreAdapter {
         self.client.get_client_uuid_by_client_id(client_id).await
     }
 
-    async fn get_client_by_client_id(&self, client_id: &str) -> Result<KeycloakOidcClient> {
-        self.client.get_client_by_client_id(client_id).await
+    async fn get_client_by_client_id(&self, client_id: &str) -> Result<OidcClientRepresentation> {
+        let kc_client = self.client.get_client_by_client_id(client_id).await?;
+        Ok(kc_client.into())
     }
 
     async fn update_oidc_client(
         &self,
         client_uuid: &str,
-        client: &KeycloakOidcClient,
+        client: &OidcClientRepresentation,
     ) -> Result<()> {
-        self.client.update_oidc_client(client_uuid, client).await
+        let kc_client: KeycloakOidcClient = client.into();
+        self.client.update_oidc_client(client_uuid, &kc_client).await
     }
 
     async fn delete_oidc_client(&self, client_uuid: &str) -> Result<()> {

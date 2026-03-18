@@ -1,6 +1,5 @@
 //! Email provider domain types
 
-use crate::keycloak::SmtpServerConfig;
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
 use sha2::Sha256;
@@ -9,6 +8,50 @@ use validator::Validate;
 
 /// Version byte for SES SMTP password calculation
 const SES_SMTP_PASSWORD_VERSION: u8 = 0x04;
+
+/// SMTP server configuration (wire-compatible with Keycloak Admin API).
+/// Note: All fields in Keycloak Admin API are string types.
+#[derive(Clone, Serialize, Deserialize, Default, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct SmtpServerConfig {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub host: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub port: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub from: Option<String>,
+    #[serde(rename = "fromDisplayName", skip_serializing_if = "Option::is_none")]
+    pub from_display_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auth: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ssl: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub starttls: Option<String>,
+}
+
+impl std::fmt::Debug for SmtpServerConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SmtpServerConfig")
+            .field("host", &self.host.as_ref().map(|_| "<REDACTED>"))
+            .field("port", &self.port.as_ref().map(|_| "<REDACTED>"))
+            .field("from", &self.from.as_ref().map(|_| "<REDACTED>"))
+            .field(
+                "from_display_name",
+                &self.from_display_name.as_ref().map(|_| "<REDACTED>"),
+            )
+            .field("auth", &self.auth.as_ref().map(|_| "<REDACTED>"))
+            .field("user", &self.user.as_ref().map(|_| "<REDACTED>"))
+            .field("password", &self.password.as_ref().map(|_| "<REDACTED>"))
+            .field("ssl", &self.ssl.as_ref().map(|_| "<REDACTED>"))
+            .field("starttls", &self.starttls.as_ref().map(|_| "<REDACTED>"))
+            .finish()
+    }
+}
 
 /// Email provider configuration - supports multiple provider types
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default, ToSchema)]

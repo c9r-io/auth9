@@ -226,6 +226,11 @@
 | [provisioning/04-scim-bulk-discovery.md](./provisioning/04-scim-bulk-discovery.md) | Bulk 批量操作、ServiceProviderConfig/Schemas/ResourceTypes 发现 | 5 |
 | [provisioning/05-scim-auth-logs.md](./provisioning/05-scim-auth-logs.md) | SCIM 鉴权安全（无效/过期/吊销 Token）、审计日志查询 | 5 |
 
+### Identity Engine (1 个文档, 5 个场景)
+| 文档 | 描述 | 场景数 |
+|------|------|--------|
+| [identity_engine/decouple_keycloak_types.md](./identity_engine/decouple_keycloak_types.md) | 解耦 Keycloak 类型重构验证（编译、Clippy、trait 中性化、SmtpServerConfig 迁移） | 5 |
+
 ---
 
 ## 统计概览
@@ -250,12 +255,14 @@
 | 集成测试 | 20 | 91 |
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
-| **总计** | **123** | **578** |
+| Identity Engine | 1 | 5 |
+| **总计** | **124** | **583** |
 
 ### 文档对齐记录
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-03-19 | 5.25.0 | **Phase 5 FR2 解耦 Keycloak 类型**：新增 `identity_engine/decouple_keycloak_types.md`（5 场景），覆盖编译通过、Clippy 无新增警告、IdentityEngine trait 无 Keycloak 类型引用、中性类型定义验证、SmtpServerConfig 迁移验证；纯重构验证，无 API/UI 变更；共 124 文档 583 场景 |
 | 2026-03-18 | 5.24.0 | **Phase 4 FR4 Federated Identity Linking**：新增 `auth/28-federated-identity-linking.md`（5 场景），覆盖社交登录 linked identity 写入、Unlink/Re-link 完整流程、`prompt_confirm` 策略阻止静默 takeover、`create_new` 策略创建独立账号、confirm-link token 过期错误；认证 24 文档 112 场景；总计 123 文档 578 场景 |
 | 2026-03-18 | 5.23.0 | **Phase 4 FR2 Enterprise OIDC Connector**：新增 `auth/26-enterprise-oidc-broker.md`（5 场景），覆盖 OIDC 连接器 CRUD 不触发 Keycloak IDP、userInfoUrl 必填验证、Auth9 原生 broker 路由、endpoint 可达性测试、Discovery 返回 Auth9 broker URL；更新 `auth/09-enterprise-sso-discovery.md` 的场景 1/5 预期（OIDC 使用 Auth9 broker 而非 Keycloak kc_idp_hint）；认证 23 文档 107 场景；总计 123 文档 578 场景 |
 | 2026-03-18 | 5.22.0 | **Phase 3 总控 FR 文档治理与闭环**：跨文档修复 `security/authentication/03-mfa-security.md` 背景说明（Keycloak→Auth9 本地 MFA）及 Recovery Code 检查清单；修复 `security/authentication/04-password-security.md` 背景说明（Keycloak→Auth9 本地密码管理）；修复 `integration/20-local-credential-store.md` migration 文件数（3→4）和测试数（32→39）；修复 `auth/20-hosted-login-api.md` 场景 5 auth9_oidc 预期（501→200 正常响应）；总计 122 文档 573 场景 |
@@ -428,6 +435,7 @@ cargo run --bin seed-data -- --dataset=qa-basic --reset
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-03-19 | 5.25.0 | **Phase 5 FR2 解耦 Keycloak 类型**：新增 identity_engine/decouple_keycloak_types（编译、Clippy、trait 中性化、中性类型定义、SmtpServerConfig 迁移）共 5 场景；纯重构验证；共 124 文档 583 场景 |
 | 2026-03-18 | 5.24.0 | **Phase 4 FR4 Federated Identity Linking**：新增 auth/28（社交登录身份关联、Unlink/Re-link、first_login_policy 策略、confirm-link 过期）共 5 场景；共 123 文档 578 场景 |
 | 2026-03-18 | 5.22.0 | **Phase 3 总控 FR 文档治理与闭环**：跨文档修复安全文档背景说明、集成测试预期值、Hosted Login API 预期；共 122 文档 573 场景 |
 | 2026-03-18 | 5.21.0 | **Phase 3 FR5 Token Issuance 与 FR4 MFA**：新增 auth/24（MFA TOTP/Recovery）、auth/25（本地 OIDC Token 签发）共 10 场景；共 122 文档 573 场景 |
