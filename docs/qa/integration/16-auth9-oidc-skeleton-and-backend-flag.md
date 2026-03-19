@@ -9,22 +9,23 @@
 
 ## 背景说明
 
+> **迁移已完成**: `IDENTITY_BACKEND` 开关已移除，auth9-oidc 现在是唯一后端。以下为历史迁移验证记录。
+
 本用例用于验证 Phase 1 FR4 完成后的关键回归点：
 
-- 仓库新增独立 `auth9-oidc` 服务目录，而不是继续把第二身份后端塞回 `auth9-core`
-- `auth9-core` 可通过 `IDENTITY_BACKEND=keycloak|auth9_oidc` 选择身份后端
-- 默认分支仍为 `keycloak`
-- `auth9_oidc` 分支虽仍为 stub，但 State wiring、Session/Federation 注入链必须完整
+- 仓库新增独立 `auth9-oidc` 服务目录
+- `auth9-core` 已固定使用 `auth9_oidc` 后端（`IDENTITY_BACKEND` 开关已移除）
+- State wiring、Session/Federation 注入链完整
 
-该阶段不验证真实 OIDC 登录闭环，也不验证 `auth9-core -> auth9-oidc` RPC。
+该阶段验证 auth9-oidc 基础骨架。
 
 ---
 
 ## 场景 1：默认 `keycloak` backend 启动成功
 
 ### 初始状态
-- `auth9-core`、`auth9-keycloak`、`auth9-redis`、`auth9-tidb` 已启动
-- 未显式设置 `IDENTITY_BACKEND`，或其值为 `keycloak`
+- `auth9-core`、`auth9-oidc`、`auth9-redis`、`auth9-tidb` 已启动
+- `IDENTITY_BACKEND` 开关已移除（auth9_oidc 为唯一后端）
 
 ### 目的
 验证默认配置仍走 `keycloak`，且不影响现有服务启动。

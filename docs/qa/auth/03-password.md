@@ -8,7 +8,7 @@
 
 ## 架构说明
 
-Auth9 密码管理完全由 Auth9 自身控制，不依赖 Keycloak credentials API：
+Auth9 密码管理完全由 Auth9 自身控制：
 
 1. **忘记密码页面** → Auth9 Portal `/forgot-password`
 2. **重置密码页面** → Auth9 Portal `/reset-password?token=...`
@@ -23,8 +23,8 @@ Auth9 密码管理完全由 Auth9 自身控制，不依赖 Keycloak credentials 
 - 已登录用户：进入 `Account -> Security` 修改密码
 
 **测试原则**：
-- 所有密码流程从 Auth9 Portal 触发，不涉及 Keycloak UI
-- 密码验证由 Auth9 本地 argon2id 执行，不调用 Keycloak credentials API
+- 所有密码流程从 Auth9 Portal 触发
+- 密码验证由 Auth9 本地 argon2id 执行
 - Dark Mode 视觉层级与对比度回归由 [15-dark-mode-auth-contrast.md](./15-dark-mode-auth-contrast.md) 单独覆盖
 
 ---

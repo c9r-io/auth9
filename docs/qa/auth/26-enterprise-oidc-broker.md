@@ -9,7 +9,7 @@
 
 ## 背景说明
 
-Phase 4 FR2 将企业 OIDC 连接器从 Keycloak 委托模式迁移到 Auth9 原生 broker。Auth9 现在直接处理 OIDC authorization code 流程：authorize → 外部 IdP → callback → token exchange → userinfo → claim mapping → 用户解析 → 登录完成。
+Auth9 原生 broker 直接处理企业 OIDC authorization code 流程：authorize → 外部 IdP → callback → token exchange → userinfo → claim mapping → 用户解析 → 登录完成。（注：Keycloak 已退役，所有企业 OIDC broker 流程由 Auth9 内置引擎处理）
 
 端点：
 - `GET /api/v1/enterprise-sso/authorize/{alias}` — 发起企业 OIDC 登录
@@ -43,14 +43,14 @@ Phase 4 FR2 将企业 OIDC 连接器从 Keycloak 委托模式迁移到 Auth9 原
 
 ---
 
-## 场景 1：创建 OIDC 连接器不创建 Keycloak IDP
+## 场景 1：创建 OIDC 连接器仅保存到 Auth9 数据库
 
 ### 步骤 0（Gate Check）
 - 已获取管理员 JWT token
 - 已存在租户 `{tenant_id}`
 
 ### 目的
-验证创建 OIDC 类型连接器时不向 Keycloak 写入 Identity Provider，仅保存到 Auth9 数据库
+验证创建 OIDC 类型连接器时仅保存到 Auth9 数据库
 
 ### 测试操作流程
 ```bash
@@ -136,7 +136,7 @@ SELECT COUNT(*) FROM enterprise_sso_connectors WHERE alias = 'missing-userinfo';
 - 场景 1 的连接器已创建
 
 ### 目的
-验证 test 端点对 OIDC 连接器检查实际 IdP 端点可达性（非 Keycloak 状态）
+验证 test 端点对 OIDC 连接器检查实际 IdP 端点可达性
 
 ### 测试操作流程
 ```bash
@@ -151,13 +151,13 @@ curl -X POST "http://localhost:8080/api/v1/tenants/{tenant_id}/sso/connectors/{c
 
 ---
 
-## 场景 4：删除 OIDC 连接器不调用 Keycloak
+## 场景 4：删除 OIDC 连接器
 
 ### 步骤 0（Gate Check）
 - 场景 1 的连接器已创建
 
 ### 目的
-验证删除 OIDC 连接器时仅清理 Auth9 数据库，不调用 Keycloak API
+验证删除 OIDC 连接器时正确清理 Auth9 数据库
 
 ### 测试操作流程
 ```bash
@@ -185,7 +185,7 @@ SELECT COUNT(*) FROM enterprise_sso_domains WHERE connector_id = '{connector_id}
 - 已创建 OIDC 连接器，绑定域名 `corp.example.com`
 
 ### 目的
-验证 discovery 对 OIDC 连接器返回 Auth9 原生 broker 地址而非 Keycloak URL
+验证 discovery 对 OIDC 连接器返回 Auth9 原生 broker 地址
 
 ### 测试操作流程
 ```bash
@@ -206,8 +206,8 @@ curl -X POST 'http://localhost:8080/api/v1/enterprise-sso/discovery?response_typ
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | OIDC 连接器创建不触发 Keycloak IDP | ☐ | | | API |
+| 1 | OIDC 连接器创建仅保存到 Auth9 数据库 | ☐ | | | API |
 | 2 | userInfoUrl 为 OIDC 必填字段 | ☐ | | | API |
 | 3 | OIDC 连接器 test 端点验证 IdP 可达性 | ☐ | | | API |
-| 4 | OIDC 连接器删除不调用 Keycloak | ☐ | | | API |
+| 4 | OIDC 连接器删除 | ☐ | | | API |
 | 5 | Discovery 对 OIDC 返回 Auth9 broker URL | ☐ | | | API |

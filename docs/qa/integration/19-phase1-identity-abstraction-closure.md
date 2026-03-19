@@ -9,10 +9,11 @@
 
 ## 背景说明
 
-本用例用于对 Keycloak Phase 1 的身份抽象层改造做最终 closure 验收，确认以下目标已同时成立：
+> **迁移已完成**: Keycloak 已被 Auth9 内置 OIDC 引擎完全替代。以下为历史迁移 closure 验收记录。
 
-- 默认 `keycloak` backend 仍可完成注入与 contract 回归
-- `auth9_oidc` stub backend 可完成最小 wiring，不因抽象层改造而 panic
+本用例用于对 Phase 1 的身份抽象层改造做最终 closure 验收，确认以下目标已同时成立：
+
+- auth9-oidc backend 完成完整注入与 contract 回归
 - 业务层与 adapter 注入链保持在 `IdentityEngine` 抽象边界内
 - QA 主断言字段已经切到 `identity_subject`、`provider_session_id`、`provider_alias`
 

@@ -70,7 +70,7 @@
 - **Card 玻璃效果**: 标准 `liquid-glass`，`border-radius: 20px`。
 - **认证方式分隔**: "or" 文字分隔线，使用 `--glass-border-subtle` 横线 + 居中文字。
 - **SSO 输入**: Email Input + "Continue with SSO" Button（`variant="default"`）。
-- **密码登录**: 先在 Portal 内展开 Password fallback 说明和继续按钮，不应默认立即跳往 Keycloak。
+- **密码登录**: 先在 Portal 内展开 Password fallback 说明和继续按钮，不应默认立即跳离当前页面。
 - **Passkey 登录**: 按钮触发 WebAuthn，提交中显示 loading 状态。
 - **错误消息**: 映射自 `mapOAuthError()`，红色背景 + `--accent-red` 文字，`border-radius: 12px`。
 - **底部链接**: `--accent-blue` 色，`text-sm`（14px），hover 时 `underline`。

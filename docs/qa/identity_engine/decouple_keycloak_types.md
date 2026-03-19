@@ -1,4 +1,6 @@
-# 解耦 Keycloak 类型: IdentityEngine Trait 重构验证
+# 解耦旧身份引擎类型: IdentityEngine Trait 重构验证
+
+> **迁移已完成**: Keycloak 已被 Auth9 内置 OIDC 引擎完全替代。以下为历史迁移验证记录。
 
 **模块**: identity_engine
 **关联 FR**: Phase 5 FR2
@@ -40,21 +42,21 @@ cargo clippy --all-targets --all-features 2>&1 | grep -c "warning:"
 
 ---
 
-## 场景 3: IdentityEngine trait 不再引用 Keycloak 类型
+## 场景 3: IdentityEngine trait 不再引用旧身份引擎类型
 
 ### 步骤
 
 ```bash
 cd auth9-core
-# 检查 trait 定义文件中是否存在 Keycloak 专有类型引用
-grep -n "KeycloakOidcClient\|RealmUpdate\|keycloak::.*Client\|keycloak::.*Realm" src/identity_engine/mod.rs || echo "PASS: 无 Keycloak 类型引用"
+# 检查 trait 定义文件中是否存在旧身份引擎专有类型引用
+grep -n "KeycloakOidcClient\|RealmUpdate\|keycloak::.*Client\|keycloak::.*Realm" src/identity_engine/mod.rs || echo "PASS: 无旧身份引擎类型引用"
 ```
 
 ### 预期结果
 
-- 输出 `PASS: 无 Keycloak 类型引用`
+- 输出 `PASS: 无旧身份引擎类型引用`
 - `identity_engine/mod.rs` 的 trait 方法签名中仅使用中性类型（`OidcClientRepresentation`、`RealmSettingsUpdate` 等）
-- 不出现 `KeycloakOidcClient`、`RealmUpdate` 等 Keycloak 专有结构体名
+- 不出现 `KeycloakOidcClient`、`RealmUpdate` 等旧身份引擎专有结构体名
 
 ---
 

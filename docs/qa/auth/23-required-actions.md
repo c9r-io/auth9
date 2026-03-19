@@ -9,7 +9,7 @@
 
 ## 背景说明
 
-Auth9 自管 required actions，不再依赖 Keycloak required actions 页面。登录成功后，如果用户有 pending actions，Auth9 决定跳转到对应流程页面。
+Auth9 自管 required actions。登录成功后，如果用户有 pending actions，Auth9 决定跳转到对应流程页面。
 
 端点：
 - `GET /api/v1/hosted-login/pending-actions` — 列出 pending actions（需认证）
@@ -35,7 +35,7 @@ Action 类型与 Portal 页面映射：
 
 ### 步骤 0（Gate Check）
 - Auth9 Core 服务运行中：`curl -sf http://localhost:8080/health`
-- **`IDENTITY_BACKEND=auth9_oidc`**：Required Actions 功能仅在 auth9-oidc 后端下可用。在 docker-compose 中设置 `IDENTITY_BACKEND=auth9_oidc` 并重启 auth9-core
+- Required Actions 功能由 auth9-oidc 引擎提供（注：`IDENTITY_BACKEND` 标志已移除，auth9_oidc 是唯一后端）
 - 已获取有效 identity token（`$TOKEN`）
 
 ### 初始状态
@@ -187,7 +187,7 @@ http://localhost:3000/force-update-password?action_id=test-123
 4. 点击提交按钮
 
 ### 预期结果
-- 页面正常渲染，无 Keycloak 页面元素
+- 页面正常渲染，由 Auth9 Portal 托管
 - 提交成功后重定向到 `/tenant/select`
 - `users.display_name` 已更新为 `QA Test User`
 - Pending action 标记为 `completed`
@@ -241,5 +241,5 @@ VALUES (
 - 登录成功后**不**跳转到 `/tenant/select`
 - 而是跳转到 `/force-update-password?action_id=<action_id>`
 - 强制更新密码页面正确渲染
-- 页面由 Auth9 域名托管（`localhost:3000`），无 Keycloak 页面元素
+- 页面由 Auth9 域名托管（`localhost:3000`），由 Auth9 Portal 渲染
 - 完成密码更新后，跳转到 `/tenant/select`

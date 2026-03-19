@@ -23,16 +23,16 @@
 
 ### 初始状态
 - 管理员已通过 Portal 为用户启用 MFA（`POST /api/v1/users/{id}/mfa`）
-- 用户尚未完成 TOTP 注册（Keycloak required action: `CONFIGURE_TOTP`）
+- 用户尚未完成 TOTP 注册（required action: `CONFIGURE_TOTP`）
 
 ### 目的
-验证用户首次配置 TOTP 的完整流程。此流程由 Keycloak 在认证中强制触发，配置页面由 auth9-keycloak-theme 自定义渲染（`LoginConfigTotp.tsx`），保持 Liquid Glass 品牌风格。
+验证用户首次配置 TOTP 的完整流程。此流程由认证引擎在认证中强制触发，配置页面由 Auth9 品牌认证页自定义渲染（`LoginConfigTotp.tsx`），保持 Liquid Glass 品牌风格。
 
 ### 测试操作流程
 1. 在 Portal `/login` 页面点击「**Sign in with password**」
 2. 在 Auth9 品牌认证页输入用户名和密码
 3. 自动跳转到 TOTP 配置页面（QR 码页面）
-4. 验证页面保持 Auth9 品牌风格（Liquid Glass），**非** Keycloak 默认 PatternFly UI
+4. 验证页面保持 Auth9 品牌风格（Liquid Glass），**非**原生认证 UI 的默认样式
 5. 页面显示三步引导：
    - Step 1: 安装 authenticator 应用（如 FreeOTP, Google Authenticator）
    - Step 2: 扫描 QR 码（或点击「Unable to scan?」切换手动输入密钥模式）
@@ -56,7 +56,7 @@
 - ☐ 步骤编号为蓝色圆形气泡
 - ☐ 输入框使用 Glass Input 组件
 - ☐ 按钮为蓝色主题按钮
-- ☐ 不出现 Keycloak 默认 PatternFly 样式
+- ☐ 不出现原生认证 UI 的默认样式
 
 ---
 
@@ -64,10 +64,10 @@
 
 ### 初始状态
 - 用户配置了多种认证方式（如 TOTP + WebAuthn/Passkey）
-- Keycloak authentication flow 包含多个 authenticator
+- 认证流程包含多个 authenticator
 
 ### 目的
-验证多认证方式选择页面。此页面由 auth9-keycloak-theme 自定义渲染（`SelectAuthenticator.tsx`），在用户有多种认证选项时触发。
+验证多认证方式选择页面。此页面由 Auth9 品牌认证页自定义渲染（`SelectAuthenticator.tsx`），在用户有多种认证选项时触发。
 
 ### 测试操作流程
 1. 使用配置了多种认证方式的账号登录

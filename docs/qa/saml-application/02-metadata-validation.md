@@ -21,10 +21,10 @@ SAML Application 提供 IdP Metadata XML 端点（公开，无需认证），外
 
 ### 初始状态
 - 已创建 SAML Application `{app_id}`（enabled）
-- Keycloak 正常运行
+- Auth9 内置 OIDC 引擎正常运行
 
 ### 目的
-验证 Metadata 端点无需认证即可访问，返回有效 XML，URL 使用公开域名（`KC_HOSTNAME`）
+验证 Metadata 端点无需认证即可访问，返回有效 XML，URL 使用公开域名
 
 ### 测试操作流程
 
@@ -39,9 +39,9 @@ curl -s "http://localhost:8080/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/met
 - XML 中包含：
   - `<EntityDescriptor>` 根元素
   - `<IDPSSODescriptor>` 元素
-  - `<SingleSignOnService>` 的 `Location` 属性指向 `http://localhost:8081/realms/auth9/protocol/saml`（Docker 环境）
+  - `<SingleSignOnService>` 的 `Location` 属性指向 Auth9 SAML SSO 端点
   - `<KeyDescriptor use="signing">` 包含 X509 签名证书
-- **关键校验**：URL 中不包含 Keycloak 内部地址（如 `http://keycloak:8080`）
+- **关键校验**：URL 中使用公开域名
 
 ---
 
@@ -239,7 +239,7 @@ curl -s "http://localhost:8080/api/v1/tenants/{tenant_id}/saml-apps" | jq .statu
 # Metadata 公开端点无 Token → 200（或 404 如果 app_id 无效）
 curl -s -o /dev/null -w "%{http_code}" \
   "http://localhost:8080/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/metadata"
-# 预期: 200（如果 app 存在且 Keycloak 可达）
+# 预期: 200（如果 app 存在且 Auth9 内置 OIDC 引擎可达）
 ```
 
 ---

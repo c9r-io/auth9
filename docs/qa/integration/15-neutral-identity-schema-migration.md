@@ -9,6 +9,8 @@
 
 ## 背景说明
 
+> **迁移已完成**: Keycloak 已被 Auth9 内置 OIDC 引擎完全替代，中性字段为当前唯一使用字段。以下为历史迁移验证记录。
+
 Phase 1 FR3 将用户、会话、企业 SSO connector 的核心模型从 `keycloak_*` 命名迁移到中性字段：
 
 - `users.identity_subject`

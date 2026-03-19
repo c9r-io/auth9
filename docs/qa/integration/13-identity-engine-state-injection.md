@@ -1,7 +1,7 @@
 # 集成测试 - Identity Engine 接口与 State 注入回归
 
 **模块**: 集成测试
-**测试范围**: `IdentityEngine` 抽象注入、Keycloak adapter 注入链、SessionService 回归、Identity Provider Service 回归
+**测试范围**: `IdentityEngine` 抽象注入、注入链回归、SessionService 回归、Identity Provider Service 回归
 **场景数**: 3
 **优先级**: 高
 
@@ -9,23 +9,23 @@
 
 ## 背景说明
 
+> **迁移已完成**: Keycloak 已被 Auth9 内置 OIDC 引擎（auth9-oidc）完全替代。以下为历史迁移验证记录。
+
 本用例用于验证 Phase 1 FR1 完成后的关键回归点：
 
-- `AppState` / `TestAppState` 已持有抽象身份后端，而不是仅依赖 `KeycloakClient`
-- 默认 Keycloak backend 通过 `identity_engine/adapters/keycloak/` 注入，而不是直接把 `KeycloakClient` 当作 trait object
-- backend flag 选择逻辑由 `integration/16-auth9-oidc-skeleton-and-backend-flag.md` 覆盖，这里只验证默认 Keycloak 分支
+- `AppState` / `TestAppState` 已持有抽象身份后端（`IdentityEngine`）
+- auth9-oidc backend 通过 `identity_engine/adapters/` 注入
 - `SessionService` 通过抽象会话能力访问身份后端
 - `IdentityProviderService` 通过抽象联邦能力访问身份后端
-- `KeycloakSyncService` 通过统一身份引擎抽象更新 realm 配置
 
-该 FR 不改变外部 API 契约，因此 QA 重点是“现有行为未回退”。
+该 FR 不改变外部 API 契约，因此 QA 重点是”现有行为未回退”。
 
 ---
 
 ## 场景 1：服务启动后健康检查正常
 
 ### 初始状态
-- `auth9-core`、`auth9-keycloak`、`auth9-redis`、`auth9-tidb` 已启动
+- `auth9-core`、`auth9-oidc`、`auth9-redis`、`auth9-tidb` 已启动
 
 ### 目的
 验证 State 构造链在切换为 `IdentityEngine` 注入后仍可正常完成，服务可对外提供基础健康探针。

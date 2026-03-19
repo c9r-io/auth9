@@ -23,7 +23,7 @@
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | id | CHAR(36) | UUID 主键 |
-| identity_subject | VARCHAR(255) | 中性身份主体 ID（migration period 下与 `keycloak_id` 同步） |
+| identity_subject | VARCHAR(255) | 身份主体 ID |
 | email | VARCHAR(255) | 邮箱（唯一） |
 | display_name | VARCHAR(255) | 显示名称 |
 | avatar_url | TEXT | 头像 URL |
@@ -94,7 +94,7 @@ SELECT id, email, display_name, avatar_url, mfa_enabled FROM users WHERE id = '{
 - 当前 display_name 为 `Test User`
 
 ### 目的
-验证用户可以从侧边栏可见入口进入 Account Profile，并成功修改显示名称和头像 URL（含 Keycloak 同步）
+验证用户可以从侧边栏可见入口进入 Account Profile，并成功修改显示名称和头像 URL
 
 ### 测试操作流程
 1. 在任意 Dashboard 页面，确认左侧边栏底部存在当前用户卡片入口

@@ -1,7 +1,7 @@
 # 认证流程 - 企业 SAML Broker 原生登录测试
 
 **模块**: 认证流程
-**测试范围**: Auth9 原生企业 SAML 连接器 broker 流程（SP metadata 生成、AuthnRequest 发起、SAML Response 校验、connector CRUD 不依赖 Keycloak）
+**测试范围**: Auth9 原生企业 SAML 连接器 broker 流程（SP metadata 生成、AuthnRequest 发起、SAML Response 校验、connector CRUD）
 **场景数**: 5
 **优先级**: 高
 
@@ -9,7 +9,7 @@
 
 ## 背景说明
 
-Phase 4 FR3 将企业 SAML 连接器从 Keycloak 委托模式迁移到 Auth9 原生 broker。Auth9 现在直接处理 SAML SP-initiated 登录流程：authorize → 构建 AuthnRequest → 重定向到 IdP → IdP POST SAMLResponse 到 ACS → 校验签名/issuer/audience/时间窗口 → 用户解析 → 登录完成。
+Auth9 原生 broker 直接处理企业 SAML SP-initiated 登录流程：authorize → 构建 AuthnRequest → 重定向到 IdP → IdP POST SAMLResponse 到 ACS → 校验签名/issuer/audience/时间窗口 → 用户解析 → 登录完成。（注：Keycloak 已退役，所有企业 SAML broker 流程由 Auth9 内置引擎处理）
 
 端点：
 - `GET /api/v1/enterprise-sso/authorize/{alias}` — 发起企业 SSO 登录（SAML 分支构建 AuthnRequest）
@@ -44,14 +44,14 @@ Phase 4 FR3 将企业 SAML 连接器从 Keycloak 委托模式迁移到 Auth9 原
 
 ---
 
-## 场景 1：创建 SAML 连接器不创建 Keycloak IDP
+## 场景 1：创建 SAML 连接器仅保存到 Auth9 数据库
 
 ### 步骤 0（Gate Check）
 - 已获取管理员 JWT token
 - 已存在租户 `{tenant_id}`
 
 ### 目的
-验证创建 SAML 类型连接器时不向 Keycloak 写入 Identity Provider，仅保存到 Auth9 数据库
+验证创建 SAML 类型连接器时仅保存到 Auth9 数据库
 
 ### 测试操作流程
 ```bash
@@ -122,7 +122,7 @@ curl -s "http://localhost:8080/api/v1/enterprise-sso/saml/metadata/corp-saml-tes
 - 场景 1 的连接器已创建
 
 ### 目的
-验证 test 端点对 SAML 连接器执行原生证书格式校验和 SSO URL 可达性检查（非 Keycloak 状态）
+验证 test 端点对 SAML 连接器执行原生证书格式校验和 SSO URL 可达性检查
 
 ### 测试操作流程
 ```bash
@@ -143,7 +143,7 @@ curl -X POST "http://localhost:8080/api/v1/tenants/{tenant_id}/sso/connectors/{c
 - 已创建 SAML 连接器，绑定域名 `corp.example.com`
 
 ### 目的
-验证 discovery 对 SAML 连接器返回 Auth9 原生 broker 地址而非 Keycloak kc_idp_hint URL
+验证 discovery 对 SAML 连接器返回 Auth9 原生 broker 地址
 
 ### 测试操作流程
 ```bash
@@ -157,17 +157,17 @@ curl -X POST 'http://localhost:8080/api/v1/enterprise-sso/discovery?response_typ
 - `data.authorize_url` 包含 `/api/v1/enterprise-sso/authorize/` 和 `login_challenge=`
 - `data.authorize_url` 包含 `login_hint=user%40corp.example.com`
 - `data.authorize_url` **不包含** `kc_idp_hint`
-- `data.authorize_url` **不包含** Keycloak URL (`/realms/`)
+- `data.authorize_url` **不包含** 外部认证服务 URL
 
 ---
 
-## 场景 5：删除 SAML 连接器不调用 Keycloak
+## 场景 5：删除 SAML 连接器
 
 ### 步骤 0（Gate Check）
 - 场景 1 的连接器已创建
 
 ### 目的
-验证删除 SAML 连接器时仅清理 Auth9 数据库，不调用 Keycloak Identity Provider API
+验证删除 SAML 连接器时正确清理 Auth9 数据库
 
 ### 测试操作流程
 ```bash
@@ -193,8 +193,8 @@ SELECT COUNT(*) FROM enterprise_sso_domains WHERE connector_id = '{connector_id}
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | SAML 连接器创建不触发 Keycloak IDP | ☐ | | | API |
+| 1 | SAML 连接器创建仅保存到 Auth9 数据库 | ☐ | | | API |
 | 2 | SP Metadata 端点返回有效 XML | ☐ | | | API |
 | 3 | SAML 连接器 test 端点验证证书 | ☐ | | | API |
 | 4 | Discovery 对 SAML 返回 Auth9 broker URL | ☐ | | | API |
-| 5 | SAML 连接器删除不调用 Keycloak | ☐ | | | API |
+| 5 | SAML 连接器删除 | ☐ | | | API |

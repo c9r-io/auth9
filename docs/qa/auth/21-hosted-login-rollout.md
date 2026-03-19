@@ -2,7 +2,7 @@
 
 **模块**: auth / rollout
 **前置条件**: Docker 环境运行中，Portal 和 auth9-core 可访问
-**关联 FR**: `keycloak_phase2_fr4_rollout_observability_and_fallback.md`
+**关联 FR**: Hosted Login 灰度上线与回滚
 
 ---
 
@@ -15,19 +15,19 @@
 1. 确认环境变量 `LOGIN_MODE` 未设置或设为 `hosted`
 2. 访问 `http://localhost:3000/login`
 3. 验证页面包含密码登录表单、SSO 登录入口、Passkey 按钮
-4. 验证页面 **不会** 重定向到 Keycloak 的登录界面
+4. 验证页面 **不会** 重定向到外部登录界面
 
 ### 预期结果
 
 - 页面 URL 保持在 `localhost:3000/login`
 - 页面显示 Auth9 品牌化的登录表单
-- 网络请求中无对 Keycloak 域名的浏览器直接跳转
+- 网络请求中无对外部认证服务域名的浏览器直接跳转
 
 ---
 
-## 场景 2: OIDC 回退模式 — 重定向到 Keycloak
+## 场景 2: OIDC 回退模式 — 重定向到 OIDC 授权流程
 
-**目标**: 验证 `LOGIN_MODE=oidc` 时，用户被重定向到 Keycloak OIDC 登录
+**目标**: 验证 `LOGIN_MODE=oidc` 时，用户被重定向到 OIDC 授权流程（注：Keycloak 已退役，OIDC 流程由 Auth9 内置引擎处理）
 
 ### 步骤
 
@@ -37,7 +37,7 @@
 
 ### 预期结果
 
-- 浏览器被重定向到 Keycloak 的授权端点
+- 浏览器被重定向到 Auth9 OIDC 授权端点
 - URL 包含 `response_type=code`、`client_id`、`redirect_uri` 等 OIDC 参数
 - `Set-Cookie` 头包含 `oauth_state` cookie（用于回调验证）
 
@@ -51,7 +51,7 @@
 
 1. 设置 `LOGIN_MODE=percentage`，`LOGIN_ROLLOUT_PCT=50`，重启 Portal
 2. 使用不同的 User-Agent 和 IP 组合多次访问 `/login`
-3. 统计显示 Auth9 登录表单 vs Keycloak 重定向的比例
+3. 统计显示 Auth9 登录表单 vs OIDC 重定向的比例
 
 ### 预期结果
 
@@ -109,7 +109,7 @@ curl -s http://localhost:8080/metrics | grep auth9_hosted_login_duration
 
 1. 在 `LOGIN_MODE=hosted` 下正常登录一个用户，验证 session 正常
 2. 将 `LOGIN_MODE` 改为 `oidc`，重启 Portal
-3. 访问 `/login`，确认被重定向到 Keycloak
+3. 访问 `/login`，确认被重定向到 OIDC 授权流程
 4. 验证之前创建的 session 仍然有效（访问 `/dashboard` 不需要重新登录）
 5. 将 `LOGIN_MODE` 改回 `hosted`，重启 Portal
 6. 访问 `/login`，确认回到 Auth9 登录表单

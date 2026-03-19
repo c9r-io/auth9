@@ -9,7 +9,7 @@
 
 ## 背景说明
 
-Auth9 自行签发和消费 email verification token，不依赖 Keycloak required actions。验证流程：
+Auth9 自行签发和消费 email verification token。验证流程：
 
 1. 调用 `POST /api/v1/hosted-login/send-verification` 发送验证邮件
 2. 用户点击邮件中的链接，Portal 加载 `/verify-email?token=<raw_token>`
@@ -32,7 +32,7 @@ Token 特性：
 
 ### 步骤 0（Gate Check）
 - Auth9 Core 服务运行中：`curl -sf http://localhost:8080/health`
-- **`IDENTITY_BACKEND=auth9_oidc`**：邮箱验证功能仅在 auth9-oidc 后端下可用。在 docker-compose 中设置 `IDENTITY_BACKEND=auth9_oidc` 并重启 auth9-core
+- 邮箱验证功能由 auth9-oidc 引擎提供（注：`IDENTITY_BACKEND` 标志已移除，auth9_oidc 是唯一后端）
 - 系统中存在已注册用户
 
 ### 初始状态

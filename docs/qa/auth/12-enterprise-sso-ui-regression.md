@@ -30,7 +30,7 @@
 
 ### 预期数据状态
 ```sql
-SELECT c.provider_alias, c.keycloak_alias, d.domain
+SELECT c.provider_alias, d.domain
 FROM enterprise_sso_connectors c
 JOIN enterprise_sso_domains d ON d.connector_id = c.id
 WHERE d.domain = '{corp_domain}' AND c.enabled = 1;
@@ -112,7 +112,7 @@ WHERE d.domain = '{corp_domain}' AND c.enabled = 1;
 | 1 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ✅ 通过 | 2026-03-04 | opencode | 成功进入托管认证链路，kc_idp_hint=test-oidc-idp |
 | 2 | Portal /login 页面输入未配置域名邮箱显示错误（UI 回归） | ✅ 通过 | 2026-03-04 | opencode | 防止 auto-redirect 绕过 SSO 入口 |
 | 3 | Portal /login 页面输入未配置域名邮箱显示错误（UI 回归） | ✅ 通过 | 2026-03-06 | opencode | 页面停留/login，显示错误提示 |
-| 4 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ✅ 通过 | 2026-03-06 | opencode | 成功跳转Keycloak，kc_idp_hint=oidc-test-idp |
+| 4 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ✅ 通过 | 2026-03-06 | opencode | 成功跳转Auth9 broker，kc_idp_hint=oidc-test-idp |
 | 5 | Portal /login 页面输入未配置域名邮箱显示错误（UI 回归） | ✅ 通过 | 2026-03-11 | opencode | 页面停留/login，显示错误提示"The requested resource was not found." |
-| 6 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ✅ 通过 | 2026-03-15 | opencode | 成功跳转到Keycloak授权链路，client_id=test-oidc-client |
+| 6 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ✅ 通过 | 2026-03-15 | opencode | 成功跳转到Auth9授权链路，client_id=test-oidc-client |
 | 7 | Portal /login 页面输入未配置域名邮箱显示错误（UI 回归） | ✅ 通过 | 2026-03-15 | opencode | 页面停留/login，显示错误提示"リクエストされたリソースが見つかりません。" |

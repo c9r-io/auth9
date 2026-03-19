@@ -168,14 +168,14 @@ done
 2. 执行 Token 操作，检查日志中是否出现完整 JWT
 3. 触发错误，检查错误日志中的敏感信息
 4. 检查 HTTP 请求日志中是否记录了 Authorization 头
-5. 检查 Keycloak 通信日志中是否泄露 client_secret
+5. 检查内部服务通信日志中是否泄露 client_secret
 
 ### 预期安全行为
 - 密码、Token、API Key 不出现在日志中
 - Authorization 头内容被脱敏（如 `Bearer ***`）
 - 错误日志不包含数据库连接字符串
 - PII 数据（邮箱、电话）根据策略脱敏
-- Keycloak admin_client_secret 不出现在日志中
+- 内部签名密钥不出现在日志中
 
 ### 验证方法
 ```bash
@@ -224,7 +224,7 @@ docker logs auth9-core 2>&1 | grep -i "REDACTED\|<REDACTED>"
 ### 前置条件
 - 了解 `SecurityDetectionService` 的检测阈值
 - 能够模拟各类攻击模式
-- **Keycloak ext-event-http SPI 已部署且 auth9-core 已启动**。ext-event-http 插件将事件推送到 `POST /api/v1/keycloak/events`，auth9-core 接收后触发安全检测。确认 `KEYCLOAK_WEBHOOK_SECRET` 已配置且 Keycloak realm 的 Event Listeners 包含 `ext-event-http`。
+- **auth9-core 已启动**。登录事件通过内部事件系统推送到安全检测服务，auth9-core 接收后触发安全检测。确认 webhook secret 已配置。
 
 ### 攻击目标
 验证安全检测与告警系统是否正确识别攻击行为
@@ -246,7 +246,7 @@ docker logs auth9-core 2>&1 | grep -i "REDACTED\|<REDACTED>"
 ### 验证方法
 ```bash
 # 说明：Auth9 不支持 /api/v1/auth/token + grant_type=password。
-# 当前默认链路使用 Webhook 注入 Keycloak 事件，验证检测逻辑与告警产出。
+# 当前默认链路使用 Webhook 注入登录事件，验证检测逻辑与告警产出。
 # 以下使用 Webhook 端点直接注入事件进行测试。
 
 SECRET="dev-webhook-secret-change-in-production"  # pragma: allowlist secret
@@ -326,7 +326,7 @@ done
 - 错误响应不包含堆栈跟踪 (stack trace)
 - 错误响应不暴露内部文件路径
 - 错误响应不暴露数据库查询或连接信息
-- 错误响应不暴露第三方服务信息（Keycloak 内部 URL 等）
+- 错误响应不暴露内部服务信息
 - 所有错误使用统一格式
 
 ### 验证方法

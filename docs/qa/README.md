@@ -5,8 +5,8 @@
 默认原则：
 
 - QA 应优先验证 Auth9 Portal、Auth9 API 和用户可见的 Auth9 产品行为。
-- 认证链路中的托管页面统一称为“Auth9 品牌认证页”；其可由 `auth9-keycloak-theme` 承载，但不应在测试步骤中作为独立产品面暴露为 Keycloak UI。
-- 如无文档明确说明，QA 不应直接操作 Keycloak Admin Console。底层认证引擎相关配置、管理接口和 realm 状态仅用于排障或受控集成校验。
+- 认证链路中的托管页面统一称为”Auth9 品牌认证页”，由 Auth9 内置 OIDC 引擎承载。
+- 底层身份引擎相关配置通过 Auth9 API 或数据库直接验证。
 
 ## 测试用例索引
 
@@ -88,7 +88,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (24 个文档, 112 个场景)
+### 认证流程 (23 个文档, 107 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 4 |
@@ -103,11 +103,10 @@
 | [auth/10-b2b-onboarding-flow.md](./auth/10-b2b-onboarding-flow.md) | B2B 首次入驻流程（三种登录方式均可触发） | 5 |
 | [auth/11-tenant-selection-token-exchange.md](./auth/11-tenant-selection-token-exchange.md) | 登录后 tenant 选择、tenant token exchange、identity token 权限收敛、gRPC tenant token 使用 | 5 |
 | [auth/12-enterprise-sso-ui-regression.md](./auth/12-enterprise-sso-ui-regression.md) | 企业 SSO UI 入口可见性与异常回归（Portal `/login`） | 2 |
-| [auth/13-keycloak-ui-visibility-regression.md](./auth/13-keycloak-ui-visibility-regression.md) | 社交登录/关联异常路径下的 Keycloak UI 可视性回归（仅检查是否有原生 UI 泄漏） | 5 |
 | [auth/14-landing-public-pages.md](./auth/14-landing-public-pages.md) | Landing 公共页面（Privacy / Terms / Docs）入口、内容、三语翻译 | 5 |
-| [auth/15-dark-mode-auth-contrast.md](./auth/15-dark-mode-auth-contrast.md) | 独立认证页与 Auth9 品牌认证页的 Dark Mode 对比度回归（Portal + Keycloak Theme） | 5 |
+| [auth/15-dark-mode-auth-contrast.md](./auth/15-dark-mode-auth-contrast.md) | 独立认证页与 Auth9 品牌认证页的 Dark Mode 对比度回归 | 5 |
 | [auth/16-pkce-flow.md](./auth/16-pkce-flow.md) | PKCE (RFC 7636) 参数透传、Cookie 存储、Public Client 强制验证 | 5 |
-| [auth/19-hosted-login-routes-and-branding.md](./auth/19-hosted-login-routes-and-branding.md) | Hosted Login 路由托管、Portal branding、`/mfa/verify` 占位与 Keycloak fallback 定位 | 5 |
+| [auth/19-hosted-login-routes-and-branding.md](./auth/19-hosted-login-routes-and-branding.md) | Hosted Login 路由托管、Portal branding、`/mfa/verify` 占位 | 5 |
 | [auth/17-email-otp-login.md](./auth/17-email-otp-login.md) | Email OTP 无密码登录（发送/验证端点、Portal UI 入口、租户级开关、防枚举） | 5 | 🆕
 | [auth/18-oidc-login-mfa-advanced.md](./auth/18-oidc-login-mfa-advanced.md) | OIDC 登录进阶页回归（TOTP 注册、认证器选择、登出） | 3 |
 | [auth/20-hosted-login-api.md](./auth/20-hosted-login-api.md) | Hosted Login API（密码登录、登出、密码重置、Backend Flag 切换） | 5 |
@@ -116,8 +115,8 @@
 | [auth/23-required-actions.md](./auth/23-required-actions.md) | Required Actions 与登录后跳转（Pending Actions API、Force Password、Complete Profile） | 5 |
 | [auth/24-mfa-totp-recovery.md](./auth/24-mfa-totp-recovery.md) | MFA 本地化（TOTP 注册/验证/重放防护、Recovery Code 生成/消费、MFA 登录挑战、Session 过期） | 5 |
 | [auth/25-auth9-oidc-local-token-issuance.md](./auth/25-auth9-oidc-local-token-issuance.md) | Auth9 本地 OIDC Token 签发（授权码流程、Code Replay、PKCE 验证、Refresh 轮转、ID Token Claims） | 5 |
-| [auth/26-enterprise-oidc-broker.md](./auth/26-enterprise-oidc-broker.md) | 企业 OIDC Broker 原生登录（OIDC 连接器 CRUD 不触发 Keycloak、userInfoUrl 必填、Auth9 broker 路由、claim mapping） | 5 |
-| [auth/27-enterprise-saml-broker.md](./auth/27-enterprise-saml-broker.md) | 企业 SAML Broker 原生登录（SAML 连接器 CRUD 不触发 Keycloak、SP Metadata 生成、证书校验、Auth9 broker 路由） | 5 |
+| [auth/26-enterprise-oidc-broker.md](./auth/26-enterprise-oidc-broker.md) | 企业 OIDC Broker 原生登录（OIDC 连接器 CRUD、userInfoUrl 必填、Auth9 broker 路由、claim mapping） | 5 |
+| [auth/27-enterprise-saml-broker.md](./auth/27-enterprise-saml-broker.md) | 企业 SAML Broker 原生登录（SAML 连接器 CRUD、SP Metadata 生成、证书校验、Auth9 broker 路由） | 5 |
 | [auth/28-federated-identity-linking.md](./auth/28-federated-identity-linking.md) | Federated Identity Linking（社交登录身份关联、Unlink/Re-link、first_login_policy 策略控制、confirm-link 过期） | 5 |
 
 ### 系统设置 (4 个文档, 20 个场景)
@@ -184,32 +183,28 @@
 | [sdk/09-auth-password-passkey-clients.md](./sdk/09-auth-password-passkey-clients.md) | 认证流程与凭证管理子客户端（Password/Passkeys/EmailOtp/Auth/Organizations） | 5 |
 | [sdk/10-observability-config-clients.md](./sdk/10-observability-config-clients.md) | 可观测性与系统配置子客户端（AuditLogs/Analytics/SecurityAlerts/System/EmailTemplates/Branding） | 5 |
 
-### 集成测试 (23 个文档, 106 个场景)
+### 集成测试 (19 个文档, 87 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [integration/01-concurrent-operations.md](./integration/01-concurrent-operations.md) | 并发操作、竞态条件 | 4 |
 | [integration/02-password-policy.md](./integration/02-password-policy.md) | 密码策略强制执行 | 5 |
 | [integration/03-rate-limiting.md](./integration/03-rate-limiting.md) | 限流策略与异常窗口验证 | 5 |
 | [integration/04-health-check.md](./integration/04-health-check.md) | 健康检查端点与依赖状态 | 5 |
-| [integration/05-keycloak-events.md](./integration/05-keycloak-events.md) | Keycloak 事件兼容入口与映射 | 5 |
-| [integration/11-keycloak26-event-stream.md](./integration/11-keycloak26-event-stream.md) | Keycloak 26 升级、Webhook 事件接入（ext-event-http SPI）、Redis Stream 兼容回归 | 5 |
 | [integration/06-init-seed-data.md](./integration/06-init-seed-data.md) | Init 初始种子数据、幂等性、底层认证同步恢复 | 5 |
 | [integration/07-observability-metrics.md](./integration/07-observability-metrics.md) | Prometheus /metrics 端点、HTTP 指标、X-Request-ID、路径折叠 | 5 |
 | [integration/08-observability-stack.md](./integration/08-observability-stack.md) | 可观测性栈启动、Grafana 仪表盘、业务指标、限流指标 | 5 |
 | [integration/09-security-hardening-config.md](./integration/09-security-hardening-config.md) | 生产环境安全启动校验、REST aud 严格校验、HSTS 条件下发、gRPC audience 必填 | 5 |
-| [integration/10-security-hardening-p2.md](./integration/10-security-hardening-p2.md) | 事务性级联删除原子性、Keycloak 事件源安全校验、外部系统同步 | 5 |
+| [integration/10-security-hardening-p2.md](./integration/10-security-hardening-p2.md) | 事务性级联删除原子性、事件源安全校验、外部系统同步 | 5 |
 | [integration/12-otp-service-layer.md](./integration/12-otp-service-layer.md) | OTP 通用服务层基础设施（OtpManager、OtpChannel、速率限制、CacheOperations 扩展） | 5 |
 | [integration/13-identity-engine-state-injection.md](./integration/13-identity-engine-state-injection.md) | IdentityEngine 抽象注入、Session/Identity Provider/Realm Sync 回归 | 3 |
-| [integration/14-keycloak-adapter-layer.md](./integration/14-keycloak-adapter-layer.md) | Keycloak adapter 层回归（Session revoke、IdP CRUD、linked identity、realm sync 注入链） | 4 |
 | [integration/15-neutral-identity-schema-migration.md](./integration/15-neutral-identity-schema-migration.md) | 中性身份字段迁移回归（identity_subject / provider_session_id / provider_alias） | 4 |
 | [integration/16-auth9-oidc-skeleton-and-backend-flag.md](./integration/16-auth9-oidc-skeleton-and-backend-flag.md) | `auth9-oidc` 服务骨架、`IDENTITY_BACKEND` 开关与双 backend smoke test | 4 |
 | [integration/17-identity-engine-capabilities-state-cleanup.md](./integration/17-identity-engine-capabilities-state-cleanup.md) | Identity Engine 最小能力面补齐、`state` 去 `keycloak_client()` 出口、adapter contract 回归 | 3 |
 | [integration/18-business-layer-keycloak-decoupling.md](./integration/18-business-layer-keycloak-decoupling.md) | 业务层去 `KeycloakClient` 直接依赖、handler 中性 DTO、Password/WebAuthn/SCIM/SAML 抽象回归 | 5 |
 | [integration/19-phase1-identity-abstraction-closure.md](./integration/19-phase1-identity-abstraction-closure.md) | Phase 1 身份抽象层 closure 验收（默认 `keycloak` backend、`auth9_oidc` stub、adapter contract、中性字段主路径） | 4 |
-| [integration/20-local-credential-store.md](./integration/20-local-credential-store.md) | Phase 3 FR1 本地 Credential Store（中性模型、migration、repository 契约、Keycloak 共存） | 5 |
+| [integration/20-local-credential-store.md](./integration/20-local-credential-store.md) | Phase 3 FR1 本地 Credential Store（中性模型、migration、repository 契约） | 5 |
 | [integration/21-email-verification-required-actions.md](./integration/21-email-verification-required-actions.md) | Phase 3 FR3 邮箱验证与 Required Actions（schema 完整性、migration 幂等性、adapter 契约、Identity Token 白名单、Backend fallback） | 5 |
 | [integration/22-config-keycloak-retirement.md](./integration/22-config-keycloak-retirement.md) | Phase 5 FR4 Config 重构 — KeycloakConfig 退役、字段提升、SAML 方法补全 | 5 |
-| [integration/qa-infrastructure-keycloak-cleanup.md](./integration/qa-infrastructure-keycloak-cleanup.md) | Phase 5 FR5 基础设施清理 — Docker Compose/K8s/Portal/脚本 Keycloak 残留移除验证 | 5 |
 
 ### SAML Application (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
@@ -246,7 +241,7 @@
 | 邀请管理 | 3 | 15 |
 | 会话与安全 | 8 | 39 |
 | Webhook | 4 | 17 |
-| 认证流程 | 24 | 112 |
+| 认证流程 | 23 | 107 |
 | 系统设置 | 4 | 20 |
 | 身份提供商 | 3 | 15 |
 | Passkeys | 3 | 15 |
@@ -254,11 +249,11 @@
 | 审计日志 | 1 | 5 |
 | Action | 12 | 49 |
 | SDK | 10 | 50 |
-| 集成测试 | 23 | 106 |
+| 集成测试 | 19 | 87 |
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
 | Identity Engine | 1 | 5 |
-| **总计** | **125** | **588** |
+| **总计** | **119** | **564** |
 
 ### 文档对齐记录
 

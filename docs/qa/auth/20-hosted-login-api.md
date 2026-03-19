@@ -79,7 +79,7 @@ curl -s http://localhost:8080/api/v1/auth/userinfo \
 - 系统中存在用户 `qa-user@example.com`
 
 ### 目的
-验证错误密码返回统一错误码，不暴露 Keycloak 原始错误结构
+验证错误密码返回统一错误码，不暴露内部错误结构
 
 ### 测试操作流程
 1. 使用错误密码登录：
@@ -100,7 +100,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST http://localhost:8080/api/v1/
 ### 预期结果
 - 两个请求都返回 HTTP 401
 - 响应体为 `{"error": "unauthorized", "message": "Invalid email or password."}`
-- 响应中**不包含** Keycloak 错误字段（如 `error_description`、`invalid_grant` 等）
+- 响应中**不包含**内部错误字段（如 `error_description`、`invalid_grant` 等）
 - 两个错误响应结构一致（防止邮箱枚举）
 
 ---
@@ -197,26 +197,24 @@ curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST http://localhost:8080/api/v1/
 
 ---
 
-## 场景 5：Backend Flag 切换验证
+## 场景 5：auth9_oidc 后端验证
 
 ### 步骤 0（Gate Check）
-- 确认 `IDENTITY_BACKEND` 环境变量可配置
+- 确认 auth9-core 正在运行（注：`IDENTITY_BACKEND` 环境变量已移除，auth9_oidc 是唯一后端）
 
 ### 初始状态
-- 默认环境运行 `IDENTITY_BACKEND=keycloak`
+- 默认环境运行 auth9_oidc 后端
 
 ### 目的
-验证 Hosted Login API 在不同 `IDENTITY_BACKEND` 模式下均能响应请求
+验证 Hosted Login API 在 auth9_oidc 后端下正常响应请求
 
 ### 测试操作流程
-1. 确认当前 backend 模式：
+1. 确认服务健康：
 ```bash
-# 检查 docker-compose 或环境变量
-docker exec auth9-core env | grep IDENTITY_BACKEND
+curl -sf http://localhost:8080/health
+# 预期: HTTP 200
 ```
-2. 在 `keycloak` 模式下执行密码登录（同场景 1）
-3. 切换到 `auth9_oidc` 模式（修改环境变量并重启服务）
-4. 在 `auth9_oidc` 模式下执行密码登录：
+2. 执行密码登录：
 ```bash
 curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST http://localhost:8080/api/v1/hosted-login/password \
   -H "Content-Type: application/json" \
@@ -225,10 +223,9 @@ curl -s -w "\nHTTP_STATUS: %{http_code}\n" -X POST http://localhost:8080/api/v1/
 ```
 
 ### 预期结果
-- `keycloak` 模式：密码登录正常返回 200 和 token
-- `auth9_oidc` 模式：密码登录正常返回 200 和 token（Phase 3 FR5 已完整实现本地 OIDC 流程，包括密码验证、token 签发、refresh 轮转）
-- 两种模式下**响应结构一致**，均为 `{"access_token": "...", "token_type": "Bearer", "expires_in": ...}`
-- 错误响应结构一致，均为 `{"error": "...", "message": "..."}`
+- 密码登录正常返回 200 和 token（Auth9 内置 OIDC 引擎完整实现本地 OIDC 流程，包括密码验证、token 签发、refresh 轮转）
+- 响应结构为 `{"access_token": "...", "token_type": "Bearer", "expires_in": ...}`
+- 错误响应结构为 `{"error": "...", "message": "..."}`
 
 ---
 

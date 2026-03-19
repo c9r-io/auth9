@@ -25,7 +25,7 @@ Phase 3 新增以下能力：
 
 ### 初始状态
 - 已创建 SAML Application `{app_id}`
-- Keycloak 正常运行
+- Auth9 内置 OIDC 引擎正常运行
 
 ### 目的
 验证证书端点无需认证即可访问，返回有效 PEM 格式证书
@@ -174,11 +174,11 @@ FROM saml_applications WHERE entity_id = 'https://encrypted.example.com';
 ## 场景 4：SLO POST Binding 验证
 
 ### 初始状态
-- Keycloak 正常运行
-- 持有管理员级别的 Keycloak Admin Token（用于验证 Keycloak Client 属性）
+- Auth9 内置 OIDC 引擎正常运行
+- 持有管理员级别的 Access Token（用于验证 SAML Client 属性）
 
 ### 目的
-验证配置 `slo_url` 时，Keycloak SAML Client 同时注册 Redirect 和 POST 两种 SLO 绑定
+验证配置 `slo_url` 时，SAML Client 同时注册 Redirect 和 POST 两种 SLO 绑定
 
 ### 测试操作流程
 
@@ -194,30 +194,21 @@ APP_RESULT=$(curl -s -X POST "http://localhost:8080/api/v1/tenants/{tenant_id}/s
     "slo_url": "https://slo-test.example.com/slo"
   }')
 KC_CLIENT_ID=$(echo $APP_RESULT | jq -r '.data.keycloak_client_id')
-echo "Keycloak Client UUID: $KC_CLIENT_ID"
+echo "SAML Client ID: $KC_CLIENT_ID"
 ```
 
-**验证 Keycloak Client 属性**:
+**验证 SAML Client 属性**:
 ```bash
-# 获取 Keycloak Admin Token
-KC_TOKEN=$(curl -s -X POST "http://localhost:8081/realms/master/protocol/openid-connect/token" \
-  -d "grant_type=client_credentials&client_id=admin-cli&client_secret={admin_secret}" \
-  | jq -r '.access_token')
-
-# 查看 SAML Client 属性
-curl -s "http://localhost:8081/admin/realms/auth9/clients/$KC_CLIENT_ID" \
-  -H "Authorization: Bearer $KC_TOKEN" \
-  | jq '.attributes | {
-    saml_single_logout_service_url_redirect,
-    saml_single_logout_service_url_post
-  }'
+# 通过数据库验证 SLO URL 配置
+mysql -h 127.0.0.1 -P 4000 -u root auth9 -e "
+SELECT slo_url FROM saml_applications WHERE keycloak_client_id = '$KC_CLIENT_ID';
+"
+# 预期: slo_url = 'https://slo-test.example.com/slo'
 ```
 
 ### 预期结果
 - SAML Application 创建成功，`slo_url` = `"https://slo-test.example.com/slo"`
-- Keycloak Client 属性中同时包含：
-  - `saml_single_logout_service_url_redirect` = `"https://slo-test.example.com/slo"`
-  - `saml_single_logout_service_url_post` = `"https://slo-test.example.com/slo"`
+- SAML Client SLO 配置正确：`slo_url` = `"https://slo-test.example.com/slo"`（同时支持 Redirect 和 POST 绑定）
 
 ---
 

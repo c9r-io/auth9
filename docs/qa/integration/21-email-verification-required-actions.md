@@ -9,12 +9,12 @@
 
 ## 背景说明
 
-Phase 3 FR3 实现了 Auth9 自管的邮箱验证和 Required Actions，替代 Keycloak required actions 页面。核心变更：
+Phase 3 FR3 实现了 Auth9 自管的邮箱验证和 Required Actions。核心变更：
 
 - **auth9-oidc 新增 4 张表**：`credentials`、`user_verification_status`、`email_verification_tokens`、`pending_actions`
 - **auth9-oidc 启动时自动建表**：通过 `include_str!` 嵌入 migration SQL + `CREATE TABLE IF NOT EXISTS` 幂等执行
 - **Identity Token 白名单扩展**：`/api/v1/hosted-login/pending-actions` 和 `/api/v1/hosted-login/complete-action` 允许 identity token 访问
-- **Backend 隔离**：邮箱验证和 required actions 仅在 `IDENTITY_BACKEND=auth9_oidc` 下可用
+- **Backend**：邮箱验证和 required actions 由 auth9-oidc 提供（`IDENTITY_BACKEND` 开关已移除，auth9_oidc 为唯一后端）
 
 ---
 
@@ -167,25 +167,19 @@ grep -A2 "hosted-login" auth9-core/src/middleware/require_auth.rs
 
 ---
 
-## 场景 5：Keycloak Backend 下 Email Verification 端点 Graceful 处理
+## 场景 5：Email Verification 端点正常工作
 
 ### 步骤 0（Gate Check）
-- auth9-core 以 `IDENTITY_BACKEND=keycloak` 运行（默认）
+- auth9-core 正常运行（auth9-oidc 为唯一后端）
 
 ### 初始状态
-- auth9-core 使用 Keycloak backend
+- auth9-core 使用 auth9-oidc backend
 
 ### 目的
-验证在 Keycloak backend 下调用 email verification 端点不会返回 200 假成功，而是返回明确的错误
+验证 email verification 端点在 auth9-oidc backend 下正常工作
 
 ### 测试操作流程
-1. 确认 backend 为 keycloak：
-```bash
-docker exec auth9-core env | grep IDENTITY_BACKEND
-# 预期: IDENTITY_BACKEND=keycloak
-```
-
-2. 调用发送验证端点（已存在用户）：
+1. 调用发送验证端点（已存在用户）：
 ```bash
 curl -s -w "\nHTTP_STATUS: %{http_code}\n" \
   -X POST http://localhost:8080/api/v1/hosted-login/send-verification \
@@ -193,7 +187,7 @@ curl -s -w "\nHTTP_STATUS: %{http_code}\n" \
   -d '{"email": "admin@auth9.local"}'
 ```
 
-3. 调用发送验证端点（不存在用户）：
+2. 调用发送验证端点（不存在用户）：
 ```bash
 curl -s -w "\nHTTP_STATUS: %{http_code}\n" \
   -X POST http://localhost:8080/api/v1/hosted-login/send-verification \
@@ -202,7 +196,5 @@ curl -s -w "\nHTTP_STATUS: %{http_code}\n" \
 ```
 
 ### 预期结果
-- 存在用户：HTTP 500（`internal_error`），因为 Keycloak adapter 不支持 verification tokens
-  - **注意**：理想情况应返回 501 Not Implemented 或 200 + 统一消息（防枚举），当前行为为 500 — 这是已知的待优化项
-- 不存在用户：HTTP 200 + 统一消息 `"If an account exists with this email..."`（防枚举逻辑在 user 查找之前就返回）
-- 日志中出现 `verification tokens not supported in keycloak backend` 错误信息（仅对存在用户的请求）
+- 存在用户：HTTP 200 + 统一消息 `"If an account exists with this email..."`（防枚举）
+- 不存在用户：HTTP 200 + 统一消息 `"If an account exists with this email..."`（防枚举）

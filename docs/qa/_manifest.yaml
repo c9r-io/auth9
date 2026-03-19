@@ -230,14 +230,6 @@ documents:
     has_entry_visibility: true
     has_checklist: true
     last_reviewed: 2026-03-06
-  - id: auth/13-keycloak-ui-visibility-regression
-    path: docs/qa/auth/13-keycloak-ui-visibility-regression.md
-    module: auth
-    scenarios: 5
-    has_ui_flow: true
-    has_entry_visibility: true
-    has_checklist: true
-    last_reviewed: 2026-03-04
   - id: auth/15-dark-mode-auth-contrast
     path: docs/qa/auth/15-dark-mode-auth-contrast.md
     module: auth
@@ -327,15 +319,6 @@ documents:
     has_checklist: true
     last_reviewed: 2026-02-21
     test_script: scripts/qa/auto/integration-04-health-check.sh
-  - id: integration/05-keycloak-events
-    path: docs/qa/integration/05-keycloak-events.md
-    module: integration
-    scenarios: 5
-    has_ui_flow: false
-    has_entry_visibility: false
-    has_checklist: true
-    last_reviewed: 2026-02-21
-    test_script: scripts/qa/auto/integration-05-keycloak-events.sh
   - id: integration/06-init-seed-data
     path: docs/qa/integration/06-init-seed-data.md
     module: integration
@@ -378,14 +361,6 @@ documents:
     has_entry_visibility: false
     has_checklist: true
     last_reviewed: 2026-02-21
-  - id: integration/11-keycloak26-event-stream
-    path: docs/qa/integration/11-keycloak26-event-stream.md
-    module: integration
-    scenarios: 5
-    has_ui_flow: false
-    has_entry_visibility: false
-    has_checklist: true
-    last_reviewed: 2026-02-21
   - id: integration/12-otp-service-layer
     path: docs/qa/integration/12-otp-service-layer.md
     module: integration
@@ -402,15 +377,6 @@ documents:
     has_entry_visibility: false
     has_checklist: true
     last_reviewed: 2026-03-17
-  - id: integration/14-keycloak-adapter-layer
-    path: docs/qa/integration/14-keycloak-adapter-layer.md
-    module: integration
-    scenarios: 4
-    has_ui_flow: false
-    has_entry_visibility: false
-    has_checklist: true
-    last_reviewed: 2026-03-17
-    test_script: scripts/qa/auto/integration-14-keycloak-adapter-layer.sh
   - id: integration/19-phase1-identity-abstraction-closure
     path: docs/qa/integration/19-phase1-identity-abstraction-closure.md
     module: integration

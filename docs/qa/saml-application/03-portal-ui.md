@@ -101,7 +101,7 @@ curl -s -X POST "http://localhost:8080/api/v1/tenants/{tenant_id}/saml-apps" \
   - 显示 Entity ID `https://sp.example.com`
   - 启用开关为 ON
   - 显示 IdP Metadata URL（可复制）
-  - 显示 SSO URL（可复制，形如 `http://localhost:8081/realms/auth9/protocol/saml`）
+  - 显示 SSO URL（可复制，Auth9 SAML SSO 端点）
   - 显示配置摘要：NameID / Assertions 签名状态 / Mappings 数量
 
 ### 预期数据状态
@@ -145,7 +145,7 @@ WHERE tenant_id = '{tenant_id}' AND entity_id = 'https://sp.example.com';
 - 复制按钮点击后显示 ✓ 反馈（约 2 秒后恢复）
 - IdP Metadata URL 格式：`http://localhost:8080/api/v1/tenants/{tenant_id}/saml-apps/{app_id}/metadata`
 - 浏览器中直接访问 Metadata URL 返回有效的 SAML IdP Metadata XML（无需登录，公开端点）
-- XML 中 `<SingleSignOnService>` 的 `Location` 指向 `http://localhost:8081/realms/auth9/protocol/saml`
+- XML 中 `<SingleSignOnService>` 的 `Location` 指向 Auth9 SAML SSO 端点
 
 ---
 
@@ -204,7 +204,7 @@ SELECT id, name, enabled FROM saml_applications WHERE id = '{app_id}';
 - 记录删除前的 `keycloak_client_id`
 
 ### 目的
-验证通过 Portal 删除 SAML Application，同时清理 DB 和 Keycloak Client
+验证通过 Portal 删除 SAML Application，同时清理 DB 和 SAML Client
 
 ### 测试操作流程
 
@@ -229,8 +229,8 @@ curl -s -X DELETE "http://localhost:8080/api/v1/tenants/{tenant_id}/saml-apps/{a
 SELECT COUNT(*) AS cnt FROM saml_applications WHERE id = '{app_id}';
 -- 预期: cnt = 0
 
--- 验证 Keycloak Client 也已删除:
--- GET http://localhost:8081/admin/realms/auth9/clients/{keycloak_client_id}
+-- 验证 SAML Client 也已删除（通过数据库验证）:
+-- SELECT COUNT(*) FROM saml_applications WHERE keycloak_client_id = '{keycloak_client_id}';
 -- 预期: 404 Not Found
 ```
 

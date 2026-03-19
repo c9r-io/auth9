@@ -140,7 +140,7 @@ cd auth9-oidc && cargo test 2>&1
 
 ---
 
-## 场景 5: 与现有 Keycloak 路径无冲突
+## 场景 5: 与 Auth9 内置 OIDC 引擎路径无冲突
 
 **目的**: 验证新增代码不破坏 auth9-core 现有运行路径
 

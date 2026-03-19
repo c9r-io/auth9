@@ -8,7 +8,7 @@
 
 ## 架构说明
 
-Auth9 接管社交登录 Broker 全链路。社交登录不再通过 Keycloak identity provider 代理，而是由 Auth9-core 直接执行 OAuth2 授权跳转、callback 接收、token 交换和 profile 映射。
+Auth9 接管社交登录 Broker 全链路。社交登录由 Auth9-core 直接执行 OAuth2 授权跳转、callback 接收、token 交换和 profile 映射。
 
 **核心端点**:
 - `GET /api/v1/social-login/providers` — 获取已启用的社交提供商列表（公开，无需认证）
@@ -50,7 +50,7 @@ curl -s http://localhost:8080/api/v1/social-login/providers | jq '.data'
 - Homepage URL: `http://localhost:3000`
 - Authorization callback URL: `http://localhost:8080/api/v1/social-login/callback`
 
-> **重要**：GitHub OAuth App 的 callback 必须指向 **Auth9-core 社交登录 callback 端点**，而不是 Keycloak broker endpoint。
+> **重要**：GitHub OAuth App 的 callback 必须指向 **Auth9-core 社交登录 callback 端点**。
 
 ---
 
@@ -75,7 +75,7 @@ curl -s http://localhost:8080/api/v1/social-login/providers | jq '.data'
 - 用户成功登录，进入 Portal
 - 如果是新用户，自动创建账户
 - Google 身份被关联
-- 浏览器地址栏不应暴露 Keycloak broker endpoint
+- 浏览器地址栏不应暴露内部 broker endpoint
 
 ### 预期数据状态
 ```sql
@@ -109,7 +109,7 @@ WHERE user_id = '{user_id}' AND provider_alias = 'google';
 - 页面显示可发起关联的提供商入口（仅显示已启用且当前未关联的提供商）
 - 完成授权后返回 Linked Identities 页面
 - 新的社交身份出现在已关联身份列表中
-- 关联流程不经过 Keycloak broker endpoint
+- 关联流程由 Auth9 原生 broker 处理
 
 ### 预期数据状态
 ```sql

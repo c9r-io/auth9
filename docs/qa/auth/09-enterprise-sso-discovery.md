@@ -30,7 +30,7 @@
 | alias | VARCHAR(100) | 连接器别名 |
 | provider_type | VARCHAR(20) | `saml` / `oidc` |
 | enabled | BOOLEAN | 是否启用 |
-| provider_alias | VARCHAR(140) | 中性 provider alias（migration period 下与 `keycloak_alias` 同步） |
+| provider_alias | VARCHAR(140) | provider alias |
 | config | JSON | 协议配置 |
 
 ### `enterprise_sso_domains` 表
@@ -78,7 +78,7 @@ curl -X POST 'http://localhost:8080/api/v1/enterprise-sso/discovery?response_typ
 
 ### 预期数据状态
 ```sql
-SELECT c.id, c.alias, c.provider_alias, c.keycloak_alias, c.enabled, d.domain
+SELECT c.id, c.alias, c.provider_alias, c.enabled, d.domain
 FROM enterprise_sso_connectors c
 JOIN enterprise_sso_domains d ON d.connector_id = c.id
 WHERE d.domain = '{corp_domain}';
@@ -206,7 +206,7 @@ curl -I 'http://localhost:8080/api/v1/auth/authorize?response_type=code&client_i
 ### 预期结果
 - HTTP 状态码为 `307` 或 `302`
 - OIDC 连接器：`Location` 指向 `/api/v1/enterprise-sso/authorize/{alias}?login_challenge=...`（Auth9 原生 broker）
-- SAML 连接器：`Location` 指向 Keycloak 端点，查询参数中存在 `kc_idp_hint={provider_alias}`
+- SAML 连接器：`Location` 指向 Auth9 broker 端点（`/api/v1/enterprise-sso/authorize/{alias}?login_challenge=...`）
 
 ### 预期数据状态
 ```sql

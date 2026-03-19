@@ -36,7 +36,7 @@
    - `created_at` - 创建时间
    - `created_by` - 创建者
    - `tenant_id` - 租户 ID
-   - `identity_subject` - 外部身份主体 ID（migration period 下与 `keycloak_id` 同步）
+   - `identity_subject` - 外部身份主体 ID
 3. 检查字段是否被修改
 
 ### 预期安全行为
@@ -64,7 +64,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 # 预期: id, created_at, tenant_id, identity_subject 未变
 
 # 数据库验证
-SELECT id, created_at, identity_subject, keycloak_id FROM users WHERE id = '...';
+SELECT id, created_at, identity_subject FROM users WHERE id = '...';
 ```
 
 ### 修复建议

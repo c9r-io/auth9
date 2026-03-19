@@ -22,7 +22,7 @@ curl -sf http://localhost:8080/health
 ### 预期结果
 
 - 返回 HTTP 200
-- 服务正常运行，无 Keycloak 连接错误日志
+- 服务正常运行，无外部身份引擎连接错误日志
 
 ---
 

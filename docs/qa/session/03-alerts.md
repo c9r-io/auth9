@@ -21,12 +21,12 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 < docs/qa/session/seed.sql
 
 1. 通过 Auth9 Portal「用户管理」创建 `target@example.com`
 2. 或通过 Auth9 用户 API / 测试脚本创建同名用户
-3. 若本地集成环境需要补齐底层认证主体映射，使用受控脚本完成 `identity_subject` 对齐；migration period 下该值会与 `keycloak_id` 同步，不要求 QA 手工操作底层管理控制台
+3. 若本地集成环境需要补齐底层认证主体映射，使用受控脚本完成 `identity_subject` 对齐
 
 验证目标：
 
 - `target@example.com` 能通过正常登录流程完成认证
-- `users.identity_subject`（migration period 下与 `keycloak_id` 同步）已正确存在
+- `users.identity_subject` 已正确存在
 
 说明：
 - `seed.sql` 会创建目标用户的会话数据和历史登录记录（用于安全告警检测）
@@ -63,7 +63,7 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 < docs/qa/session/seed.sql
 验证暴力破解检测和告警
 
 ### 测试操作流程
-1. 对同一账户连续尝试错误密码 10+ 次（通过 Keycloak webhook 模拟）
+1. 对同一账户连续尝试错误密码 10+ 次（通过事件 Webhook 模拟）
 
 **API 模拟方式**（推荐，可重复执行）：
 ```bash
@@ -144,7 +144,7 @@ WHERE user_id = '{user_id}' AND alert_type = 'new_device' ORDER BY created_at DE
 异地登录检测要求：(1) 上一次登录有 location 数据，(2) 当前登录有不同的 location，(3) 两次登录间隔 < 1 小时。
 seed.sql 预置了一条 10 分钟前来自公网 IP (203.0.113.10) 的登录记录（location = "IP:203.0.113.10"）。
 
-> **本地 Docker 环境限制**: Keycloak webhook 事件的 IP 通常为私网地址（如 172.x.x.x、192.168.x.x），这些 IP 会被 `derive_location_from_ip()` 映射为 `"Local Network"`。如果 seed.sql 中的历史记录 location 也是 `"Local Network"`（而非公网 IP），两次登录 location 相同，将不会触发 impossible_travel 告警。**要在本地环境中可靠测试此场景**，需确保 seed.sql 中的历史登录 location 为公网 IP 格式（如 `"IP:203.0.113.10"`），并通过 webhook API 直接发送带公网 IP 的登录事件（而非通过浏览器登录）。
+> **本地 Docker 环境限制**: 事件 Webhook 的 IP 通常为私网地址（如 172.x.x.x、192.168.x.x），这些 IP 会被 `derive_location_from_ip()` 映射为 `"Local Network"`。如果 seed.sql 中的历史记录 location 也是 `"Local Network"`（而非公网 IP），两次登录 location 相同，将不会触发 impossible_travel 告警。**要在本地环境中可靠测试此场景**，需确保 seed.sql 中的历史登录 location 为公网 IP 格式（如 `"IP:203.0.113.10"`），并通过 webhook API 直接发送带公网 IP 的登录事件（而非通过浏览器登录）。
 
 ### 测试操作流程
 1. 确认 seed.sql 已执行（包含 10 分钟前的登录记录）

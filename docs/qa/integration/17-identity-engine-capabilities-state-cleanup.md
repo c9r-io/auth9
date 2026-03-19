@@ -1,7 +1,7 @@
 # 集成测试 - Identity Engine 能力面补齐与 State 清理
 
 **模块**: 集成测试
-**测试范围**: `IdentityUserStore` / `IdentityClientStore` / `IdentityCredentialStore` 最小能力面、`HasServices` 移除 `keycloak_client()` 出口、Keycloak/Auth9 OIDC wiring 回归
+**测试范围**: `IdentityUserStore` / `IdentityClientStore` / `IdentityCredentialStore` 最小能力面、`HasServices` 抽象出口、Auth9 OIDC wiring 回归
 **场景数**: 3
 **优先级**: 高
 
@@ -9,11 +9,13 @@
 
 ## 背景说明
 
+> **迁移已完成**: Keycloak 已被 Auth9 内置 OIDC 引擎完全替代。以下为历史迁移验证记录。
+
 本用例用于验证 Phase 1 FR1 完成后的关键回归点：
 
-- `state` 不再通过 trait 向业务层暴露 `KeycloakClient`
+- `state` 通过 `IdentityEngine` 抽象向业务层暴露身份能力
 - `identity_engine` 抽象具备当前业务层已使用的 user/client/credential 最小能力面
-- `keycloak` adapter 与 `auth9_oidc` stub backend 均可完成最小 wiring 与 contract 回归
+- auth9-oidc backend 完成完整 wiring 与 contract 回归
 
 本用例聚焦后端注入链与 contract，不覆盖 Portal UI。
 

@@ -27,7 +27,7 @@ Tenant Access Token 的 `aud` 字段等于签发时使用的 `service_id`（即 
 ## 步骤 0: Gate Check
 
 ```bash
-# 确认 auth9-core 运行在 auth9_oidc 模式（或 keycloak 模式均可，audience 验证与 backend 无关）
+# 确认 auth9-core 正常运行（audience 验证与 backend 无关）
 curl -sf http://localhost:8080/health | jq .
 
 # 确认 Redis 中 audience set 已种子化

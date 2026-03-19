@@ -1,7 +1,7 @@
-# 集成测试 - 业务层 Keycloak 解耦
+# 集成测试 - 业务层身份引擎解耦
 
 **模块**: 集成测试
-**测试范围**: `UserService` / `PasswordService` / `WebAuthnService` / `ScimService` / `SamlApplicationService` 与 `tenant_access` handlers 改为依赖 `IdentityEngine` 抽象，不再直接持有 `KeycloakClient` 或拼装 `Keycloak*` DTO
+**测试范围**: `UserService` / `PasswordService` / `WebAuthnService` / `ScimService` / `SamlApplicationService` 与 `tenant_access` handlers 依赖 `IdentityEngine` 抽象
 **场景数**: 5
 **优先级**: 高
 
@@ -9,12 +9,13 @@
 
 ## 背景说明
 
-本用例覆盖 Keycloak Phase 1 FR2 的主要回归点：
+> **迁移已完成**: Keycloak 已被 Auth9 内置 OIDC 引擎完全替代。以下为历史迁移验证记录。
 
-- 业务服务不再直接持有 `KeycloakClient`
-- `tenant_access/api/user.rs` 与 `tenant_access/api/invitation.rs` 不再直接构造 `CreateKeycloakUserInput` / `KeycloakCredential` / `KeycloakUserUpdate`
-- Keycloak 特有映射收敛到 `identity_engine/adapters/keycloak/`
-- 默认 `keycloak` backend 与 `auth9_oidc` stub backend 均维持最小 contract
+本用例覆盖 Phase 1 FR2 的主要回归点：
+
+- 业务服务通过 `IdentityEngine` 抽象访问身份后端
+- `tenant_access/api/user.rs` 与 `tenant_access/api/invitation.rs` 使用中性输入模型
+- auth9-oidc backend 维持完整 contract
 
 本用例聚焦后端抽象边界与回归测试，不覆盖 Portal UI。
 
