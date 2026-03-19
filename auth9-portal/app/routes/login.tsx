@@ -456,7 +456,7 @@ export default function Login() {
       panelTitle={t("auth.shared.hostedTitle")}
       panelDescription={t("auth.shared.hostedDescription")}
     >
-      <Card className={`w-full animate-fade-in-up ${view === "methods" ? "max-w-xl" : "max-w-md"}`}>
+      <Card className="w-full max-w-md animate-fade-in-up">
           <CardHeader className="text-center">
             {data.branding.logo_url ? (
               <img
