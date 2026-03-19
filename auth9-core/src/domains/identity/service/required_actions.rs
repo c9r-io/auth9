@@ -13,6 +13,7 @@ use utoipa::ToSchema;
 pub const ACTION_VERIFY_EMAIL: &str = "verify_email";
 pub const ACTION_UPDATE_PASSWORD: &str = "update_password"; // pragma: allowlist secret
 pub const ACTION_COMPLETE_PROFILE: &str = "complete_profile";
+pub const ACTION_CONFIGURE_TOTP: &str = "CONFIGURE_TOTP";
 
 /// Response object for a pending action with its redirect URL.
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -114,6 +115,7 @@ impl RequiredActionService {
             ACTION_VERIFY_EMAIL => "/verify-email".to_string(),
             ACTION_UPDATE_PASSWORD => "/force-update-password".to_string(),
             ACTION_COMPLETE_PROFILE => "/complete-profile".to_string(),
+            ACTION_CONFIGURE_TOTP => "/mfa/setup-totp".to_string(),
             other => format!("/pending-action?type={}", other),
         }
     }
@@ -154,6 +156,10 @@ mod tests {
         assert_eq!(
             RequiredActionService::action_redirect_url(ACTION_COMPLETE_PROFILE),
             "/complete-profile"
+        );
+        assert_eq!(
+            RequiredActionService::action_redirect_url(ACTION_CONFIGURE_TOTP),
+            "/mfa/setup-totp"
         );
     }
 

@@ -198,7 +198,7 @@ pub async fn password_login<S: HasServices + HasSessionManagement + HasCache + H
     // No MFA — proceed with session creation and token issuance
     let session = state
         .session_service()
-        .create_session(user.id, None, ip_address, user_agent)
+        .create_session(user.id, None, ip_address.clone(), user_agent.clone())
         .await?;
 
     let jwt_manager = HasServices::jwt_manager(&state);
@@ -232,6 +232,51 @@ pub async fn password_login<S: HasServices + HasSessionManagement + HasCache + H
             Vec::new()
         }
     };
+
+    // Execute post-login action triggers for each tenant the user belongs to
+    {
+        use crate::models::action::{
+            ActionContext, ActionContextRequest, ActionContextTenant, ActionContextUser,
+        };
+        let tenant_memberships = state
+            .user_service()
+            .get_user_tenants(user.id)
+            .await
+            .unwrap_or_default();
+        for membership in tenant_memberships {
+            let context = ActionContext {
+                user: ActionContextUser {
+                    id: user.id.to_string(),
+                    email: user.email.clone(),
+                    display_name: user.display_name.clone(),
+                    mfa_enabled: user.mfa_enabled,
+                },
+                tenant: ActionContextTenant {
+                    id: membership.tenant_id.to_string(),
+                    slug: String::new(),
+                    name: String::new(),
+                },
+                service: None,
+                request: ActionContextRequest {
+                    ip: ip_address.clone(),
+                    user_agent: user_agent.clone(),
+                    timestamp: Utc::now(),
+                },
+                claims: None,
+            };
+            if let Err(e) = state
+                .action_service()
+                .execute_trigger_by_tenant(membership.tenant_id, "post-login", context)
+                .await
+            {
+                tracing::warn!(
+                    tenant_id = %membership.tenant_id,
+                    error = %e,
+                    "Failed to execute post-login actions, proceeding"
+                );
+            }
+        }
+    }
 
     metrics::counter!("auth9_auth_login_total", "result" => "success", "backend" => "hosted").increment(1);
     metrics::histogram!("auth9_hosted_login_duration_seconds", "method" => "password").record(start.elapsed().as_secs_f64());

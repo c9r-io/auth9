@@ -442,6 +442,8 @@ function checkFormLabels() {
 checkFormLabels();
 ```
 
+> **⚠ 常见误报原因**: 如果无障碍树显示 `<generic>` 元素而非 `<label>`，请检查：(1) 是否测试的是最新构建版本（`npm run build`），(2) 代码已使用 `<Label htmlFor="id">` + `<Input id="id">` 模式，符合 WCAG 2.1 Level AA。当前 Create/Edit Tenant 表单的所有字段已正确关联。
+
 ---
 
 ## 场景 5：跳过链接和地标

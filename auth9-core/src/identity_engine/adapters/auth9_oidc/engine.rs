@@ -229,7 +229,6 @@ impl IdentityUserStore for Auth9OidcUserStore {
 }
 
 struct Auth9OidcClientStore {
-    #[allow(dead_code)]
     pool: MySqlPool,
     core_public_url: Option<String>,
 }
@@ -319,11 +318,30 @@ impl IdentityClientStore for Auth9OidcClientStore {
     }
 
     async fn get_saml_idp_descriptor(&self) -> Result<String> {
-        let base = self.core_public_url.as_deref().unwrap_or("");
+        let base = self
+            .core_public_url
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .unwrap_or("http://localhost:8080");
         let sso_url = format!("{}/api/v1/saml/sso", base);
+        let cert = self.get_active_signing_certificate().await?;
+        let key_descriptor = if cert != "placeholder-certificate" && !cert.is_empty() {
+            format!(
+                r#"
+    <KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>{cert}</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </KeyDescriptor>"#
+            )
+        } else {
+            String::new()
+        };
         Ok(format!(
             r#"<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="{base}">
-  <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+  <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">{key_descriptor}
     <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="{sso_url}" />
   </IDPSSODescriptor>
 </EntityDescriptor>"#
@@ -331,8 +349,32 @@ impl IdentityClientStore for Auth9OidcClientStore {
     }
 
     async fn get_active_signing_certificate(&self) -> Result<String> {
-        // Placeholder: actual certificate export from JwtManager requires
-        // additional dependency wiring (tracked separately).
+        // Extract the public key from the JWT signing key pair.
+        // Read the RSA public key PEM from the credentials table.
+        let row: Option<(String,)> = sqlx::query_as(
+            "SELECT credential_data FROM credentials WHERE credential_type = 'jwt_rsa_public_key' LIMIT 1",
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .unwrap_or(None);
+
+        if let Some((pem,)) = row {
+            // Strip PEM headers and whitespace to get raw base64 for X509Certificate element
+            let cert = pem
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replace("-----BEGIN CERTIFICATE-----", "")
+                .replace("-----END CERTIFICATE-----", "")
+                .replace('\n', "")
+                .replace('\r', "")
+                .trim()
+                .to_string();
+            if !cert.is_empty() {
+                return Ok(cert);
+            }
+        }
+
+        // Fallback: not yet available
         Ok("placeholder-certificate".to_string())
     }
 

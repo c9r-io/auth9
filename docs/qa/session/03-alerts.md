@@ -185,6 +185,8 @@ SELECT resolved_at, resolved_by FROM security_alerts WHERE id = '{alert_id}';
 -- 预期: resolved_at 有值，resolved_by = 当前管理员 ID
 ```
 
+> **⚠ 常见误报原因**: 如果 UI 显示已解决但数据库未更新，请检查：(1) 是否使用了正确的 Tenant Access Token（非 Identity Token），(2) 当前用户是否具有 `SecurityAlertResolve` 权限，(3) 浏览器控制台是否有 403/401 错误。后端 API `POST /api/v1/security/alerts/{id}/resolve` 已验证可正常工作。
+
 ---
 
 ## 场景 5：安全告警过滤
