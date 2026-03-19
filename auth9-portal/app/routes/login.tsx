@@ -516,7 +516,7 @@ export default function Login() {
                   <Form
                     method="post"
                     action="/login"
-                    className="rounded-2xl border border-[var(--glass-border-subtle)] bg-white/70 p-4 text-left space-y-3 dark:bg-white/6"
+                    className="rounded-2xl border border-[var(--glass-border-subtle)] bg-[var(--glass-bg)] p-4 text-left space-y-3"
                   >
                     <input type="hidden" name="intent" value="password-login" />
                     {data.loginChallenge && (

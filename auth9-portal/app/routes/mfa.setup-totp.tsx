@@ -173,7 +173,7 @@ export default function MfaSetupTotpPage() {
           </div>
 
           {showManual && (
-            <div className="rounded-2xl border border-[var(--glass-border-subtle)] bg-white/70 p-4 dark:bg-white/6">
+            <div className="rounded-2xl border border-[var(--glass-border-subtle)] bg-[var(--glass-bg)] p-4">
               <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
                 {t("auth.mfaSetup.manualEntryLabel")}
               </p>

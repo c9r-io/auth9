@@ -88,10 +88,9 @@ export function OtpInput({ length = 6, onComplete, disabled, error }: OtpInputPr
           maxLength={1}
           disabled={disabled}
           className={cn(
-            "h-12 w-10 rounded-xl border bg-white/70 text-center text-lg font-mono",
+            "h-12 w-10 rounded-xl border bg-[var(--glass-bg)] text-center text-lg font-mono text-[var(--text-primary)]",
             "outline-none transition-all duration-200",
             "focus:border-[var(--accent-blue)] focus:ring-2 focus:ring-[var(--accent-blue)]/25",
-            "dark:bg-white/6",
             error
               ? "border-[var(--accent-red)] focus:border-[var(--accent-red)] focus:ring-[var(--accent-red)]/25"
               : "border-[var(--glass-border-subtle)]",
