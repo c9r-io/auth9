@@ -127,8 +127,11 @@ export default {
       description: "选择你的登录方式",
       accessDenied: "访问被拒绝，请重试或联系管理员。",
       genericError: "登录过程中发生错误：{{error}}",
+      ssoTitle: "企业 SSO 登录",
+      ssoDescription: "输入你的企业邮箱以继续",
       ssoButton: "使用企业 SSO 继续",
       ssoFinding: "正在查找你的 SSO...",
+      ssoSubmit: "继续",
       passwordButton: "使用密码登录",
       redirecting: "跳转中...",
       passkeyButton: "使用通行密钥登录",
@@ -152,6 +155,7 @@ export default {
       passwordSubmit: "登录", // pragma: allowlist secret
       signingIn: "登录中...",
       backToMethods: "其他登录方式",
+      socialDivider: "或继续使用",
       credentialsRequired: "请输入邮箱和密码。", // pragma: allowlist secret
       futureMethodsEyebrow: "后续扩展位",
       futureMethodsDescription: "当前布局已为 password、enterprise SSO、social login 和其他认证方式预留稳定入口位置。", // pragma: allowlist secret

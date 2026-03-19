@@ -127,8 +127,11 @@ export default {
       description: "Choose how you want to sign in",
       accessDenied: "Access was denied. Please try again or contact your administrator.",
       genericError: "An error occurred during sign in: {{error}}",
+      ssoTitle: "Enterprise SSO",
+      ssoDescription: "Enter your company email to continue",
       ssoButton: "Continue with Enterprise SSO",
       ssoFinding: "Finding your SSO...",
+      ssoSubmit: "Continue",
       passwordButton: "Sign in with password", // pragma: allowlist secret
       redirecting: "Redirecting...",
       passkeyButton: "Sign in with passkey",
@@ -152,6 +155,7 @@ export default {
       passwordSubmit: "Sign in", // pragma: allowlist secret
       signingIn: "Signing in...",
       backToMethods: "Other sign-in methods",
+      socialDivider: "Or continue with",
       credentialsRequired: "Email and password are required.", // pragma: allowlist secret
       futureMethodsEyebrow: "More methods",
       futureMethodsDescription: "This layout reserves space for password, enterprise SSO, social login, and additional verifiers in later phases.", // pragma: allowlist secret

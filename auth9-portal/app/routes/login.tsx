@@ -2,7 +2,6 @@ import type { MetaFunction, ActionFunctionArgs, LoaderFunctionArgs } from "react
 import { redirect, Form, Link, useActionData, useLoaderData, useNavigation } from "react-router";
 import { useState, useCallback } from "react";
 import { getBrandMark } from "~/components/auth/AuthBrandPanel";
-import { AuthMethodStack } from "~/components/auth/AuthMethodStack";
 import { AuthPageShell } from "~/components/AuthPageShell";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -11,7 +10,7 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { useI18n } from "~/i18n";
 import { translate } from "~/i18n/translate";
 import { mapApiError, mapOAuthError } from "~/lib/error-messages";
-import { LockClosedIcon } from "@radix-ui/react-icons";
+import { LockClosedIcon, GlobeIcon, EnvelopeClosedIcon, IdCardIcon } from "@radix-ui/react-icons";
 import { resolveLocale } from "~/services/locale.server";
 import { commitSession, serializeOAuthState } from "~/services/session.server";
 import { enterpriseSsoApi, hostedLoginApi, publicBrandingApi, identityProviderApi, type BrandingConfig, isMfaChallenge } from "~/services/api";
@@ -340,7 +339,7 @@ export default function Login() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const { t } = useI18n();
-  const [view, setView] = useState<"methods" | "password">("methods");
+  const [view, setView] = useState<"methods" | "password" | "sso">("methods");
   const [ssoEmail, setSsoEmail] = useState("");
 
   const [authenticating, setAuthenticating] = useState(false);
@@ -455,7 +454,7 @@ export default function Login() {
       panelTitle={t("auth.shared.hostedTitle")}
       panelDescription={t("auth.shared.hostedDescription")}
     >
-      <Card className="auth-form-card w-full max-w-xl animate-fade-in-up">
+      <Card className="w-full max-w-xl animate-fade-in-up">
           <CardHeader className="text-center">
             {data.branding.logo_url ? (
               <img
@@ -470,12 +469,18 @@ export default function Login() {
               </div>
             )}
             <CardTitle className="text-2xl">
-              {data.error ? t("auth.login.failedTitle") : t("auth.login.title")}
+              {data.error
+                ? t("auth.login.failedTitle")
+                : view === "sso"
+                  ? t("auth.login.ssoTitle")
+                  : t("auth.login.title")}
             </CardTitle>
             <CardDescription>
               {data.error
                 ? mapOAuthError(data.error, data.locale as AppLocale)
-                : t("auth.login.chooseMethod")}
+                : view === "sso"
+                  ? t("auth.login.ssoDescription")
+                  : t("auth.login.chooseMethod")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -528,27 +533,58 @@ export default function Login() {
                   </button>
                 </div>
               </div>
+            ) : view === "sso" ? (
+              /* ── SSO Login View ── */
+              <div className="space-y-4">
+                <Form method="post" action="/login" className="space-y-3">
+                  <input type="hidden" name="intent" value="sso-login" />
+                  {data.loginChallenge && (
+                    <input type="hidden" name="loginChallenge" value={data.loginChallenge} />
+                  )}
+                  <Input
+                    type="email"
+                    name="email"
+                    required
+                    autoFocus
+                    placeholder={t("common.placeholders.companyEmail")}
+                    onChange={(e) => setSsoEmail(e.target.value)}
+                    defaultValue={ssoEmail}
+                  />
+
+                  {actionData?.error && (
+                    <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
+                      {actionData.error}
+                    </div>
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={isSubmitting}>
+                    {isSubmitting ? t("auth.login.ssoFinding") : t("auth.login.ssoSubmit")}
+                  </Button>
+                </Form>
+
+                <div className="flex items-center justify-center text-sm text-[var(--text-tertiary)]">
+                  <button
+                    type="button"
+                    onClick={() => setView("methods")}
+                    className="text-[var(--accent-blue)] hover:underline underline-offset-4"
+                  >
+                    {t("auth.login.backToMethods")}
+                  </button>
+                </div>
+              </div>
             ) : (
               /* ── Method Selection View ── */
-              <div className="space-y-4">
-                <AuthMethodStack>
-                  <Form method="post" action="/login">
-                    <input type="hidden" name="intent" value="sso-login" />
-                    {data.loginChallenge && (
-                      <input type="hidden" name="loginChallenge" value={data.loginChallenge} />
-                    )}
-                    <Input
-                      type="email"
-                      name="email"
-                      required
-                      placeholder={t("common.placeholders.companyEmail")}
-                      className="mb-3"
-                      onChange={(e) => setSsoEmail(e.target.value)}
-                    />
-                    <Button type="submit" className="w-full" disabled={isSubmitting || authenticating}>
-                      {isSubmitting ? t("auth.login.ssoFinding") : t("auth.login.ssoButton")}
-                    </Button>
-                  </Form>
+              <div className="space-y-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setView("sso")}
+                    disabled={isSubmitting || authenticating}
+                  >
+                    <GlobeIcon className="h-4 w-4 mr-2" />
+                    {t("auth.login.ssoButton")}
+                  </Button>
 
                   <Button
                     type="button"
@@ -557,12 +593,14 @@ export default function Login() {
                     onClick={() => setView("password")}
                     disabled={isSubmitting || authenticating}
                   >
+                    <LockClosedIcon className="h-4 w-4 mr-2" />
                     {t("auth.login.passwordButton")}
                   </Button>
 
                   {data.branding.email_otp_enabled && (
-                    <Link to="/auth/email-otp">
+                    <Link to="/auth/email-otp" className="block mt-2">
                       <Button variant="outline" className="w-full" disabled={isSubmitting || authenticating}>
+                        <EnvelopeClosedIcon className="h-4 w-4 mr-2" />
                         {t("auth.login.emailOtpButton")}
                       </Button>
                     </Link>
@@ -570,11 +608,11 @@ export default function Login() {
 
                   <Button
                     variant="outline"
-                    className="w-full"
+                    className={`w-full${!data.branding.email_otp_enabled ? " mt-2" : ""}`}
                     onClick={handlePasskeyLogin}
                     disabled={authenticating || isSubmitting}
                   >
-                    <LockClosedIcon className="h-4 w-4 mr-2" />
+                    <IdCardIcon className="h-4 w-4 mr-2" />
                     {authenticating ? t("auth.login.verifying") : t("auth.login.passkeyButton")}
                   </Button>
 
@@ -585,7 +623,7 @@ export default function Login() {
                           <span className="w-full border-t border-[var(--glass-border-subtle)]" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-[var(--surface-elevated)] px-2 text-[var(--text-tertiary)]">
+                          <span className="bg-[var(--auth-surface-bg)] px-2 text-[var(--text-tertiary)]">
                             {t("auth.login.socialDivider")}
                           </span>
                         </div>
@@ -612,8 +650,6 @@ export default function Login() {
                       ))}
                     </div>
                   )}
-                </AuthMethodStack>
-
                 {actionData?.error && (
                   <p className="text-sm text-[var(--accent-red)]">{actionData.error}</p>
                 )}
@@ -624,18 +660,13 @@ export default function Login() {
                   </div>
                 )}
 
-                <div className="flex items-center justify-between text-sm text-[var(--text-tertiary)] pt-1">
-                  <Link to="/forgot-password" className="hover:text-[var(--text-primary)] underline-offset-4 hover:underline">
-                    {t("auth.login.forgotPassword")}
-                  </Link>
-                  {data.branding.allow_registration ? (
+                {data.branding.allow_registration && (
+                  <div className="flex items-center justify-center text-sm text-[var(--text-tertiary)] pt-1">
                     <Link to="/register" className="hover:text-[var(--text-primary)] underline-offset-4 hover:underline">
                       {t("auth.login.createAccount")}
                     </Link>
-                  ) : (
-                    <span />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
