@@ -71,7 +71,11 @@ echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq '{token_type, tenant_id}'
 2. 点击「Add Mapping」添加属性映射：
    - 第 1 行: Source = `email`, SAML Attribute = `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress`, Friendly Name = `email`
    - 第 2 行: Source = `display_name`, SAML Attribute = `http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name`, Friendly Name = `displayName`
-3. 点击「Register Application」按钮
+3. 再次点击「Add Mapping」，在新行中选择 Source = `tenant_roles`
+   - 确认下拉框下方出现黄色提示文字（高级源提示）
+   - 选择 Source = `tenant_permissions`，同样确认提示出现
+   - 删除该行（点击 ✕ 按钮）
+4. 点击「Register Application」按钮
 
 **API 等效验证**:
 ```bash
@@ -137,8 +141,13 @@ WHERE tenant_id = '{tenant_id}' AND entity_id = 'https://sp.example.com';
    - 「Download IdP Certificate」下载链接（带下载图标）
    - 证书状态 badge（绿色/黄色/红色，显示剩余天数）
    - 配置摘要行（NameID 格式、签名状态、映射数量）
-4. 点击 IdP Metadata URL 旁的复制按钮
-5. 在浏览器中打开复制的 URL
+   - 「Setup Instructions」可折叠链接（带 chevron 图标）
+4. 点击「Setup Instructions」展开
+   - 确认显示 4 个配置指南区块：Generic SP Configuration、Salesforce、AWS IAM Identity Center、Google Workspace
+   - 每个区块包含编号步骤列表
+   - 再次点击折叠，内容隐藏
+5. 点击 IdP Metadata URL 旁的复制按钮
+6. 在浏览器中打开复制的 URL
 
 ### 预期结果
 - 列表项显示所有信息字段（含证书下载链接和过期 badge）

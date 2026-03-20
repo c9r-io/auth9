@@ -415,7 +415,15 @@ fn build_keycloak_saml_client(
     }
 }
 
-/// Convert Auth9 attribute mappings to Keycloak SAML Protocol Mappers
+/// Convert Auth9 attribute mappings to identity engine SAML Protocol Mappers.
+///
+/// For `tenant_roles`: uses `saml-role-list-mapper` which emits the user's role
+/// assignments as a multi-valued SAML attribute. Requires that Auth9 tenant roles
+/// are synced to the identity engine's role model.
+///
+/// For `tenant_permissions`: uses `saml-user-attribute-idp-mapper` with the
+/// namespaced attribute `auth9.tenant.permissions`. Requires that resolved
+/// permissions are synced to the identity engine's user attributes.
 fn build_protocol_mappers(
     mappings: &[AttributeMapping],
 ) -> Vec<IdentityProtocolMapperRepresentation> {
@@ -424,7 +432,7 @@ fn build_protocol_mappers(
         .map(|m| {
             let mut config = HashMap::new();
 
-            // Map source to Keycloak user attribute or property
+            // Map source to identity engine user attribute or property
             let (mapper_type, user_attr) = match m.source.as_str() {
                 "email" => ("saml-user-property-idp-mapper", "email"),
                 "first_name" => ("saml-user-property-idp-mapper", "firstName"),
@@ -432,7 +440,9 @@ fn build_protocol_mappers(
                 "user_id" => ("saml-user-property-idp-mapper", "id"),
                 "display_name" => ("saml-user-attribute-idp-mapper", "displayName"),
                 "tenant_roles" => ("saml-role-list-mapper", ""),
-                "tenant_permissions" => ("saml-user-attribute-idp-mapper", "permissions"),
+                "tenant_permissions" => {
+                    ("saml-user-attribute-idp-mapper", "auth9.tenant.permissions")
+                }
                 _ => ("saml-user-attribute-idp-mapper", m.source.as_str()),
             };
 
@@ -606,6 +616,30 @@ mod tests {
         assert_eq!(mappers.len(), 1);
         assert_eq!(mappers[0].protocol_mapper, "saml-role-list-mapper");
         assert_eq!(mappers[0].config.get("single"), Some(&"false".to_string()));
+    }
+
+    #[test]
+    fn test_build_protocol_mappers_tenant_permissions() {
+        let mappings = vec![AttributeMapping {
+            source: "tenant_permissions".to_string(),
+            saml_attribute: "http://schemas.auth9.com/claims/permissions".to_string(),
+            friendly_name: Some("permissions".to_string()),
+        }];
+
+        let mappers = build_protocol_mappers(&mappings);
+        assert_eq!(mappers.len(), 1);
+        assert_eq!(
+            mappers[0].protocol_mapper,
+            "saml-user-attribute-idp-mapper"
+        );
+        assert_eq!(
+            mappers[0].config.get("user.attribute"),
+            Some(&"auth9.tenant.permissions".to_string())
+        );
+        assert_eq!(
+            mappers[0].config.get("friendly.name"),
+            Some(&"permissions".to_string())
+        );
     }
 
     #[test]
