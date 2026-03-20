@@ -88,7 +88,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (23 个文档, 107 个场景)
+### 认证流程 (24 个文档, 112 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 4 |
@@ -119,6 +119,7 @@
 | [auth/27-enterprise-saml-broker.md](./auth/27-enterprise-saml-broker.md) | 企业 SAML Broker 原生登录（SAML 连接器 CRUD、SP Metadata 生成、证书校验、Auth9 broker 路由） | 5 |
 | [auth/28-federated-identity-linking.md](./auth/28-federated-identity-linking.md) | Federated Identity Linking（社交登录身份关联、Unlink/Re-link、first_login_policy 策略控制、confirm-link 过期） | 5 |
 | [auth/29-portal-auth-ui-completion.md](./auth/29-portal-auth-ui-completion.md) | Portal 认证 UI 补全（密码登录表单、MFA 验证页面、TOTP 注册页面、OTP 组件） | 5 |
+| [auth/30-mfa-self-service-portal.md](./auth/30-mfa-self-service-portal.md) | Portal MFA 自助管理页面（TOTP 设置/移除、恢复码生成弹窗、导航入口、警告阈值） | 5 |
 
 ### 系统设置 (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
@@ -261,6 +262,7 @@
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-03-20 | 5.27.0 | **Portal MFA 自助管理页面**：新增 `auth/30-mfa-self-service-portal.md`（5 场景），覆盖 MFA 页面入口可见性、TOTP 内嵌设置流程、恢复码生成弹窗、TOTP 移除确认、恢复码不足警告；认证 25 文档 117 场景；共 126 文档 593 场景 |
 | 2026-03-19 | 5.26.0 | **Phase 5 FR5 基础设施清理**：新增 `integration/qa-infrastructure-keycloak-cleanup.md`（5 场景），覆盖 Docker Compose 无 Keycloak 依赖、Portal 登录模式简化、API 健康检查、K8s 配置清理、脚本清理验证；集成测试 23 文档 106 场景；共 125 文档 588 场景 |
 | 2026-03-19 | 5.25.0 | **Phase 5 FR2 解耦 Keycloak 类型**：新增 `identity_engine/decouple_keycloak_types.md`（5 场景），覆盖编译通过、Clippy 无新增警告、IdentityEngine trait 无 Keycloak 类型引用、中性类型定义验证、SmtpServerConfig 迁移验证；纯重构验证，无 API/UI 变更；共 124 文档 583 场景 |
 | 2026-03-18 | 5.24.0 | **Phase 4 FR4 Federated Identity Linking**：新增 `auth/28-federated-identity-linking.md`（5 场景），覆盖社交登录 linked identity 写入、Unlink/Re-link 完整流程、`prompt_confirm` 策略阻止静默 takeover、`create_new` 策略创建独立账号、confirm-link token 过期错误；认证 24 文档 112 场景；总计 123 文档 578 场景 |

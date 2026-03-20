@@ -14,6 +14,7 @@ export default function AccountLayout() {
   const accountNav = [
     { name: t("account.nav.profile"), href: "/dashboard/account", description: t("account.navDescriptions.profile") },
     { name: t("account.nav.security"), href: "/dashboard/account/security", description: t("account.navDescriptions.security") },
+    { name: t("account.nav.mfa"), href: "/dashboard/account/mfa", description: t("account.navDescriptions.mfa") },
     { name: t("account.nav.passkeys"), href: "/dashboard/account/passkeys", description: t("account.navDescriptions.passkeys") },
     { name: t("account.nav.sessions"), href: "/dashboard/account/sessions", description: t("account.navDescriptions.sessions") },
     { name: t("account.nav.identities"), href: "/dashboard/account/identities", description: t("account.navDescriptions.identities") },
