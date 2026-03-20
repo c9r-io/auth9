@@ -1,7 +1,7 @@
 //! HTTP API Handler Tests Infrastructure
 //!
 //! This module provides test utilities for HTTP handler testing without
-//! external dependencies (no database, no Redis, no Keycloak).
+//! external dependencies (no database, no Redis, no identity backend).
 //!
 //! Key components:
 //! - `TestAppState` - Test-friendly version of AppState implementing `HasServices`
@@ -31,7 +31,7 @@ use auth9_core::domains::identity::service::{
 };
 use auth9_core::domains::integration::service::{ActionService, WebhookService};
 use auth9_core::domains::platform::service::{
-    BrandingService, EmailService, EmailTemplateService, KeycloakSyncService, SystemSettingsService,
+    BrandingService, EmailService, EmailTemplateService, IdentitySyncService, SystemSettingsService,
 };
 use auth9_core::domains::provisioning::service::{ScimService, ScimTokenService};
 use auth9_core::domains::security_observability::service::{
@@ -64,7 +64,7 @@ use tower::ServiceExt;
 // Test Configuration
 // ============================================================================
 
-/// Create a test config (keycloak_url parameter is retained for call-site compatibility)
+/// Create a test config (url parameter is retained for call-site compatibility)
 pub fn create_test_config(_keycloak_url: &str) -> Config {
     Config {
         environment: "development".to_string(),
@@ -227,7 +227,7 @@ pub struct TestAppState {
 }
 
 impl TestAppState {
-    /// Create a new test app state with the given Keycloak base URL
+    /// Create a new test app state with the given base URL
     pub fn new(keycloak_url: &str) -> Self {
         let config = Arc::new(create_test_config(keycloak_url));
         let tenant_repo = Arc::new(TestTenantRepository::new());
@@ -308,8 +308,8 @@ impl TestAppState {
         let identity_engine: Arc<dyn IdentityEngine> =
             Arc::new(crate::support::noop_identity_engine::NoOpIdentityEngine);
 
-        // Create Keycloak sync service for tests
-        let keycloak_sync_service = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
+        // Create identity sync service for tests
+        let identity_sync_service = Arc::new(IdentitySyncService::new(identity_engine.clone()));
 
         // Create new services
         let password_service = Arc::new(PasswordService::with_tenant_repo(
@@ -318,7 +318,7 @@ impl TestAppState {
             email_service.clone(),
             identity_engine.clone(),
             tenant_repo.clone(),
-            keycloak_sync_service,
+            identity_sync_service,
             config.password_reset.hmac_key.clone(),
         ));
         let session_service = Arc::new(SessionService::new(

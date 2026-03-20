@@ -149,11 +149,11 @@ where
                         fields.external_id.as_deref(),
                         None,
                         "error",
-                        Some(&format!("Keycloak error: {}", e)),
+                        Some(&format!("Identity backend error: {}", e)),
                     )
                     .await;
-                    return Err(AppError::Keycloak(format!(
-                        "Failed to create user in Keycloak: {}",
+                    return Err(AppError::IdentityBackend(format!(
+                        "Failed to create user in identity backend: {}",
                         e
                     )));
                 }

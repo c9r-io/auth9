@@ -1,7 +1,7 @@
 //! Test infrastructure shared across all domain test modules
 //!
 //! This module provides test utilities for API handler testing without
-//! external dependencies (no database, no Redis, no Keycloak).
+//! external dependencies (no database, no Redis, no identity backend).
 
 pub mod http;
 pub mod noop_identity_engine;

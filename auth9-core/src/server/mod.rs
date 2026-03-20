@@ -17,7 +17,7 @@ use crate::domains::identity::service::{
 };
 use crate::domains::integration::service::{ActionEngine, ActionService, WebhookService};
 use crate::domains::platform::service::{
-    BrandingService, EmailService, EmailTemplateService, KeycloakSyncService, SystemSettingsService,
+    BrandingService, EmailService, EmailTemplateService, IdentitySyncService, SystemSettingsService,
 };
 use crate::domains::provisioning::service::{ScimService, ScimTokenService};
 use crate::domains::security_observability::service::{
@@ -638,15 +638,15 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         }
     };
 
-    // Create Keycloak sync service (shared between branding and system settings)
-    let keycloak_sync_service = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
+    // Create identity sync service (shared between branding and system settings)
+    let identity_sync_service = Arc::new(IdentitySyncService::new(identity_engine.clone()));
 
-    // Create system settings service with Keycloak sync
+    // Create system settings service with identity sync
     let system_settings_service = Arc::new(SystemSettingsService::with_sync_service(
         system_settings_repo.clone(),
         malicious_ip_blacklist_repo.clone(),
         encryption_key,
-        keycloak_sync_service.clone(),
+        identity_sync_service.clone(),
     ));
 
     // Create email service
@@ -655,12 +655,12 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     // Create email template service
     let email_template_service = Arc::new(EmailTemplateService::new(system_settings_repo.clone()));
 
-    // Create branding service with Keycloak sync
+    // Create branding service with identity sync
     let branding_service = Arc::new(
         BrandingService::with_sync_service(
             system_settings_repo.clone(),
             service_branding_repo.clone(),
-            keycloak_sync_service.clone(),
+            identity_sync_service.clone(),
         )
         .with_allowed_domains(config.branding_allowed_domains.clone())
         .with_service_repo(service_repo.clone()),
@@ -686,7 +686,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         identity_engine.clone(),
         tenant_repo.clone(),
         action_engine.clone(),
-        keycloak_sync_service.clone(),
+        identity_sync_service.clone(),
         config.password_reset.hmac_key.clone(),
     ));
 

@@ -11,7 +11,7 @@ const API_ERROR_CODE_MAP: Record<string, string> = {
   database_error: "apiErrors.serverError",
   cache_error: "apiErrors.serverError",
   jwt_error: "apiErrors.sessionExpired",
-  keycloak_error: "apiErrors.authServiceError",
+  identity_backend_error: "apiErrors.authServiceError",
   action_execution_failed: "apiErrors.serverError",
   internal_error: "apiErrors.serverError",
   method_not_allowed: "apiErrors.badRequest",

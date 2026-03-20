@@ -1115,7 +1115,7 @@ export default {
       hide: "Hide",
       reveal: "Reveal",
       copySecret: "Copy secret", // pragma: allowlist secret
-      keycloakUnavailable: "Unable to retrieve - check Keycloak",
+      clientSecretUnavailable: "Unable to retrieve client secret from identity backend", // pragma: allowlist secret
       environmentVariables: "Environment Variables",
       environmentVariablesDescription: "Add these to your application's .env file",
       endpoints: "OAuth/OIDC Endpoints",

@@ -1,8 +1,8 @@
-//! Keycloak sync service for Auth9 ↔ Keycloak state synchronization
+//! Identity sync service for Auth9 ↔ identity backend state synchronization
 //!
-//! This service manages the synchronization of configuration between Auth9 and Keycloak.
+//! This service manages the synchronization of configuration between Auth9 and the identity backend.
 //! When Auth9 settings change (e.g., branding configuration, email settings), this service
-//! ensures the corresponding Keycloak realm settings are updated.
+//! ensures the corresponding identity backend realm settings are updated.
 
 use crate::error::Result;
 use crate::identity_engine::{IdentityEngine, RealmSettingsUpdate};
@@ -12,23 +12,23 @@ use crate::models::password::PasswordPolicy;
 use std::sync::Arc;
 use tracing::{error, info};
 
-/// Service for synchronizing Auth9 configuration with Keycloak realm settings
-pub struct KeycloakSyncService {
+/// Service for synchronizing Auth9 configuration with identity backend realm settings
+pub struct IdentitySyncService {
     identity_engine: Arc<dyn IdentityEngine>,
 }
 
-impl KeycloakSyncService {
-    /// Create a new KeycloakSyncService
+impl IdentitySyncService {
+    /// Create a new IdentitySyncService
     pub fn new(identity_engine: Arc<dyn IdentityEngine>) -> Self {
         Self { identity_engine }
     }
 
-    /// Synchronize realm settings to Keycloak
+    /// Synchronize realm settings to identity backend
     ///
-    /// This method updates the Keycloak realm configuration to match the
+    /// This method updates the identity backend realm configuration to match the
     /// provided settings. Only non-None fields in the update will be applied.
     pub async fn sync_realm_settings(&self, settings: RealmSettingsUpdate) -> Result<()> {
-        info!("Syncing realm settings to Keycloak: {:?}", settings);
+        info!("Syncing realm settings to identity backend: {:?}", settings);
         self.identity_engine.update_realm(&settings).await?;
         info!("Successfully synced realm settings");
         Ok(())
@@ -36,7 +36,7 @@ impl KeycloakSyncService {
 
     /// Extract realm settings from BrandingConfig
     ///
-    /// This method extracts the Keycloak realm settings that should be
+    /// This method extracts the identity backend realm settings that should be
     /// synchronized based on the Auth9 branding configuration.
     pub fn extract_realm_settings(config: &BrandingConfig) -> RealmSettingsUpdate {
         RealmSettingsUpdate {
@@ -45,24 +45,24 @@ impl KeycloakSyncService {
         }
     }
 
-    /// Sync branding configuration to Keycloak
+    /// Sync branding configuration to identity backend
     ///
     /// This is a convenience method that extracts settings from BrandingConfig
-    /// and syncs them to Keycloak. Errors are logged but not propagated to
+    /// and syncs them to the identity backend. Errors are logged but not propagated to
     /// avoid blocking the main branding update flow.
     pub async fn sync_branding_config(&self, config: &BrandingConfig) {
         let realm_settings = Self::extract_realm_settings(config);
 
         if let Err(e) = self.sync_realm_settings(realm_settings).await {
-            error!("Failed to sync realm settings to Keycloak: {}", e);
-            // Don't propagate error - Keycloak sync failure shouldn't block branding updates
+            error!("Failed to sync realm settings to identity backend: {}", e);
+            // Don't propagate error - identity sync failure shouldn't block branding updates
         }
     }
 
-    /// Convert a PasswordPolicy to a Keycloak password policy string
+    /// Convert a PasswordPolicy to a backend password policy string
     ///
-    /// Keycloak uses a specific format: `length(N) and upperCase(N) and ...`
-    pub fn to_keycloak_policy_string(policy: &PasswordPolicy) -> String {
+    /// The identity backend uses a specific format: `length(N) and upperCase(N) and ...`
+    pub fn to_backend_policy_string(policy: &PasswordPolicy) -> String {
         let mut parts = Vec::new();
 
         parts.push(format!("length({})", policy.min_length));
@@ -94,14 +94,14 @@ impl KeycloakSyncService {
         parts.join(" and ")
     }
 
-    /// Sync password policy to Keycloak realm
+    /// Sync password policy to identity backend realm
     ///
-    /// This method updates the Keycloak realm's password policy configuration
+    /// This method updates the identity backend's password policy configuration
     /// and brute force protection settings.
     /// Errors are logged but not propagated to avoid blocking the main policy update flow.
     pub async fn sync_password_policy(&self, policy: &PasswordPolicy) {
-        let policy_string = Self::to_keycloak_policy_string(policy);
-        info!("Syncing password policy to Keycloak: {}", policy_string);
+        let policy_string = Self::to_backend_policy_string(policy);
+        info!("Syncing password policy to identity backend: {}", policy_string);
 
         let mut realm_update = RealmSettingsUpdate {
             password_policy: Some(policy_string),
@@ -120,18 +120,18 @@ impl KeycloakSyncService {
         }
 
         if let Err(e) = self.sync_realm_settings(realm_update).await {
-            error!("Failed to sync password policy to Keycloak: {}", e);
+            error!("Failed to sync password policy to identity backend: {}", e);
         }
     }
 
-    /// Sync email configuration to Keycloak realm
+    /// Sync email configuration to identity backend realm
     ///
-    /// This method updates the Keycloak realm's SMTP server configuration.
+    /// This method updates the identity backend's SMTP server configuration.
     /// When smtp_config is None, the sync is skipped (e.g., when SES lacks credentials).
     /// Errors are logged but not propagated to avoid blocking the main email config update.
     pub async fn sync_email_config(&self, smtp_config: Option<SmtpServerConfig>) {
         let Some(smtp) = smtp_config else {
-            info!("Skipping Keycloak email sync - no SMTP config available");
+            info!("Skipping identity backend email sync - no SMTP config available");
             return;
         };
 
@@ -141,8 +141,8 @@ impl KeycloakSyncService {
         };
 
         if let Err(e) = self.sync_realm_settings(realm_update).await {
-            error!("Failed to sync email config to Keycloak: {}", e);
-            // Don't propagate error - Keycloak sync failure shouldn't block email config updates
+            error!("Failed to sync email config to identity backend: {}", e);
+            // Don't propagate error - identity sync failure shouldn't block email config updates
         }
     }
 }
@@ -498,7 +498,7 @@ mod tests {
             self.updates.lock().unwrap().push(settings.clone());
 
             if let Some(message) = &self.failure {
-                Err(AppError::Keycloak(message.clone()))
+                Err(AppError::IdentityBackend(message.clone()))
             } else {
                 Ok(())
             }
@@ -512,7 +512,7 @@ mod tests {
             ..Default::default()
         };
 
-        let settings = KeycloakSyncService::extract_realm_settings(&config);
+        let settings = IdentitySyncService::extract_realm_settings(&config);
         assert_eq!(settings.registration_allowed, Some(true));
     }
 
@@ -523,7 +523,7 @@ mod tests {
             ..Default::default()
         };
 
-        let settings = KeycloakSyncService::extract_realm_settings(&config);
+        let settings = IdentitySyncService::extract_realm_settings(&config);
         assert_eq!(settings.registration_allowed, Some(false));
     }
 
@@ -531,7 +531,7 @@ mod tests {
     fn test_extract_realm_settings_default() {
         let config = BrandingConfig::default();
 
-        let settings = KeycloakSyncService::extract_realm_settings(&config);
+        let settings = IdentitySyncService::extract_realm_settings(&config);
         assert_eq!(settings.registration_allowed, Some(false));
         assert_eq!(settings.reset_password_allowed, None);
         assert_eq!(settings.reset_password_allowed, None);
@@ -540,7 +540,7 @@ mod tests {
     #[tokio::test]
     async fn test_sync_realm_settings_success() {
         let engine = Arc::new(FakeIdentityEngine::succeeds());
-        let service = KeycloakSyncService::new(engine.clone());
+        let service = IdentitySyncService::new(engine.clone());
 
         let settings = RealmSettingsUpdate {
             registration_allowed: Some(true),
@@ -554,8 +554,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_realm_settings_error() {
-        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::fails(
-            crate::error::AppError::Keycloak("access_denied".to_string()),
+        let service = IdentitySyncService::new(Arc::new(FakeIdentityEngine::fails(
+            crate::error::AppError::IdentityBackend("access_denied".to_string()),
         )));
 
         let settings = RealmSettingsUpdate {
@@ -569,7 +569,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_branding_config_success() {
-        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
+        let service = IdentitySyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
 
         let branding = BrandingConfig {
             allow_registration: true,
@@ -582,8 +582,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_branding_config_error_does_not_propagate() {
-        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::fails(
-            crate::error::AppError::Keycloak("internal_error".to_string()),
+        let service = IdentitySyncService::new(Arc::new(FakeIdentityEngine::fails(
+            crate::error::AppError::IdentityBackend("internal_error".to_string()),
         )));
 
         let branding = BrandingConfig {
@@ -597,7 +597,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_email_config_success() {
-        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
+        let service = IdentitySyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
 
         let smtp = SmtpServerConfig {
             host: Some("smtp.example.com".to_string()),
@@ -618,7 +618,7 @@ mod tests {
     #[tokio::test]
     async fn test_sync_email_config_none_skips_sync() {
         let engine = Arc::new(FakeIdentityEngine::succeeds());
-        let service = KeycloakSyncService::new(engine.clone());
+        let service = IdentitySyncService::new(engine.clone());
 
         // This should not panic and should not make any HTTP requests
         service.sync_email_config(None).await;
@@ -627,8 +627,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_email_config_error_does_not_propagate() {
-        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::fails(
-            crate::error::AppError::Keycloak("internal_error".to_string()),
+        let service = IdentitySyncService::new(Arc::new(FakeIdentityEngine::fails(
+            crate::error::AppError::IdentityBackend("internal_error".to_string()),
         )));
 
         let smtp = SmtpServerConfig {
@@ -643,7 +643,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_email_config_empty_clears_smtp() {
-        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
+        let service = IdentitySyncService::new(Arc::new(FakeIdentityEngine::succeeds()));
 
         // Empty config should be sent to clear SMTP settings
         let empty_smtp = SmtpServerConfig::default();
@@ -651,9 +651,9 @@ mod tests {
     }
 
     #[test]
-    fn test_to_keycloak_policy_string_default() {
+    fn test_to_backend_policy_string_default() {
         let policy = PasswordPolicy::default();
-        let result = KeycloakSyncService::to_keycloak_policy_string(&policy);
+        let result = IdentitySyncService::to_backend_policy_string(&policy);
         assert!(result.contains("length(12)"));
         assert!(result.contains("upperCase(1)"));
         assert!(result.contains("lowerCase(1)"));
@@ -664,7 +664,7 @@ mod tests {
     }
 
     #[test]
-    fn test_to_keycloak_policy_string_with_history() {
+    fn test_to_backend_policy_string_with_history() {
         let policy = PasswordPolicy {
             min_length: 12,
             require_uppercase: true,
@@ -674,7 +674,7 @@ mod tests {
             history_count: 5,
             ..Default::default()
         };
-        let result = KeycloakSyncService::to_keycloak_policy_string(&policy);
+        let result = IdentitySyncService::to_backend_policy_string(&policy);
         assert!(result.contains("length(12)"));
         assert!(result.contains("specialChars(1)"));
         assert!(result.contains("passwordHistory(5)"));
@@ -682,7 +682,7 @@ mod tests {
     }
 
     #[test]
-    fn test_to_keycloak_policy_string_minimal() {
+    fn test_to_backend_policy_string_minimal() {
         let policy = PasswordPolicy {
             min_length: 6,
             require_uppercase: false,
@@ -692,14 +692,14 @@ mod tests {
             history_count: 0,
             ..Default::default()
         };
-        let result = KeycloakSyncService::to_keycloak_policy_string(&policy);
+        let result = IdentitySyncService::to_backend_policy_string(&policy);
         assert_eq!(result, "length(6) and notUsername()");
     }
 
     #[tokio::test]
     async fn test_sync_password_policy_success() {
         let engine = Arc::new(FakeIdentityEngine::succeeds());
-        let service = KeycloakSyncService::new(engine.clone());
+        let service = IdentitySyncService::new(engine.clone());
 
         let policy = PasswordPolicy {
             min_length: 12,
@@ -712,8 +712,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_sync_password_policy_error_does_not_propagate() {
-        let service = KeycloakSyncService::new(Arc::new(FakeIdentityEngine::fails(
-            crate::error::AppError::Keycloak("internal_error".to_string()),
+        let service = IdentitySyncService::new(Arc::new(FakeIdentityEngine::fails(
+            crate::error::AppError::IdentityBackend("internal_error".to_string()),
         )));
 
         let policy = PasswordPolicy::default();

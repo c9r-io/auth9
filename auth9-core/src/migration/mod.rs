@@ -322,7 +322,7 @@ async fn index_exists(pool: &Pool<MySql>, table: &str, index: &str) -> Result<bo
 }
 
 /// Seed default services and initial data
-pub async fn seed_keycloak(config: &Config) -> Result<()> {
+pub async fn seed_services(config: &Config) -> Result<()> {
     // Seed portal service in database
     info!("Seeding portal service in database...");
     seed_portal_service(config)

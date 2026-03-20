@@ -69,8 +69,8 @@ impl<R: SamlApplicationRepository> SamlApplicationService<R> {
             .as_ref()
             .unwrap_or(&NameIdFormat::Email);
 
-        // Build Keycloak SAML Client
-        let kc_client = build_keycloak_saml_client(
+        // Build SAML Client representation
+        let kc_client = build_saml_client_representation(
             &input.name,
             &input.entity_id,
             &input.acs_url,
@@ -185,7 +185,7 @@ impl<R: SamlApplicationRepository> SamlApplicationService<R> {
             ));
         }
 
-        let mut kc_client = build_keycloak_saml_client(
+        let mut kc_client = build_saml_client_representation(
             name,
             &existing.entity_id,
             acs_url,
@@ -341,9 +341,9 @@ fn parse_certificate_expiry(cert_base64: &str) -> Result<(String, DateTime<Utc>)
     Ok((pem, expires_at))
 }
 
-/// Build a Keycloak SAML Client representation from Auth9 input
+/// Build a SAML Client representation from Auth9 input
 #[allow(clippy::too_many_arguments)]
-fn build_keycloak_saml_client(
+fn build_saml_client_representation(
     name: &str,
     entity_id: &str,
     acs_url: &str,
@@ -512,8 +512,8 @@ mod tests {
     }
 
     #[test]
-    fn test_build_keycloak_saml_client_basic() {
-        let kc = build_keycloak_saml_client(
+    fn test_build_saml_client_representation_basic() {
+        let kc = build_saml_client_representation(
             "My SP",
             "https://sp.example.com",
             "https://sp.example.com/acs",
@@ -543,8 +543,8 @@ mod tests {
     }
 
     #[test]
-    fn test_build_keycloak_saml_client_with_slo_and_cert() {
-        let kc = build_keycloak_saml_client(
+    fn test_build_saml_client_representation_with_slo_and_cert() {
+        let kc = build_saml_client_representation(
             "SP with SLO",
             "https://sp.example.com",
             "https://sp.example.com/acs",
@@ -843,8 +843,8 @@ mod tests {
     }
 
     #[test]
-    fn test_build_keycloak_saml_client_without_slo() {
-        let kc = build_keycloak_saml_client(
+    fn test_build_saml_client_representation_without_slo() {
+        let kc = build_saml_client_representation(
             "No SLO SP",
             "https://sp.example.com",
             "https://sp.example.com/acs",

@@ -1112,7 +1112,7 @@ export default {
       hide: "隐藏",
       reveal: "显示",
       copySecret: "复制密钥",
-      keycloakUnavailable: "无法获取，请检查 Keycloak",
+      clientSecretUnavailable: "无法从身份后端获取客户端密钥",
       environmentVariables: "环境变量",
       environmentVariablesDescription: "将这些变量添加到应用的 .env 文件中",
       endpoints: "OAuth/OIDC 端点",

@@ -1,7 +1,7 @@
 //! Password management business logic
 
 use crate::domains::integration::service::ActionEngine;
-use crate::domains::platform::service::{EmailService, KeycloakSyncService};
+use crate::domains::platform::service::{EmailService, IdentitySyncService};
 use crate::error::{AppError, Result};
 use crate::identity_engine::IdentityEngine;
 use crate::models::action::{
@@ -42,7 +42,7 @@ pub struct PasswordService<
     // Reserved for future PostChangePassword trigger integration
     #[allow(dead_code)]
     action_engine: Option<Arc<ActionEngine<AR>>>,
-    keycloak_sync: Option<Arc<KeycloakSyncService>>,
+    identity_sync: Option<Arc<IdentitySyncService>>,
     hmac_key: String,
 }
 
@@ -63,7 +63,7 @@ impl<P: PasswordResetRepository, U: UserRepository, S: SystemSettingsRepository>
             identity_engine,
             tenant_repo: None,
             action_engine: None,
-            keycloak_sync: None,
+            identity_sync: None,
             hmac_key,
         }
     }
@@ -82,7 +82,7 @@ impl<
         email_service: Arc<EmailService<S>>,
         identity_engine: Arc<dyn IdentityEngine>,
         tenant_repo: Arc<T>,
-        keycloak_sync: Arc<KeycloakSyncService>,
+        identity_sync: Arc<IdentitySyncService>,
         hmac_key: String,
     ) -> Self {
         Self {
@@ -92,7 +92,7 @@ impl<
             identity_engine,
             tenant_repo: Some(tenant_repo),
             action_engine: None,
-            keycloak_sync: Some(keycloak_sync),
+            identity_sync: Some(identity_sync),
             hmac_key,
         }
     }
@@ -105,7 +105,7 @@ impl<
         identity_engine: Arc<dyn IdentityEngine>,
         tenant_repo: Arc<T>,
         action_engine: Arc<ActionEngine<AR>>,
-        keycloak_sync: Arc<KeycloakSyncService>,
+        identity_sync: Arc<IdentitySyncService>,
         hmac_key: String,
     ) -> PasswordService<P, U, S, T, AR> {
         PasswordService {
@@ -115,7 +115,7 @@ impl<
             identity_engine,
             tenant_repo: Some(tenant_repo),
             action_engine: Some(action_engine),
-            keycloak_sync: Some(keycloak_sync),
+            identity_sync: Some(identity_sync),
             hmac_key,
         }
     }
@@ -182,14 +182,14 @@ impl<
             .await?
             .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
 
-        // Validate new password against tenant password policy before sending to Keycloak.
+        // Validate new password against tenant password policy before sending to identity backend.
         // Falls back to default policy when tenant lookup fails to ensure enforcement.
         let policy = self.resolve_user_password_policy(reset_token.user_id).await;
         if let Err(errors) = policy.validate_password(&input.new_password) {
             return Err(AppError::Validation(errors.join("; ")));
         }
 
-        // Reset password in Keycloak
+        // Reset password in identity backend
         self.identity_engine
             .user_store()
             .set_user_password(&user.identity_subject, &input.new_password, false)
@@ -227,14 +227,14 @@ impl<
             .await?
             .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
 
-        // Validate new password against tenant password policy before sending to Keycloak.
+        // Validate new password against tenant password policy before sending to identity backend.
         // Falls back to default policy when tenant lookup fails to ensure enforcement.
         let policy = self.resolve_user_password_policy(user_id).await;
         if let Err(errors) = policy.validate_password(&input.new_password) {
             return Err(AppError::Validation(errors.join("; ")));
         }
 
-        // Verify current password with Keycloak
+        // Verify current password with identity backend
         let is_valid = self
             .identity_engine
             .user_store()
@@ -247,13 +247,13 @@ impl<
             ));
         }
 
-        // Set new password in Keycloak
+        // Set new password in identity backend
         self.identity_engine
             .user_store()
             .set_user_password(&user.identity_subject, &input.new_password, false)
             .await?;
 
-        // Invalidate all Keycloak sessions for the user (security: revoke stolen sessions)
+        // Invalidate all identity backend sessions for the user (security: revoke stolen sessions)
         if let Err(e) = self
             .identity_engine
             .session_store()
@@ -262,7 +262,7 @@ impl<
         {
             tracing::warn!(
                 user_id = %user_id,
-                "Failed to invalidate Keycloak sessions after password change: {}",
+                "Failed to invalidate identity backend sessions after password change: {}",
                 e
             );
         }
@@ -294,7 +294,7 @@ impl<
             .await?
             .ok_or_else(|| AppError::NotFound("User not found".to_string()))?;
 
-        // Admin bypass: set password in Keycloak, bypassing realm password policy
+        // Admin bypass: set password in identity backend, bypassing realm password policy
         self.identity_engine
             .user_store()
             .admin_set_user_password(&user.identity_subject, password, temporary)
@@ -361,9 +361,9 @@ impl<
                 .await?;
         }
 
-        // Sync password policy to Keycloak
-        if let Some(ref keycloak_sync) = self.keycloak_sync {
-            keycloak_sync.sync_password_policy(&updated).await;
+        // Sync password policy to identity backend
+        if let Some(ref identity_sync) = self.identity_sync {
+            identity_sync.sync_password_policy(&updated).await;
         }
 
         Ok(updated)
@@ -1243,7 +1243,7 @@ mod tests {
         ));
         let email_service = Arc::new(EmailService::new(settings_service));
         let identity_engine = create_test_identity_engine();
-        let keycloak_sync = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
+        let identity_sync = Arc::new(IdentitySyncService::new(identity_engine.clone()));
 
         let service = PasswordService::with_tenant_repo(
             Arc::new(password_reset_mock),
@@ -1251,7 +1251,7 @@ mod tests {
             email_service,
             identity_engine,
             Arc::new(tenant_mock),
-            keycloak_sync,
+            identity_sync,
             "test-key".to_string(),
         );
 
@@ -1282,7 +1282,7 @@ mod tests {
         ));
         let email_service = Arc::new(EmailService::new(settings_service));
         let identity_engine = create_test_identity_engine();
-        let keycloak_sync = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
+        let identity_sync = Arc::new(IdentitySyncService::new(identity_engine.clone()));
 
         let service = PasswordService::with_tenant_repo(
             Arc::new(password_reset_mock),
@@ -1290,7 +1290,7 @@ mod tests {
             email_service,
             identity_engine,
             Arc::new(tenant_mock),
-            keycloak_sync,
+            identity_sync,
             "test-key".to_string(),
         );
 
@@ -1338,7 +1338,7 @@ mod tests {
         ));
         let email_service = Arc::new(EmailService::new(settings_service));
         let identity_engine = create_test_identity_engine();
-        let keycloak_sync = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
+        let identity_sync = Arc::new(IdentitySyncService::new(identity_engine.clone()));
 
         let service = PasswordService::with_tenant_repo(
             Arc::new(password_reset_mock),
@@ -1346,7 +1346,7 @@ mod tests {
             email_service,
             identity_engine,
             Arc::new(tenant_mock),
-            keycloak_sync,
+            identity_sync,
             "test-key".to_string(),
         );
 
@@ -1414,7 +1414,7 @@ mod tests {
         ));
         let email_service = Arc::new(EmailService::new(settings_service));
         let identity_engine = create_test_identity_engine();
-        let keycloak_sync = Arc::new(KeycloakSyncService::new(identity_engine.clone()));
+        let identity_sync = Arc::new(IdentitySyncService::new(identity_engine.clone()));
 
         let service = PasswordService::with_tenant_repo(
             Arc::new(password_reset_mock),
@@ -1422,7 +1422,7 @@ mod tests {
             email_service,
             identity_engine,
             Arc::new(tenant_mock),
-            keycloak_sync,
+            identity_sync,
             "test-key".to_string(),
         );
 
