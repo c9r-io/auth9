@@ -67,6 +67,20 @@ function mapSpecialApiError(
     return translate(locale, "auth.resetPassword.expiredToken");
   }
 
+  // Credential-specific unauthorized errors should show the actual error,
+  // not the generic "session expired" message.
+  if (error.code === "unauthorized") {
+    if (message.includes("invalid email or password")) {
+      return translate(locale, "apiErrors.invalidCredentials");
+    }
+    if (message.includes("invalid totp code")) {
+      return translate(locale, "apiErrors.invalidTotpCode");
+    }
+    if (message.includes("invalid or already used recovery code")) {
+      return translate(locale, "apiErrors.invalidRecoveryCode");
+    }
+  }
+
   return null;
 }
 

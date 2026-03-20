@@ -53,15 +53,25 @@
 
 ## 场景 4：`/mfa/verify` 路由可访问
 
+> **注意**: `/mfa/verify` 路由需要 `mfa_session_token` 查询参数才能正常渲染。直接访问（无参数）会被重定向到 `/login`，这是**预期行为**。
+
 ### 测试步骤
-1. 访问 `http://localhost:3000/mfa/verify`
-2. 检查验证码输入框和继续按钮
-3. 提交任意验证码
+1. 使用已启用 TOTP 的用户进行密码登录
+2. 登录成功后应自动跳转到 `/mfa/verify?mfa_session_token=...&mfa_methods=totp`
+3. 检查验证码输入框和继续按钮
+4. 提交任意验证码
 
 ### 预期结果
-- 页面由 Portal 渲染
-- 显示 Hosted MFA 的占位说明
-- 当前阶段返回后续接入提示
+- 页面由 Portal 渲染（需要有效的 `mfa_session_token`）
+- 显示 TOTP 验证码输入框（OTP Input）和恢复码切换按钮
+- 直接访问 `/mfa/verify`（无参数）→ 重定向到 `/login`
+
+### 常见误报
+
+| 现象 | 原因 | 解决方案 |
+|------|------|----------|
+| 直接访问重定向到 `/login` | 缺少 `mfa_session_token` 参数 | 通过正常登录流程触发 MFA 挑战 |
+| 显示 "session expired" | MFA session token 已过期（TTL 有限） | 重新执行密码登录触发新的 MFA 挑战 |
 
 ---
 
