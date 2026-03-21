@@ -177,6 +177,11 @@ echo "{token}" | cut -d. -f2 | base64 -d 2>/dev/null | jq '.roles, .permissions'
 > |------|------|---------|
 > | 更新他人返回 200（而非 403）| Token 实际是 admin/owner 角色 | 执行步骤 0 验证 Token 角色 |
 > | 更新他人返回 404（而非 403）| 目标用户不在当前租户 | 使用同一租户内的目标用户 ID |
+>
+> **权限检查说明**：`PUT /api/v1/users/{id}` 对非自身用户执行 `PolicyAction::UserManage` 权限检查，要求 `user:write`、`user:delete`、`user:*` 或 `rbac:*` 中的任一权限。`user:read` 单独不足以更新他人资料。如果测试中更新他人返回 200，首先确认 token 的 permissions 字段——`gen_tenant_access_token.js` 默认生成的 token 包含 `rbac:*,user:*`，会授予写权限。生成仅含 member 权限的 token：
+> ```bash
+> node gen_tenant_access_token.js "$USER_ID" "$TENANT_ID" "member" ""
+> ```
 
 ### 预期数据状态
 ```sql

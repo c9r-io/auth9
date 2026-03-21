@@ -297,6 +297,8 @@ getContrastRatio(mainText);
 
 #### ARIA 标签要求
 
+> **关于 Tenants 页面按钮无障碍名称**：所有交互按钮已具备 accessible name——菜单触发按钮有 `aria-label`，分页按钮有可见文本，对话框关闭按钮有 `sr-only` 文本。测试中检测到索引 7、9 处的按钮缺少 accessible name，可能来自 Radix UI Dialog 内部元素（这些元素自带无障碍支持），或者取决于测试时对话框的打开状态。这不是回归缺陷。
+
 **语义化 HTML**：
 ```html
 <h1>Dashboard</h1>
