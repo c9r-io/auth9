@@ -3,6 +3,8 @@
 > **模块**: analytics / identity-provider
 > **关联 FR**: Phase4 FR5 — 联邦审计与安全事件
 > **前置条件**: 系统已启动且 API 可访问，至少配置一个 Social Provider (Google/GitHub) 和一个 Enterprise SSO Connector (OIDC/SAML)
+>
+> **重要**: 联邦事件 (`federation_success`, `federation_failed`, `identity_linked`, `identity_unlinked`) 只有在 **实际执行对应操作** 后才会产生。仅查询数据库不构成测试——必须先完成真实的社交登录/SAML SSO/身份绑定流程。种子数据中的 `success`/`social`/`failed_password` 事件是基础登录事件，不包含联邦事件。
 
 ---
 
@@ -166,7 +168,8 @@ LIMIT 1;
 
 ```bash
 # 获取过去 7 天的登录统计
-curl -s "http://localhost:8080/api/v1/analytics/stats?period=weekly" \
+# 注意: 正确的端点是 /api/v1/analytics/login-stats（不是 /stats）
+curl -s "http://localhost:8080/api/v1/analytics/login-stats?period=weekly" \
   -H "Authorization: Bearer $TOKEN" | jq
 ```
 

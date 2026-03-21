@@ -237,6 +237,52 @@ async fn test_get_stats_with_start_end_dates() {
 }
 
 #[tokio::test]
+async fn test_get_stats_with_date_only_format() {
+    let state = TestAppState::new("http://localhost:8081");
+
+    add_test_login_events(&state, 8).await;
+
+    let app = build_analytics_test_router(state);
+
+    // Use current year date-only format (YYYY-MM-DD)
+    let now = Utc::now();
+    let start = format!("{}-01-01", now.format("%Y"));
+    let end = format!("{}-12-31", now.format("%Y"));
+
+    let (status, body): (StatusCode, Option<SuccessResponse<LoginStats>>) = get_json(
+        &app,
+        &format!("/api/v1/analytics/login-stats?start={}&end={}", start, end),
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.is_some());
+    let stats = body.unwrap().data;
+    assert_eq!(stats.total_logins, 8);
+}
+
+#[tokio::test]
+async fn test_get_stats_future_date_returns_zero() {
+    let state = TestAppState::new("http://localhost:8081");
+
+    add_test_login_events(&state, 5).await;
+
+    let app = build_analytics_test_router(state);
+
+    // Future dates should return 0 events
+    let (status, body): (StatusCode, Option<SuccessResponse<LoginStats>>) = get_json(
+        &app,
+        "/api/v1/analytics/login-stats?start=2027-01-01&end=2027-01-31",
+    )
+    .await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert!(body.is_some());
+    let stats = body.unwrap().data;
+    assert_eq!(stats.total_logins, 0);
+}
+
+#[tokio::test]
 async fn test_get_stats_with_invalid_dates_falls_back() {
     let state = TestAppState::new("http://localhost:8081");
 
