@@ -70,7 +70,7 @@ echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq '{token_type, tenant_id}'
    ```bash
    curl -s -w "\n%{http_code}" -X DELETE \
      -H "Authorization: Bearer {tenant_access_token}" \
-     http://localhost:8080/api/v1/tenants/{tenant_id}/users/{user_id}
+     http://localhost:8080/api/v1/users/{user_id}
    ```
 3. 验证所有关联数据已清除
 
@@ -165,6 +165,7 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
 ### 初始状态
 - 租户 `{tenant_id}` 下存在用户 `{user_id}`，该用户在底层认证主体中有对应账户
 - **`users.keycloak_id` 必须是有效的底层认证主体 UUID**（通过正常 OIDC 登录或 API 创建用户流程生成，不能是手动插入的非 UUID 字符串）
+  > **注意**: 种子数据中的 `identity_subject` 使用字符串格式（如 `seed-admin-admin@auth9.local`），不是 UUID。测试此场景时，必须使用通过正常 OIDC 登录流程创建的用户，以确保 `identity_subject` 为 UUID 格式。
 - 租户配置了至少 1 个 Webhook
 
 ### 目的
@@ -176,7 +177,7 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
    ```bash
    curl -s -w "\n%{http_code}" -X DELETE \
      -H "Authorization: Bearer {admin_token}" \
-     http://localhost:8080/api/v1/tenants/{tenant_id}/users/{user_id}
+     http://localhost:8080/api/v1/users/{user_id}
    ```
 3. 检查底层认证主体中用户是否已删除：
    ```bash

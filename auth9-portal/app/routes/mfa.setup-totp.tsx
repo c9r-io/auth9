@@ -11,7 +11,7 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { translate } from "~/i18n/translate";
 import { mapApiError } from "~/lib/error-messages";
 import { resolveLocale } from "~/services/locale.server";
-import { getAccessToken } from "~/services/session.server";
+import { getAccessToken, requireIdentityAuthWithUpdate } from "~/services/session.server";
 import { hostedLoginApi, publicBrandingApi, type BrandingConfig } from "~/services/api";
 import { DEFAULT_PUBLIC_BRANDING } from "~/services/api/branding";
 
@@ -20,8 +20,12 @@ export const meta: MetaFunction = ({ matches }) => {
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  const accessToken = await getAccessToken(request);
-  if (!accessToken) {
+  // MFA TOTP enrollment is an identity-level operation.
+  // The backend /api/v1/mfa/totp/enroll expects an Identity Token (aud: "auth9"),
+  // not a Tenant Access Token (aud: service_client_id).
+  const { session } = await requireIdentityAuthWithUpdate(request);
+  const identityToken = session.identityAccessToken || session.accessToken;
+  if (!identityToken) {
     return redirect("/login");
   }
 
@@ -39,8 +43,8 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Fall back to default branding
   }
 
-  // Start TOTP enrollment
-  const enrollment = await hostedLoginApi.totpEnrollStart(accessToken);
+  // Start TOTP enrollment — must use identity token, not tenant access token
+  const enrollment = await hostedLoginApi.totpEnrollStart(identityToken);
   const qrDataUrl = await QRCode.toDataURL(enrollment.otpauth_uri, {
     width: 200,
     margin: 2,
@@ -59,10 +63,15 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export async function action({ request }: ActionFunctionArgs) {
   const locale = await resolveLocale(request);
-  const accessToken = await getAccessToken(request);
-  if (!accessToken) {
+
+  // MFA enrollment verification also requires Identity Token
+  const { session } = await requireIdentityAuthWithUpdate(request);
+  const identityToken = session.identityAccessToken || session.accessToken;
+  if (!identityToken) {
     return redirect("/login");
   }
+  // For action completion and OIDC flow, use the best available token
+  const accessToken = (await getAccessToken(request)) || identityToken;
 
   const formData = await request.formData();
   const code = String(formData.get("code") || "").trim();
@@ -75,7 +84,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    await hostedLoginApi.totpEnrollVerify(setupToken, code, accessToken);
+    await hostedLoginApi.totpEnrollVerify(setupToken, code, identityToken);
 
     // Complete the pending action if present
     if (actionId) {

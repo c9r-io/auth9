@@ -31,7 +31,15 @@
 
 ### 步骤
 
-1. 设置环境变量 `LOGIN_MODE=oidc`，重启 Portal
+1. 设置环境变量 `LOGIN_MODE=oidc`，重启 Portal：
+   ```bash
+   # 在 docker-compose.dev.yml 的 portal 服务中添加/修改 environment 配置：
+   #   environment:
+   #     LOGIN_MODE: oidc
+   # 然后重启：
+   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+   ```
+   > **注意**: 容器文件系统为只读，不要尝试修改容器内的 `/app/.env` 文件。必须通过 `docker-compose.dev.yml` 的 `environment` 字段覆盖环境变量。
 2. 访问 `http://localhost:3000/login`
 3. 验证页面被 302 重定向到 auth9-core 的 `/api/v1/auth/authorize`
 
@@ -49,7 +57,7 @@
 
 ### 步骤
 
-1. 设置 `LOGIN_MODE=percentage`，`LOGIN_ROLLOUT_PCT=50`，重启 Portal
+1. 在 `docker-compose.dev.yml` 的 portal 服务中设置 `LOGIN_MODE: percentage` 和 `LOGIN_ROLLOUT_PCT: "50"`，然后 `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` 重启 Portal
 2. 使用不同的 User-Agent 和 IP 组合多次访问 `/login`
 3. 统计显示 Auth9 登录表单 vs OIDC 重定向的比例
 
@@ -108,14 +116,14 @@ curl -s http://localhost:8080/metrics | grep auth9_hosted_login_duration
 ### 步骤
 
 1. 在 `LOGIN_MODE=hosted` 下正常登录一个用户，验证 session 正常
-2. 将 `LOGIN_MODE` 改为 `oidc`，重启 Portal
+2. 在 `docker-compose.dev.yml` 中将 `LOGIN_MODE` 改为 `oidc`，运行 `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` 重启 Portal
 3. 访问 `/login`，确认被重定向到 OIDC 授权流程
 4. 验证之前创建的 session 仍然有效（访问 `/dashboard` 不需要重新登录）
-5. 将 `LOGIN_MODE` 改回 `hosted`，重启 Portal
+5. 在 `docker-compose.dev.yml` 中将 `LOGIN_MODE` 改回 `hosted`，运行 `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` 重启 Portal
 6. 访问 `/login`，确认回到 Auth9 登录表单
 
 ### 预期结果
 
-- 切换 `LOGIN_MODE` 只需改环境变量 + 重启，无需数据库迁移
+- 切换 `LOGIN_MODE` 只需修改 `docker-compose.dev.yml` 中的环境变量 + 重启，无需数据库迁移
 - 已有 session 在切换后仍然有效（session 表与登录模式无关）
 - 回切到 hosted 后功能完全恢复

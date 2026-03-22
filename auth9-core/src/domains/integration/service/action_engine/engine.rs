@@ -383,15 +383,42 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
                 // Take thread-local tokio runtime to drive async ops
                 let tokio_rt = take_local_tokio_rt();
 
-                let event_loop_result = tokio_rt
-                    .block_on(async { js_runtime.run_event_loop(Default::default()).await });
+                // Wrap event loop in catch_unwind to handle deno_core internal panics
+                // (e.g. RefCell borrow conflicts in FuturesUnordered driver).
+                // AssertUnwindSafe is needed because JsRuntime is not UnwindSafe,
+                // but we discard it on panic anyway.
+                let event_loop_result = {
+                    let mut rt_ref = std::panic::AssertUnwindSafe(&mut js_runtime);
+                    let tokio_ref = std::panic::AssertUnwindSafe(&tokio_rt);
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
+                        tokio_ref.block_on(async {
+                            rt_ref.run_event_loop(Default::default()).await
+                        })
+                    }))
+                };
 
                 // Return tokio runtime to thread-local
                 return_local_tokio_rt(tokio_rt);
 
-                event_loop_result.map_err(|e| {
-                    AppError::ActionExecutionFailed(format!("Async execution error: {}", e))
-                })?;
+                match event_loop_result {
+                    Ok(Ok(())) => {}
+                    Ok(Err(e)) => {
+                        return Err(AppError::ActionExecutionFailed(format!(
+                            "Async execution error: {}", e
+                        )));
+                    }
+                    Err(_panic) => {
+                        // Runtime panicked (deno_core internal RefCell conflict).
+                        // Do NOT return it to the pool — drop it here.
+                        tracing::error!(
+                            "V8 event loop panicked (likely deno_core RefCell conflict), discarding runtime"
+                        );
+                        // js_runtime will be dropped when this scope exits
+                        return Err(AppError::ActionExecutionFailed(
+                            "Action async execution failed due to internal runtime error".to_string(),
+                        ));
+                    }
+                }
             }
 
             // 6. Extract result (handle both sync value and resolved Promise)

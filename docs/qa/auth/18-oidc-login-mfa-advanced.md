@@ -11,7 +11,7 @@
 
 本文档承接 [01-oidc-login.md](./01-oidc-login.md) 的基础登录流程，补充以下进阶页面：
 
-- `LoginConfigTotp.tsx` 承载的首次 TOTP 注册页
+- `/mfa/setup-totp` 路由（`mfa.setup-totp.tsx`）承载的首次 TOTP 注册页
 - `SelectAuthenticator.tsx` 承载的多认证方式选择页
 - Sign out 后的登录态清理回归
 
@@ -27,7 +27,7 @@
 - **用户必须能够成功完成密码登录**（依赖 `auth9-core init` 已正确种子化 admin 密码凭据）
 
 ### 目的
-验证用户首次配置 TOTP 的完整流程。此流程由认证引擎在认证中强制触发，配置页面由 Auth9 品牌认证页自定义渲染（`LoginConfigTotp.tsx`），保持 Liquid Glass 品牌风格。
+验证用户首次配置 TOTP 的完整流程。此流程由认证引擎在认证中强制触发，配置页面由 Auth9 品牌认证页自定义渲染（`/mfa/setup-totp` 路由，对应 `mfa.setup-totp.tsx`），保持 Liquid Glass 品牌风格。
 
 ### 测试操作流程
 1. 在 Portal `/login` 页面点击「**Sign in with password**」
