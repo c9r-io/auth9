@@ -105,7 +105,7 @@ SECRET="dev-webhook-secret-change-in-production"  # pragma: allowlist secret
 for i in $(seq 1 6); do
   BODY="{\"type\":\"LOGIN_ERROR\",\"realmId\":\"auth9\",\"userId\":\"spray-user-$i\",\"error\":\"invalid_user_credentials\",\"ipAddress\":\"10.99.99.99\",\"details\":{\"username\":\"spray-target-$i@example.com\"}}"
   SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
-  curl -s -X POST "http://localhost:8080/api/v1/keycloak/events" \
+  curl -s -X POST "http://localhost:8080/api/v1/identity/events" \
     -H "Content-Type: application/json" \
     -H "x-keycloak-signature: sha256=$SIG" -d "$BODY"
   sleep 0.5

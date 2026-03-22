@@ -72,7 +72,7 @@ BODY='{"type":"LOGIN_ERROR","realmId":"auth9","userId":"50587266-c621-42d7-9d3d-
 SECRET="dev-webhook-secret-change-in-production"  # pragma: allowlist secret
 for i in $(seq 1 10); do
   SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
-  curl -s -o /dev/null -w "Event $i: HTTP %{http_code}\n" -X POST "http://localhost:8080/api/v1/keycloak/events" \
+  curl -s -o /dev/null -w "Event $i: HTTP %{http_code}\n" -X POST "http://localhost:8080/api/v1/identity/events" \
     -H "Content-Type: application/json" \
     -H "x-keycloak-signature: sha256=$SIG" \
     -d "$BODY"

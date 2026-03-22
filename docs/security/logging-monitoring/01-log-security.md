@@ -253,7 +253,7 @@ SECRET="dev-webhook-secret-change-in-production"  # pragma: allowlist secret
 send_webhook_event() {
   local body="$1"
   local sig=$(echo -n "$body" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
-  curl -s -X POST http://localhost:8080/api/v1/keycloak/events \
+  curl -s -X POST http://localhost:8080/api/v1/identity/events \
     -H "Content-Type: application/json" \
     -H "x-keycloak-signature: sha256=$sig" \
     -d "$body" >/dev/null
@@ -269,7 +269,7 @@ done
 
 # 检查是否生成告警
 curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:8080/api/v1/security-alerts?type=brute_force&limit=5"
+  "http://localhost:8080/api/v1/security/alerts?type=brute_force&limit=5"
 # 预期: 至少 1 条 HIGH 级别告警
 
 # 密码喷洒检测测试
@@ -281,14 +281,14 @@ done
 
 # 检查密码喷洒告警
 curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:8080/api/v1/security-alerts?type=password_spray&limit=5"
+  "http://localhost:8080/api/v1/security/alerts?type=password_spray&limit=5"
 # 预期: CRITICAL 级别告警
 
 # 新设备检测测试
 send_webhook_event "{\"type\":\"LOGIN\",\"realmId\":\"auth9\",\"clientId\":\"auth9-portal\",\"userId\":\"550e8400-e29b-41d4-a716-446655440000\",\"ipAddress\":\"198.51.100.88\",\"time\":$(date +%s)000,\"details\":{\"username\":\"test@test.com\",\"email\":\"test@test.com\",\"user_agent\":\"NewDevice/1.0 (Unknown OS)\"}}"
 
 curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:8080/api/v1/security-alerts?type=new_device&limit=5"
+  "http://localhost:8080/api/v1/security/alerts?type=new_device&limit=5"
 # 预期: INFO 级别告警
 
 # 检测规避测试 - 低速攻击
@@ -298,6 +298,15 @@ for i in $(seq 1 10); do
 done
 # 检查是否仍然触发告警（根据滑动窗口设计）
 ```
+
+### 常见误报
+
+| 症状 | 原因 | 解决方法 |
+|------|------|---------|
+| 查询告警返回 `{"error":"not_found"}` | 使用了错误的 API 路径 `/api/v1/security-alerts`（带连字符） | 正确路径为 `/api/v1/security/alerts`（带斜杠） |
+| Webhook 事件发送返回 404 | 使用了旧的端点路径 `/api/v1/keycloak/events` | 正确路径为 `/api/v1/identity/events`（仍接受 `x-keycloak-signature` 头） |
+| 告警查询返回空列表 | 未等待足够时间让事件落库，或环境刚重置无历史事件 | 确保 `sleep 1` 在每次事件发送后执行，且发送满 5+ 次再查询 |
+| 401 Unauthorized | 查询告警 API 需要 Platform Admin Token | 使用 `gen-test-tokens.js identity`（平台管理员 Identity Token）或具有 PlatformAdmin 权限的 token |
 
 ### 修复建议
 - 支持可配置的检测阈值

@@ -103,7 +103,7 @@ export default function DashboardIndex() {
                 key={activity.id}
                 className="flex items-start gap-3 py-3 border-b border-[var(--glass-border-subtle)] last:border-0"
               >
-                <div className="w-2 h-2 rounded-full bg-[var(--accent-blue)] mt-1.5 shrink-0" />
+                <div className="w-2 h-2 rounded-full bg-[var(--accent-blue)] mt-[5px] shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-[13px] font-semibold leading-snug text-[var(--text-primary)]">
                     {activity.action} • {activity.resource_type}
@@ -148,7 +148,7 @@ function StatsCard({
   };
 
   return (
-    <Card className={`animate-fade-in-up ${delay} relative overflow-hidden h-full p-5 shadow-[0_12px_36px_var(--glass-shadow-strong),inset_0_1px_0_var(--glass-highlight),inset_0_-1px_0_rgba(0,0,0,0.05)] hover:-translate-y-[2px] hover:shadow-[0_16px_44px_var(--glass-shadow-strong),inset_0_1px_0_var(--glass-highlight),inset_0_-1px_0_rgba(0,0,0,0.05)]`}>
+    <Card className={`animate-fade-in-up ${delay} relative overflow-hidden h-full p-5 shadow-[0_12px_44px_var(--glass-shadow-strong),inset_0_1px_0_var(--glass-highlight),inset_0_-1px_0_rgba(0,0,0,0.05)] hover:-translate-y-[2px] hover:shadow-[0_16px_48px_var(--glass-shadow-strong),inset_0_1px_0_var(--glass-highlight),inset_0_-1px_0_rgba(0,0,0,0.05)]`}>
       <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses[color]} pointer-events-none`} />
       <CardContent className="!p-0 relative h-full flex flex-col">
         <p className="text-[13px] font-medium text-[var(--text-secondary)]">{title}</p>

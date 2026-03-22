@@ -174,6 +174,7 @@ WHERE tenant_id = '{tenant_id}' AND events LIKE '%user.created%';
 ### 初始状态
 - 用户已登录管理后台
 - 页面正常显示
+- **环境必须已通过 `./scripts/reset-docker.sh` 重置**（重置脚本会创建 admin@auth9.local 用户并关联到 demo 租户；未重置时该用户可能未关联任何租户，导致登录失败）
 
 ### 目的
 验证页面正确检查认证状态，未登录或 session 失效时重定向到登录页

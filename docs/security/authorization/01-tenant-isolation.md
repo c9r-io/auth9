@@ -313,7 +313,8 @@ curl -s -o /dev/null -w "%{http_code}" \
 
 ### 前置条件
 - 租户 A 和租户 B 都存在，且各自有独立用户
-- 租户 A 管理员（非平台管理员）已在 `PUT /api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist` 为租户 A 保存 `203.0.113.10`
+- 租户 A 管理员（非平台管理员）已通过 `PUT /api/v1/tenants/{tenant_id}/security/malicious-ip-blacklist` 为租户 A 保存 `203.0.113.10`
+- **请求体格式**: `{"entries": [{"ip_address": "203.0.113.10", "reason": "已知恶意来源"}]}`（`entries` 数组，每项包含 `ip_address` 字段，`reason` 可选）
 - 租户 B 未保存该 IP
 
 ### 攻击目标
@@ -337,7 +338,7 @@ SECRET="${WEBHOOK_SECRET:-dev-webhook-secret-change-in-production}"
 
 BODY='{"type":"LOGIN_ERROR","realmId":"auth9","clientId":"auth9-portal","userId":"{tenant_a_user_id}","ipAddress":"203.0.113.10","error":"invalid_user_credentials","time":'$(date +%s000)',"details":{"username":"tenant-a@example.com","email":"tenant-a@example.com"}}'
 SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | awk '{print $NF}')
-curl -s -X POST "http://localhost:8080/api/v1/keycloak/events" \
+curl -s -X POST "http://localhost:8080/api/v1/identity/events" \
   -H "Content-Type: application/json" \
   -H "X-Keycloak-Signature: sha256=$SIG" \
   -d "$BODY"
@@ -350,6 +351,14 @@ WHERE alert_type = 'suspicious_ip'
 ORDER BY created_at DESC
 LIMIT 5;"
 ```
+
+### 常见误报
+
+| 症状 | 原因 | 解决方法 |
+|------|------|---------|
+| `PUT .../malicious-ip-blacklist` 返回 422 validation_error | 请求体格式错误，使用了 `{"ips": [...]}` 而非正确格式 | 正确格式为 `{"entries": [{"ip_address": "203.0.113.10", "reason": "optional"}]}`，字段名是 `entries` + `ip_address` |
+| `PUT .../malicious-ip-blacklist` 返回 403 | 使用了 Identity Token 而非 Tenant Access Token | 租户级 API 需要 `tenant-owner` 或 `tenant-access` 类型 token。Identity Token 仅用于租户选择和 token exchange |
+| 告警中 `blacklist_scope` 为空 | 黑名单未正确保存到该租户 | 先通过 `GET .../malicious-ip-blacklist` 确认黑名单已保存 |
 
 ### 修复建议
 - 所有安全检测命中逻辑必须带 `tenant_id` 作用域

@@ -16,7 +16,7 @@
 Auth9 接收认证事件 Webhook，并向外部系统发送 Webhook 通知：
 
 **入站 Webhook（Auth9 OIDC Engine → Auth9 Core）**:
-- 端点: `POST /api/v1/keycloak/events`
+- 端点: `POST /api/v1/identity/events`
 - 验证: `X-Keycloak-Signature` 头（HMAC-SHA256 签名，格式 `sha256=<hex>`）与 webhook secret 计算的签名比较
 - 备用头: `X-Webhook-Signature`（兼容旧版）
 - 用途: 接收用户登录事件、管理事件等
@@ -76,20 +76,20 @@ export WEBHOOK_SECRET="dev-webhook-secret-change-in-production"
 CURRENT_TIME_MILLIS=$(($(date +%s) * 1000))
 EVENT="{\"type\":\"LOGIN\",\"realmId\":\"auth9\",\"userId\":\"test-user\",\"time\":${CURRENT_TIME_MILLIS}}"
 
-# 注意: 正确的端点是 /api/v1/keycloak/events（不是 /api/v1/webhooks/keycloak）
+# 注意: 正确的端点是 /api/v1/identity/events（不是 /api/v1/webhooks/keycloak）
 # 注意: 签名头是 X-Keycloak-Signature（不是 X-Webhook-Secret）
 # 签名格式: sha256=<hex-encoded-hmac-sha256>
 
 # 无签名头
 curl -s -o /dev/null -w "%{http_code}" \
-  -X POST http://localhost:8080/api/v1/keycloak/events \
+  -X POST http://localhost:8080/api/v1/identity/events \
   -H "Content-Type: application/json" \
   -d "$EVENT"
 # 预期: 401 (Missing webhook signature)
 
 # 空签名
 curl -s -o /dev/null -w "%{http_code}" \
-  -X POST http://localhost:8080/api/v1/keycloak/events \
+  -X POST http://localhost:8080/api/v1/identity/events \
   -H "Content-Type: application/json" \
   -H "X-Keycloak-Signature: " \
   -d "$EVENT"
@@ -97,7 +97,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 
 # 错误签名
 curl -s -o /dev/null -w "%{http_code}" \
-  -X POST http://localhost:8080/api/v1/keycloak/events \
+  -X POST http://localhost:8080/api/v1/identity/events \
   -H "Content-Type: application/json" \
   -H "X-Keycloak-Signature: sha256=0000000000000000000000000000000000000000000000000000000000000000" \
   -d "$EVENT"
@@ -106,7 +106,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 # 正确签名（验证合法请求可通过）
 SIGNATURE=$(echo -n "$EVENT" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $2}')
 curl -s -o /dev/null -w "%{http_code}" \
-  -X POST http://localhost:8080/api/v1/keycloak/events \
+  -X POST http://localhost:8080/api/v1/identity/events \
   -H "Content-Type: application/json" \
   -H "X-Keycloak-Signature: sha256=$SIGNATURE" \
   -d "$EVENT"
@@ -116,7 +116,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 python3 << 'PYEOF'
 import requests, time, statistics
 
-url = "http://localhost:8080/api/v1/keycloak/events"
+url = "http://localhost:8080/api/v1/identity/events"
 headers = {"Content-Type": "application/json"}
 event = '{"type":"LOGIN","realmId":"auth9"}'
 
@@ -145,7 +145,7 @@ PYEOF
 | 症状 | 原因 | 解决方法 |
 |------|------|----------|
 | 所有请求返回 204 | webhook secret 未配置 | 在 docker-compose.yml 或 .env 中设置 |
-| 404 Not Found | 端点路径错误 | 使用 `/api/v1/keycloak/events`（不是 `/api/v1/webhooks/keycloak`） |
+| 404 Not Found | 端点路径错误 | 使用 `/api/v1/identity/events`（不是 `/api/v1/webhooks/keycloak`） |
 | 正确签名仍返回 401 | 签名格式错误 | 确保格式为 `sha256=<hex>`，使用 HMAC-SHA256 |
 
 ### 修复建议
@@ -200,7 +200,7 @@ VALID_SIGNATURE=$(echo -n "$EVENT" | openssl dgst -sha256 -hmac "$VALID_SECRET" 
 
 # 第一次发送（应成功）
 curl -s -o /dev/null -w "%{http_code}" \
-  -X POST http://localhost:8080/api/v1/keycloak/events \
+  -X POST http://localhost:8080/api/v1/identity/events \
   -H "Content-Type: application/json" \
   -H "X-Keycloak-Signature: sha256=$VALID_SIGNATURE" \
   -d "$EVENT"
@@ -208,7 +208,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 
 # 立即重放同一事件（应被 Redis 去重拒绝）
 curl -s -o /dev/null -w "%{http_code}" \
-  -X POST http://localhost:8080/api/v1/keycloak/events \
+  -X POST http://localhost:8080/api/v1/identity/events \
   -H "Content-Type: application/json" \
   -H "X-Keycloak-Signature: sha256=$VALID_SIGNATURE" \
   -d "$EVENT"
@@ -218,7 +218,7 @@ curl -s -o /dev/null -w "%{http_code}" \
 OLD_EVENT='{"type":"LOGIN","realmId":"auth9","userId":"test-user","time":1600000000000,"id":"event-old"}'
 OLD_SIGNATURE=$(echo -n "$OLD_EVENT" | openssl dgst -sha256 -hmac "$VALID_SECRET" | awk '{print $2}')
 curl -s -o /dev/null -w "%{http_code}" \
-  -X POST http://localhost:8080/api/v1/keycloak/events \
+  -X POST http://localhost:8080/api/v1/identity/events \
   -H "Content-Type: application/json" \
   -H "X-Keycloak-Signature: sha256=$OLD_SIGNATURE" \
   -d "$OLD_EVENT"

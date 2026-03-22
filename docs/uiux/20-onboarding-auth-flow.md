@@ -37,9 +37,12 @@
 验证组织创建后等待审批的 Pending 页面信息展示和操作按钮。
 
 ### 测试操作流程
-1. 创建组织后重定向至 `/onboard/pending`。
-2. 检查等待状态信息卡片。
-3. 验证"Try another domain"和"Sign out"按钮。
+1. 创建组织后观察重定向行为：
+   - **如果用户邮箱域名与组织域名匹配**（如 `user@acme.com` 创建 `acme.com` 组织），系统自动审批，**直接重定向到 `/dashboard`**。这是设计行为，不应判定为缺陷。
+   - **如果用户邮箱域名与组织域名不匹配**，系统将组织状态设为 `pending`，重定向至 `/onboard/pending`。
+2. 测试 pending 流程时，需使用**邮箱域名与组织域名不同**的用户（如 `user@gmail.com` 创建 `acme.com` 组织）。
+3. 检查等待状态信息卡片。
+4. 验证"Try another domain"和"Sign out"按钮。
 
 ### 预期视觉效果
 - **卡片**: 居中 Card，与 Onboarding 页保持相同 `max-w-md` 宽度和玻璃效果。

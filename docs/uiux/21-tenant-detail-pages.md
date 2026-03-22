@@ -19,7 +19,7 @@
 5. 缩小视口至移动端，验证网格从三列变为单列。
 
 ### 预期视觉效果
-- **返回按钮**: ArrowLeftIcon + "Back to Tenants" 文字，`variant="ghost"`，`--text-secondary` 色。
+- **返回按钮**: `variant="ghost" size="icon"` 仅图标按钮（ArrowLeftIcon），链接至 `/dashboard/tenants`（租户列表页）。不含文字标签，使用 `aria-label` 提供无障碍描述。
 - **租户名**: 24px `font-weight: 600`，`--text-primary`。
 - **网格布局**: `grid-cols-1 lg:grid-cols-3`，左侧 2 列（`col-span-2`）配置区 + 右侧 1 列快速链接。
 - **配置卡片**:
@@ -114,7 +114,7 @@
     - Revoked: `variant="danger"` 红色。
   - 邀请时间: `FormattedDate`，`--text-secondary`。
   - 操作: Revoke 按钮（仅 Pending 状态可见），`variant="destructive"` 或 `variant="outline"` 红色文字。
-- **创建 Dialog**: Email Input + Role Select + 到期时间 Input，标准 Dialog 布局。
+- **创建 Dialog**: Email Input + 到期时间 Select + Role Checkbox 列表（按服务分组，支持多选），标准 Dialog 布局。角色使用 Checkbox 而非 Select，因为需要支持跨服务多角色同时分配。
 - **确认弹窗**: AlertDialog 组件，"Are you sure?" 确认文字 + Cancel / Revoke 按钮。
 - **空状态**: "No invitations" + "Send Invitation" CTA 按钮，居中展示。
 
@@ -132,7 +132,7 @@
 4. 验证每个子页面的返回按钮和页面标题。
 
 ### 预期视觉效果
-- **返回按钮**: 所有子页面顶部统一使用 ArrowLeftIcon + "Back to [Tenant Name]"，`variant="ghost"`。
+- **返回按钮**: 所有子页面顶部统一使用 ArrowLeftIcon，`variant="ghost"`，链接至 `/dashboard/tenants/:tenantId`（Tenant Detail 页）。概览页的返回按钮链接至 `/dashboard/tenants`（租户列表页），因为它是 Tenant Detail 的根页面。
 - **页面标题**: 24px `font-weight: 600`，紧跟在返回按钮下方，间距 `mb-6`（24px）。
 - **内容区**: 与主 Dashboard 页面共享侧边栏，内容区宽度一致。
 - **面包屑**: 可选。若有面包屑则使用 "/" 分隔，当前页面 `--text-primary`，父级 `--accent-blue` 可点击。

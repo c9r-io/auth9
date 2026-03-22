@@ -11,7 +11,7 @@
 Auth9 的登录事件产生和记录流程：
 
 1. **用户名/密码与 MFA 验证由 Auth9 内置 OIDC 引擎处理** → 引擎产生事件
-2. **事件通过 Webhook 推送** → 事件兼容入口将事件实时推送到 auth9-core 的 `POST /api/v1/keycloak/events` 端点
+2. **事件通过 Webhook 推送** → 事件兼容入口将事件实时推送到 auth9-core 的 `POST /api/v1/identity/events` 端点
 3. **Auth9 Core 记录和分析** → Auth9 接收事件后写入 `login_events` 表，并触发安全检测（如暴力破解告警）
 
 **关键点**：本文档测试的是事件接收和记录链路，通过直接调用 Webhook API 模拟事件，不通过浏览器登录流程。
@@ -25,7 +25,7 @@ SECRET="dev-webhook-secret-change-in-production"  # pragma: allowlist secret
 BODY='<event JSON>'
 SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
 
-curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/keycloak/events" \
+curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/identity/events" \
   -H "Content-Type: application/json" \
   -H "x-keycloak-signature: sha256=$SIG" \
   -d "$BODY"
@@ -80,7 +80,7 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 < docs/qa/session/seed.sql
    BODY='{"type":"LOGIN","realmId":"auth9","clientId":"auth9-portal","userId":"550e8400-e29b-41d4-a716-446655440000","ipAddress":"192.168.1.100","time":'"$(($(date +%s)*1000))"',"details":{"username":"testuser","email":"testuser@example.com","authMethod":"password"}}'
    SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
 
-   curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/keycloak/events" \
+   curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/identity/events" \
      -H "Content-Type: application/json" \
      -H "x-keycloak-signature: sha256=$SIG" \
      -d "$BODY"
@@ -116,7 +116,7 @@ WHERE email = 'testuser@example.com' ORDER BY created_at DESC LIMIT 1;
    BODY='{"type":"LOGIN_ERROR","realmId":"auth9","clientId":"auth9-portal","userId":"550e8400-e29b-41d4-a716-446655440000","ipAddress":"192.168.1.200","error":"invalid_user_credentials","time":'"$(($(date +%s)*1000))"',"details":{"username":"user","email":"user@example.com"}}'
    SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
 
-   curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/keycloak/events" \
+   curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/identity/events" \
      -H "Content-Type: application/json" \
      -H "x-keycloak-signature: sha256=$SIG" \
      -d "$BODY"
@@ -160,7 +160,7 @@ WHERE email = 'user@example.com' ORDER BY created_at DESC LIMIT 1;
    BODY='{"type":"LOGIN_ERROR","realmId":"auth9","clientId":"auth9-portal","userId":"550e8400-e29b-41d4-a716-446655440000","ipAddress":"192.168.1.150","error":"invalid_totp","time":'"$(($(date +%s)*1000))"',"details":{"username":"mfa-user","email":"mfa-user@example.com","credentialType":"otp"}}'
    SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
 
-   curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/keycloak/events" \
+   curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/identity/events" \
      -H "Content-Type: application/json" \
      -H "x-keycloak-signature: sha256=$SIG" \
      -d "$BODY"
@@ -198,7 +198,7 @@ WHERE email = 'mfa-user@example.com' ORDER BY created_at DESC LIMIT 1;
    for i in $(seq 1 5); do
      BODY='{"type":"LOGIN_ERROR","realmId":"auth9","clientId":"auth9-portal","userId":"'"$USER_ID"'","ipAddress":"10.0.0.50","error":"invalid_user_credentials","time":'"$(($(date +%s)*1000 + i))"',"details":{"username":"locked-user","email":"locked-user@example.com"}}'
      SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
-     curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/keycloak/events" \
+     curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/identity/events" \
        -H "Content-Type: application/json" \
        -H "x-keycloak-signature: sha256=$SIG" \
        -d "$BODY"
@@ -209,7 +209,7 @@ WHERE email = 'mfa-user@example.com' ORDER BY created_at DESC LIMIT 1;
    ```bash
    BODY='{"type":"USER_DISABLED_BY_TEMPORARY_LOCKOUT","realmId":"auth9","clientId":"auth9-portal","userId":"'"$USER_ID"'","ipAddress":"10.0.0.50","time":'"$(($(date +%s)*1000 + 6))"',"details":{"username":"locked-user","email":"locked-user@example.com"}}'
    SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$SECRET" | cut -d' ' -f2)
-   curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/keycloak/events" \
+   curl -s -w "\nHTTP: %{http_code}" -X POST "http://localhost:8080/api/v1/identity/events" \
      -H "Content-Type: application/json" \
      -H "x-keycloak-signature: sha256=$SIG" \
      -d "$BODY"

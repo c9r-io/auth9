@@ -39,7 +39,7 @@ curl -sf http://localhost:8080/health
 ```bash
 TOKEN=$(.claude/skills/tools/gen-admin-token.sh)
 # 确认 webhook 端点可达
-curl -sf http://localhost:8080/api/v1/keycloak/events -X POST -H "Content-Type: application/json" -d '{}' -w '%{http_code}' -o /dev/null
+curl -sf http://localhost:8080/api/v1/identity/events -X POST -H "Content-Type: application/json" -d '{}' -w '%{http_code}' -o /dev/null
 ```
 
 预期: 返回 401（签名缺失）或 204（无签名配置时）
@@ -48,7 +48,7 @@ curl -sf http://localhost:8080/api/v1/keycloak/events -X POST -H "Content-Type: 
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}' \
-  -X POST http://localhost:8080/api/v1/keycloak/events \
+  -X POST http://localhost:8080/api/v1/identity/events \
   -H "Content-Type: application/json" \
   -d '{"type":"LOGIN","userId":"test-user","time":1700000000000,"details":{"email":"test@example.com"}}'
 ```
