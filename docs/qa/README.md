@@ -120,6 +120,7 @@
 | [auth/28-federated-identity-linking.md](./auth/28-federated-identity-linking.md) | Federated Identity Linking（社交登录身份关联、Unlink/Re-link、first_login_policy 策略控制、confirm-link 过期） | 5 |
 | [auth/29-portal-auth-ui-completion.md](./auth/29-portal-auth-ui-completion.md) | Portal 认证 UI 补全（密码登录表单、MFA 验证页面、TOTP 注册页面、OTP 组件） | 5 |
 | [auth/30-mfa-self-service-portal.md](./auth/30-mfa-self-service-portal.md) | Portal MFA 自助管理页面（TOTP 设置/移除、恢复码生成弹窗、导航入口、警告阈值） | 5 |
+| [auth/31-email-otp-user-toggle.md](./auth/31-email-otp-user-toggle.md) | 用户级 Email OTP 开关（MFA 页面卡片、启用/停用、登录双重检查、认证保护） | 5 |
 
 ### 系统设置 (4 个文档, 20 个场景)
 | 文档 | 描述 | 场景数 |
@@ -247,7 +248,7 @@
 | 邀请管理 | 3 | 15 |
 | 会话与安全 | 8 | 39 |
 | Webhook | 4 | 17 |
-| 认证流程 | 23 | 107 |
+| 认证流程 | 24 | 112 |
 | 系统设置 | 4 | 20 |
 | 身份提供商 | 3 | 15 |
 | Passkeys | 3 | 15 |
@@ -259,12 +260,13 @@
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
 | Identity Engine | 1 | 5 |
-| **总计** | **119** | **564** |
+| **总计** | **120** | **569** |
 
 ### 文档对齐记录
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-03-22 | 5.28.0 | **用户级 Email OTP 开关**：新增 `auth/31-email-otp-user-toggle.md`（5 场景），覆盖 MFA 页面 Email OTP 卡片入口可见性、启用/停用流程、登录双重检查、认证保护；更新 `auth/30-mfa-self-service-portal.md` 场景 1 卡片列表（三→四卡片）；更新 `auth/17-email-otp-login.md` 开关说明（新增用户级双重检查）；更新 `security/authentication/03-mfa-security.md` MFA 端点列表和 Email OTP 说明；认证 24 文档 112 场景；共 120 文档 569 场景 |
 | 2026-03-20 | 5.27.0 | **Portal MFA 自助管理页面**：新增 `auth/30-mfa-self-service-portal.md`（5 场景），覆盖 MFA 页面入口可见性、TOTP 内嵌设置流程、恢复码生成弹窗、TOTP 移除确认、恢复码不足警告；认证 25 文档 117 场景；共 126 文档 593 场景 |
 | 2026-03-19 | 5.26.0 | **Phase 5 FR5 基础设施清理**：新增 `integration/qa-infrastructure-keycloak-cleanup.md`（5 场景），覆盖 Docker Compose 无 Keycloak 依赖、Portal 登录模式简化、API 健康检查、K8s 配置清理、脚本清理验证；集成测试 23 文档 106 场景；共 125 文档 588 场景 |
 | 2026-03-19 | 5.25.0 | **Phase 5 FR2 解耦 Keycloak 类型**：新增 `identity_engine/decouple_keycloak_types.md`（5 场景），覆盖编译通过、Clippy 无新增警告、IdentityEngine trait 无 Keycloak 类型引用、中性类型定义验证、SmtpServerConfig 迁移验证；纯重构验证，无 API/UI 变更；共 124 文档 583 场景 |

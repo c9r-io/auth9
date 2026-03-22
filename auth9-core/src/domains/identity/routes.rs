@@ -258,4 +258,12 @@ where
             "/api/v1/mfa/recovery-codes/remaining",
             get(identity_api::mfa::recovery_codes_remaining::<S>),
         )
+        .route(
+            "/api/v1/mfa/email-otp/enable",
+            post(identity_api::mfa::email_otp_enable::<S>),
+        )
+        .route(
+            "/api/v1/mfa/email-otp/disable",
+            post(identity_api::mfa::email_otp_disable::<S>),
+        )
 }

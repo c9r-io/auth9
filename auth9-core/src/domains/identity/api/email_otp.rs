@@ -172,6 +172,11 @@ pub async fn verify_email_otp<S: HasCache + HasServices + HasSessionManagement +
         }
     };
 
+    // Check per-user email OTP preference
+    if !user.email_otp_enabled {
+        return Err(AppError::Unauthorized("Authentication failed.".to_string()));
+    }
+
     // Create session
     let ip_address = extract_client_ip(&headers);
     let user_agent = headers

@@ -270,6 +270,14 @@ documents:
     has_entry_visibility: true
     has_checklist: true
     last_reviewed: 2026-03-20
+  - id: auth/31-email-otp-user-toggle
+    path: docs/qa/auth/31-email-otp-user-toggle.md
+    module: auth
+    scenarios: 5
+    has_ui_flow: true
+    has_entry_visibility: true
+    has_checklist: true
+    last_reviewed: 2026-03-22
   - id: identity-provider/01-crud
     path: docs/qa/identity-provider/01-crud.md
     module: identity-provider

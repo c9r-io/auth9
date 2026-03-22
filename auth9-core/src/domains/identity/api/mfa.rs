@@ -21,6 +21,7 @@ pub struct MfaStatusResponse {
     pub totp_enabled: bool,
     pub webauthn_enabled: bool,
     pub recovery_codes_remaining: usize,
+    pub email_otp_enabled: bool,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -86,10 +87,18 @@ pub async fn mfa_status<S: HasMfa + HasWebAuthn + HasServices>(
         .remaining_count(user_id)
         .await?;
 
+    let email_otp_enabled = state
+        .user_service()
+        .get_by_identity_subject(user_id)
+        .await
+        .map(|u| u.email_otp_enabled)
+        .unwrap_or(false);
+
     Ok(Json(SuccessResponse::new(MfaStatusResponse {
         totp_enabled,
         webauthn_enabled,
         recovery_codes_remaining,
+        email_otp_enabled,
     })))
 }
 
@@ -128,10 +137,18 @@ pub async fn totp_enroll_verify<S: HasMfa + HasServices>(
         let _ = state.user_service().set_mfa_enabled(user.id, true).await;
     }
 
+    let email_otp_enabled = state
+        .user_service()
+        .get_by_identity_subject(user_id)
+        .await
+        .map(|u| u.email_otp_enabled)
+        .unwrap_or(false);
+
     Ok(Json(SuccessResponse::new(MfaStatusResponse {
         totp_enabled: true,
         webauthn_enabled: false,
         recovery_codes_remaining: 0,
+        email_otp_enabled,
     })))
 }
 
@@ -189,6 +206,52 @@ pub async fn recovery_codes_remaining<S: HasMfa + HasServices>(
         .remaining_count(user_id)
         .await?;
     Ok(Json(SuccessResponse::new(count)))
+}
+
+/// POST /api/v1/mfa/email-otp/enable
+pub async fn email_otp_enable<S: HasMfa + HasWebAuthn + HasServices>(
+    State(state): State<S>,
+    TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
+) -> Result<Json<SuccessResponse<MfaStatusResponse>>> {
+    let claims = HasServices::jwt_manager(&state).verify_identity_token(bearer.token())?;
+    let user_id = &claims.sub;
+
+    let user = state.user_service().get_by_identity_subject(user_id).await?;
+    state.user_service().set_email_otp_enabled(user.id, true).await?;
+
+    let totp_enabled = state.totp_service().has_totp(user_id).await?;
+    let webauthn_creds = state.webauthn_service().list_credentials(user_id, None).await?;
+    let recovery_codes_remaining = state.recovery_code_service().remaining_count(user_id).await?;
+
+    Ok(Json(SuccessResponse::new(MfaStatusResponse {
+        totp_enabled,
+        webauthn_enabled: !webauthn_creds.is_empty(),
+        recovery_codes_remaining,
+        email_otp_enabled: true,
+    })))
+}
+
+/// POST /api/v1/mfa/email-otp/disable
+pub async fn email_otp_disable<S: HasMfa + HasWebAuthn + HasServices>(
+    State(state): State<S>,
+    TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
+) -> Result<Json<SuccessResponse<MfaStatusResponse>>> {
+    let claims = HasServices::jwt_manager(&state).verify_identity_token(bearer.token())?;
+    let user_id = &claims.sub;
+
+    let user = state.user_service().get_by_identity_subject(user_id).await?;
+    state.user_service().set_email_otp_enabled(user.id, false).await?;
+
+    let totp_enabled = state.totp_service().has_totp(user_id).await?;
+    let webauthn_creds = state.webauthn_service().list_credentials(user_id, None).await?;
+    let recovery_codes_remaining = state.recovery_code_service().remaining_count(user_id).await?;
+
+    Ok(Json(SuccessResponse::new(MfaStatusResponse {
+        totp_enabled,
+        webauthn_enabled: !webauthn_creds.is_empty(),
+        recovery_codes_remaining,
+        email_otp_enabled: false,
+    })))
 }
 
 // ==================== MFA Challenge Endpoints (public, during login) ====================

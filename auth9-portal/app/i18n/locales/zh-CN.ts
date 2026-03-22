@@ -1428,6 +1428,16 @@ export default {
       notEnabled: "未启用",
       manage: "前往管理",
     },
+    emailOtp: {
+      title: "邮箱验证码",
+      description: "通过邮件接收一次性验证码进行登录。",
+      enabled: "已启用",
+      notEnabled: "未启用",
+      enable: "启用邮箱验证码",
+      disable: "停用邮箱验证码",
+      enableSuccess: "邮箱验证码已启用",
+      disableSuccess: "邮箱验证码已停用",
+    },
   },
   accountIdentities: {
     loadError: "加载关联身份失败",

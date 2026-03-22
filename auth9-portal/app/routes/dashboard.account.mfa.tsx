@@ -32,6 +32,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         totp_enabled: false,
         webauthn_enabled: false,
         recovery_codes_remaining: 0,
+        email_otp_enabled: false,
       } as MfaStatusResponse,
       accessToken: "",
       error: translate(locale, "accountMfa.loadError"),
@@ -68,6 +69,32 @@ export async function action({ request }: ActionFunctionArgs) {
         success: true as const,
         intent: "verify_totp" as const,
         message: translate(locale, "accountMfa.totp.setupSuccess"),
+        error: undefined as string | undefined,
+        codes: undefined as string[] | undefined,
+      };
+      if (headers) return Response.json(data, { headers });
+      return data;
+    }
+
+    if (intent === "enable_email_otp") {
+      await mfaApi.emailOtpEnable(accessToken);
+      const data = {
+        success: true as const,
+        intent: "enable_email_otp" as const,
+        message: translate(locale, "accountMfa.emailOtp.enableSuccess"),
+        error: undefined as string | undefined,
+        codes: undefined as string[] | undefined,
+      };
+      if (headers) return Response.json(data, { headers });
+      return data;
+    }
+
+    if (intent === "disable_email_otp") {
+      await mfaApi.emailOtpDisable(accessToken);
+      const data = {
+        success: true as const,
+        intent: "disable_email_otp" as const,
+        message: translate(locale, "accountMfa.emailOtp.disableSuccess"),
         error: undefined as string | undefined,
         codes: undefined as string[] | undefined,
       };
@@ -193,6 +220,45 @@ export default function AccountMfaPage() {
             <Button onClick={() => setEnrolling(true)}>
               {t("accountMfa.totp.setup")}
             </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Email OTP Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{t("accountMfa.emailOtp.title")}</CardTitle>
+              <CardDescription>{t("accountMfa.emailOtp.description")}</CardDescription>
+            </div>
+            <Badge variant={status.email_otp_enabled ? "success" : "secondary"}>
+              {status.email_otp_enabled
+                ? t("accountMfa.emailOtp.enabled")
+                : t("accountMfa.emailOtp.notEnabled")}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {status.email_otp_enabled ? (
+            <Form method="post">
+              <input type="hidden" name="intent" value="disable_email_otp" />
+              <Button
+                type="submit"
+                variant="outline"
+                className="text-[var(--accent-red)] hover:text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10"
+                disabled={isSubmitting}
+              >
+                {t("accountMfa.emailOtp.disable")}
+              </Button>
+            </Form>
+          ) : (
+            <Form method="post">
+              <input type="hidden" name="intent" value="enable_email_otp" />
+              <Button type="submit" disabled={isSubmitting}>
+                {t("accountMfa.emailOtp.enable")}
+              </Button>
+            </Form>
           )}
         </CardContent>
       </Card>

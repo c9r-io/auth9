@@ -16,8 +16,8 @@ impl UserRepository for UserRepositoryImpl {
 
         sqlx::query(
             r#"
-            INSERT INTO users (id, identity_subject, email, display_name, avatar_url, mfa_enabled, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, false, NOW(), NOW())
+            INSERT INTO users (id, identity_subject, email, display_name, avatar_url, mfa_enabled, email_otp_enabled, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, false, false, NOW(), NOW())
             "#,
         )
         .bind(id)
@@ -38,7 +38,7 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             SELECT id, identity_subject,
                    scim_external_id, scim_provisioned_by, email, display_name, avatar_url,
-                   mfa_enabled, password_changed_at, locked_until, created_at, updated_at
+                   mfa_enabled, email_otp_enabled, password_changed_at, locked_until, created_at, updated_at
             FROM users
             WHERE id = ?
             "#,
@@ -55,7 +55,7 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             SELECT id, identity_subject,
                    scim_external_id, scim_provisioned_by, email, display_name, avatar_url,
-                   mfa_enabled, password_changed_at, locked_until, created_at, updated_at
+                   mfa_enabled, email_otp_enabled, password_changed_at, locked_until, created_at, updated_at
             FROM users
             WHERE email = ?
             "#,
@@ -72,7 +72,7 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             SELECT id, identity_subject,
                    scim_external_id, scim_provisioned_by, email, display_name, avatar_url,
-                   mfa_enabled, password_changed_at, locked_until, created_at, updated_at
+                   mfa_enabled, email_otp_enabled, password_changed_at, locked_until, created_at, updated_at
             FROM users
             WHERE identity_subject = ?
             "#,
@@ -89,7 +89,7 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             SELECT id, identity_subject,
                    scim_external_id, scim_provisioned_by, email, display_name, avatar_url,
-                   mfa_enabled, password_changed_at, locked_until, created_at, updated_at
+                   mfa_enabled, email_otp_enabled, password_changed_at, locked_until, created_at, updated_at
             FROM users
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?
@@ -116,7 +116,7 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             SELECT id, identity_subject,
                    scim_external_id, scim_provisioned_by, email, display_name, avatar_url,
-                   mfa_enabled, password_changed_at, locked_until, created_at, updated_at
+                   mfa_enabled, email_otp_enabled, password_changed_at, locked_until, created_at, updated_at
             FROM users
             WHERE email LIKE ? OR display_name LIKE ?
             ORDER BY created_at DESC
@@ -179,6 +179,28 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             UPDATE users
             SET mfa_enabled = ?, updated_at = NOW()
+            WHERE id = ?
+            "#,
+        )
+        .bind(enabled)
+        .bind(id)
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound(format!("User {} not found", id)));
+        }
+
+        self.find_by_id(id)
+            .await?
+            .ok_or_else(|| AppError::Internal(anyhow::anyhow!("Failed to update user")))
+    }
+
+    async fn update_email_otp_enabled(&self, id: StringUuid, enabled: bool) -> Result<User> {
+        let result = sqlx::query(
+            r#"
+            UPDATE users
+            SET email_otp_enabled = ?, updated_at = NOW()
             WHERE id = ?
             "#,
         )
@@ -305,7 +327,7 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             SELECT u.id, u.identity_subject,
                    u.scim_external_id, u.scim_provisioned_by, u.email, u.display_name,
-                   u.avatar_url, u.mfa_enabled, u.password_changed_at, u.locked_until,
+                   u.avatar_url, u.mfa_enabled, u.email_otp_enabled, u.password_changed_at, u.locked_until,
                    u.created_at, u.updated_at
             FROM users u
             INNER JOIN tenant_users tu ON u.id = tu.user_id
@@ -335,7 +357,7 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             SELECT u.id, u.identity_subject,
                    u.scim_external_id, u.scim_provisioned_by, u.email, u.display_name,
-                   u.avatar_url, u.mfa_enabled, u.password_changed_at, u.locked_until,
+                   u.avatar_url, u.mfa_enabled, u.email_otp_enabled, u.password_changed_at, u.locked_until,
                    u.created_at, u.updated_at
             FROM users u
             INNER JOIN tenant_users tu ON u.id = tu.user_id
@@ -538,7 +560,7 @@ impl UserRepository for UserRepositoryImpl {
             r#"
             SELECT id, identity_subject,
                    scim_external_id, scim_provisioned_by, email, display_name, avatar_url,
-                   mfa_enabled, password_changed_at, locked_until, created_at, updated_at
+                   mfa_enabled, email_otp_enabled, password_changed_at, locked_until, created_at, updated_at
             FROM users
             WHERE scim_external_id = ?
             "#,

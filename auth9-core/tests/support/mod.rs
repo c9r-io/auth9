@@ -384,6 +384,7 @@ impl UserRepository for TestUserRepository {
             scim_external_id: None,
             scim_provisioned_by: None,
             mfa_enabled: false,
+            email_otp_enabled: false,
             password_changed_at: None,
             locked_until: None,
             created_at: Utc::now(),
@@ -488,6 +489,17 @@ impl UserRepository for TestUserRepository {
             .find(|u| u.id == id)
             .ok_or_else(|| AppError::NotFound(format!("User {} not found", id)))?;
         user.mfa_enabled = enabled;
+        user.updated_at = Utc::now();
+        Ok(user.clone())
+    }
+
+    async fn update_email_otp_enabled(&self, id: StringUuid, enabled: bool) -> Result<User> {
+        let mut users = self.users.write().await;
+        let user = users
+            .iter_mut()
+            .find(|u| u.id == id)
+            .ok_or_else(|| AppError::NotFound(format!("User {} not found", id)))?;
+        user.email_otp_enabled = enabled;
         user.updated_at = Utc::now();
         Ok(user.clone())
     }
@@ -3263,6 +3275,7 @@ pub fn create_test_user(id: Option<Uuid>) -> User {
         scim_external_id: None,
         scim_provisioned_by: None,
         mfa_enabled: false,
+        email_otp_enabled: false,
         password_changed_at: None,
         locked_until: None,
         created_at: Utc::now(),

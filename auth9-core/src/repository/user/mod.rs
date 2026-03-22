@@ -26,6 +26,7 @@ pub trait UserRepository: Send + Sync {
     async fn search_count(&self, query: &str) -> Result<i64>;
     async fn update(&self, id: StringUuid, input: &UpdateUserInput) -> Result<User>;
     async fn update_mfa_enabled(&self, id: StringUuid, enabled: bool) -> Result<User>;
+    async fn update_email_otp_enabled(&self, id: StringUuid, enabled: bool) -> Result<User>;
     async fn delete(&self, id: StringUuid) -> Result<()>;
 
     // Tenant-User relations

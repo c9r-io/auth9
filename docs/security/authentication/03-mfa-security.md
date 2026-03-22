@@ -38,16 +38,17 @@ Auth9 自行管理多种 MFA 方式：
 - **TOTP**: 基于时间的一次性密码 (Google Authenticator) — Auth9 本地 enroll/verify/replay 防护
 - **WebAuthn/Passkeys**: 硬件安全密钥或平台认证 — Auth9 本地注册/认证
 - **Recovery Code**: 8 组 10 位一次性恢复码，SHA-256 哈希存储
-- **Email OTP**: 邮件验证码
+- **Email OTP**: 邮件验证码（双重开关：系统级 `BrandingConfig.email_otp_enabled` + 用户级 `users.email_otp_enabled`）
 
 MFA 挑战端点（公开）：
 - `POST /api/v1/mfa/challenge/totp` — TOTP 验证（Redis 90s 重放防护）
 - `POST /api/v1/mfa/challenge/recovery-code` — Recovery Code 消费
 
 MFA 管理端点（需认证）：
-- `GET /api/v1/mfa/status` — 查询启用状态
+- `GET /api/v1/mfa/status` — 查询启用状态（含 `email_otp_enabled` 字段）
 - `POST /api/v1/mfa/totp/enroll` / `POST /api/v1/mfa/totp/enroll/verify` — TOTP 注册
 - `POST /api/v1/mfa/recovery-codes/generate` / `GET /api/v1/mfa/recovery-codes/remaining` — Recovery Code 管理
+- `POST /api/v1/mfa/email-otp/enable` / `POST /api/v1/mfa/email-otp/disable` — 用户级 Email OTP 开关
 
 ---
 

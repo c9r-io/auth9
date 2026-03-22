@@ -4,6 +4,7 @@ export interface MfaStatusResponse {
   totp_enabled: boolean;
   webauthn_enabled: boolean;
   recovery_codes_remaining: number;
+  email_otp_enabled: boolean;
 }
 
 export const mfaApi = {
@@ -47,6 +48,30 @@ export const mfaApi = {
       }
     );
     const result = await handleResponse<{ data: number }>(response);
+    return result.data;
+  },
+
+  emailOtpEnable: async (accessToken: string): Promise<MfaStatusResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/mfa/email-otp/enable`,
+      {
+        method: "POST",
+        headers: getHeaders(accessToken),
+      }
+    );
+    const result = await handleResponse<{ data: MfaStatusResponse }>(response);
+    return result.data;
+  },
+
+  emailOtpDisable: async (accessToken: string): Promise<MfaStatusResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/v1/mfa/email-otp/disable`,
+      {
+        method: "POST",
+        headers: getHeaders(accessToken),
+      }
+    );
+    const result = await handleResponse<{ data: MfaStatusResponse }>(response);
     return result.data;
   },
 };

@@ -13,7 +13,7 @@
 
 ### 测试操作流程
 1. 访问 `/dashboard/account`。
-2. 检查左侧导航栏（Profile / Security / Passkeys / Sessions / Identities）的排列方式。
+2. 检查左侧导航栏（Profile / Security / MFA / Passkeys / Sessions / Identities）的排列方式。
 3. 点击每个导航项，验证活跃状态的视觉区分。
 4. 缩小视口至 768px 以下，验证导航是否切换为水平滚动或折叠。
 

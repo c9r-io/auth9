@@ -427,6 +427,16 @@ export default {
       notEnabled: "未設定",
       manage: "パスキーを管理",
     },
+    emailOtp: {
+      title: "メールOTP",
+      description: "メールでワンタイム認証コードを受け取ってサインインします。",
+      enabled: "有効",
+      notEnabled: "無効",
+      enable: "メールOTPを有効にする",
+      disable: "メールOTPを無効にする",
+      enableSuccess: "メールOTPを有効にしました",
+      disableSuccess: "メールOTPを無効にしました",
+    },
   },
   accountIdentities: {
     loadError: "リンク済みアイデンティティの読み込みに失敗しました", notAuthenticated: "認証されていません", providerAliasRequired: "プロバイダーエイリアスが必要です", unlinkSuccess: "アイデンティティのリンクを解除しました", operationFailed: "操作に失敗しました", invalidAction: "無効なアクション", title: "リンク済みアイデンティティ", description: "Auth9アカウントに接続された外部アカウント。サードパーティプロバイダーでサインインできます。", linkAnother: "別のアイデンティティをリンク", linkAnotherDescription: "このアカウントに追加のサインイン方法を接続するため、検証済みプロバイダーフローを開始します。", linkAction: "{{provider}}をリンク", linkedOn: "{{date}}にリンク", unlink: "リンク解除", noIdentities: "リンク済みアイデンティティがありません", noIdentitiesWithProviders: "まだ外部アカウントを接続していません。上のリンクアクションで今すぐ追加できます。", noIdentitiesWithoutProviders: "まだ外部アカウントを接続していません。プロバイダーが有効になれば、ここでリンクできます。",

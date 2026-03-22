@@ -398,6 +398,11 @@ impl<
         self.repo.update_mfa_enabled(id, enabled).await
     }
 
+    pub async fn set_email_otp_enabled(&self, id: StringUuid, enabled: bool) -> Result<User> {
+        let _ = self.get(id).await?;
+        self.repo.update_email_otp_enabled(id, enabled).await
+    }
+
     pub async fn add_to_tenant(&self, input: AddUserToTenantInput) -> Result<TenantUser> {
         input.validate()?;
         self.repo.add_to_tenant(&input).await.map_err(|e| {
@@ -1103,6 +1108,50 @@ mod tests {
         let service = create_test_service(mock);
 
         let result = service.set_mfa_enabled(id, true).await;
+        assert!(matches!(result, Err(AppError::NotFound(_))));
+    }
+
+    #[tokio::test]
+    async fn test_set_email_otp_enabled_success() {
+        let mut mock = MockUserRepository::new();
+        let user = User {
+            email_otp_enabled: false,
+            ..Default::default()
+        };
+        let user_clone = user.clone();
+        let id = user.id;
+
+        mock.expect_find_by_id()
+            .with(eq(id))
+            .returning(move |_| Ok(Some(user_clone.clone())));
+        mock.expect_update_email_otp_enabled()
+            .with(eq(id), eq(true))
+            .returning(|_, enabled| {
+                Ok(User {
+                    email_otp_enabled: enabled,
+                    ..Default::default()
+                })
+            });
+
+        let service = create_test_service(mock);
+
+        let result = service.set_email_otp_enabled(id, true).await;
+        assert!(result.is_ok());
+        assert!(result.unwrap().email_otp_enabled);
+    }
+
+    #[tokio::test]
+    async fn test_set_email_otp_enabled_not_found() {
+        let mut mock = MockUserRepository::new();
+        let id = StringUuid::new_v4();
+
+        mock.expect_find_by_id()
+            .with(eq(id))
+            .returning(|_| Ok(None));
+
+        let service = create_test_service(mock);
+
+        let result = service.set_email_otp_enabled(id, true).await;
         assert!(matches!(result, Err(AppError::NotFound(_))));
     }
 

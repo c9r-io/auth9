@@ -1431,6 +1431,16 @@ export default {
       notEnabled: "Not set up",
       manage: "Manage passkeys",
     },
+    emailOtp: {
+      title: "Email OTP",
+      description: "Receive a one-time verification code via email to sign in.",
+      enabled: "Enabled",
+      notEnabled: "Not enabled",
+      enable: "Enable Email OTP",
+      disable: "Disable Email OTP",
+      enableSuccess: "Email OTP enabled",
+      disableSuccess: "Email OTP disabled",
+    },
   },
   accountIdentities: {
     loadError: "Failed to load linked identities",
