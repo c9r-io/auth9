@@ -698,29 +698,50 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
     let platform_tenant_id = uuid::Uuid::new_v4().to_string();
     let demo_tenant_id = uuid::Uuid::new_v4().to_string();
 
+    let default_password_policy = serde_json::json!({
+        "min_length": 12,
+        "max_length": 128,
+        "require_uppercase": true,
+        "require_lowercase": true,
+        "require_numbers": true,
+        "require_symbols": true
+    })
+    .to_string();
+
     sqlx::query(
-        r#"INSERT IGNORE INTO tenants (id, name, slug, settings, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, 'active', NOW(), NOW())"#,
+        r#"INSERT IGNORE INTO tenants (id, name, slug, settings, password_policy, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'active', NOW(), NOW())"#,
     )
     .bind(&platform_tenant_id)
     .bind(DEFAULT_PLATFORM_TENANT_NAME)
     .bind(DEFAULT_PLATFORM_TENANT_SLUG)
     .bind(&settings_json)
+    .bind(&default_password_policy)
     .execute(&pool)
     .await
     .context("Failed to seed platform tenant")?;
 
     sqlx::query(
-        r#"INSERT IGNORE INTO tenants (id, name, slug, settings, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, 'active', NOW(), NOW())"#,
+        r#"INSERT IGNORE INTO tenants (id, name, slug, settings, password_policy, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'active', NOW(), NOW())"#,
     )
     .bind(&demo_tenant_id)
     .bind(DEFAULT_DEMO_TENANT_NAME)
     .bind(DEFAULT_DEMO_TENANT_SLUG)
     .bind(&settings_json)
+    .bind(&default_password_policy)
     .execute(&pool)
     .await
     .context("Failed to seed demo tenant")?;
+
+    // Also update existing tenants that have NULL password_policy
+    sqlx::query(
+        r#"UPDATE tenants SET password_policy = ? WHERE password_policy IS NULL"#,
+    )
+    .bind(&default_password_policy)
+    .execute(&pool)
+    .await
+    .context("Failed to update existing tenant password policies")?;
 
     // 3. Upsert admin user (handles reset where identity_subject changes)
     // First try to find existing admin by display_name (stable across resets)

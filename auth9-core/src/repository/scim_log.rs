@@ -82,7 +82,7 @@ impl ScimProvisioningLogRepository for ScimProvisioningLogRepositoryImpl {
                    scim_resource_id, auth9_resource_id, status, error_detail, response_status, created_at
             FROM scim_provisioning_logs
             WHERE connector_id = ?
-            ORDER BY created_at DESC
+            ORDER BY created_at DESC, id DESC
             LIMIT ? OFFSET ?
             "#,
         )

@@ -403,6 +403,13 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
                 match event_loop_result {
                     Ok(Ok(())) => {}
                     Ok(Err(e)) => {
+                        // Check if OOM triggered before wrapping the error,
+                        // otherwise "execution terminated" gets masked.
+                        if was_oom_clone.load(std::sync::atomic::Ordering::Acquire) {
+                            return Err(AppError::ActionExecutionFailed(
+                                "Action exceeded memory limit and was terminated".to_string(),
+                            ));
+                        }
                         return Err(AppError::ActionExecutionFailed(format!(
                             "Async execution error: {}", e
                         )));
@@ -429,6 +436,11 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
                 let value = if local.is_promise() {
                     let promise = deno_core::v8::Local::<deno_core::v8::Promise>::try_from(local)
                         .map_err(|e| {
+                        if was_oom_clone.load(std::sync::atomic::Ordering::Acquire) {
+                            return AppError::ActionExecutionFailed(
+                                "Action exceeded memory limit and was terminated".to_string(),
+                            );
+                        }
                         AppError::ActionExecutionFailed(format!("Invalid promise: {}", e))
                     })?;
 

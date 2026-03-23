@@ -121,10 +121,13 @@ code_challenge_method=S256" 2>&1 | grep -i "location:"
 2. 解析返回的 302 Location 头中的授权 URL
 
 ### 预期结果
-- 返回 302 重定向到 Auth9 OIDC 授权端点
-- Location URL 包含 `code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM`
-- Location URL 包含 `code_challenge_method=S256`
-- 其他标准参数（`response_type`、`client_id`、`scope`、`state`）正常处理
+- 若用户无活跃会话：返回 307 重定向到 Portal 登录页 `http://localhost:3000/login?login_challenge=...`（这是**正确的 OAuth 行为**——用户必须先认证再授权）
+- 若用户已有活跃会话：返回 302 重定向到 Auth9 OIDC 授权端点，Location URL 包含：
+  - `code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM`
+  - `code_challenge_method=S256`
+  - 其他标准参数（`response_type`、`client_id`、`scope`、`state`）正常处理
+
+> **重要**: 直接 curl 调用 authorize 端点不携带 session cookie，因此始终收到 307 重定向到登录页。这不是 bug。要测试 PKCE 参数透传，需使用已认证的浏览器会话或在登录完成后观察 OIDC 授权流中的 PKCE 参数。
 
 ---
 

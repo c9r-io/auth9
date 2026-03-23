@@ -269,7 +269,7 @@ pub async fn password_login<
 
     // Execute post-login action triggers synchronously so that custom claims
     // set by actions are included in the identity token.  Actions that fail
-    // (including strict-mode) are logged but do not prevent token issuance.
+    // in strict-mode will block the login flow and return an error.
     let custom_claims = {
         use crate::models::action::{
             ActionContext, ActionContextRequest, ActionContextTenant, ActionContextUser,
@@ -301,23 +301,12 @@ pub async fn password_login<
                 },
                 claims: None,
             };
-            match state
+            let modified_context = state
                 .action_service()
                 .execute_trigger_by_tenant(membership.tenant_id, "post-login", context)
-                .await
-            {
-                Ok(modified_context) => {
-                    if let Some(claims) = modified_context.claims {
-                        merged_claims.extend(claims);
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        tenant_id = %membership.tenant_id,
-                        error = %e,
-                        "Post-login action failed"
-                    );
-                }
+                .await?;
+            if let Some(claims) = modified_context.claims {
+                merged_claims.extend(claims);
             }
         }
         merged_claims

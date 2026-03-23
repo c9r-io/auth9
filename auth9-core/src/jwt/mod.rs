@@ -135,6 +135,9 @@ pub struct OidcRefreshClaims {
     pub iss: String,
     /// Audience (client_id)
     pub aud: String,
+    /// JWT ID (unique identifier for one-time-use enforcement)
+    #[serde(default)]
+    pub jti: String,
     /// Token type discriminator
     #[serde(default)]
     pub token_type: String,
@@ -436,6 +439,7 @@ impl JwtManager {
             sid: session_id.to_string(),
             iss: self.config.issuer.clone(),
             aud: client_id.to_string(),
+            jti: Uuid::new_v4().to_string(),
             token_type: "oidc_refresh".to_string(),
             iat: now.timestamp(),
             exp: exp.timestamp(),
@@ -1174,6 +1178,7 @@ mod tests {
             sid: "session-456".to_string(),
             iss: "https://auth9.test".to_string(),
             aud: "my-client".to_string(),
+            jti: "test-jti-789".to_string(),
             token_type: "oidc_refresh".to_string(),
             iat: 1000000,
             exp: 1604800,

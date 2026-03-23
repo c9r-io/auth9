@@ -377,14 +377,15 @@ impl IdentityClientStore for Auth9OidcClientStore {
     async fn get_active_signing_certificate(&self) -> Result<String> {
         // Extract the public key from the JWT signing key pair.
         // Read the RSA public key PEM from the credentials table.
-        let row: Option<(String,)> = sqlx::query_as(
+        let row: Option<(serde_json::Value,)> = sqlx::query_as(
             "SELECT credential_data FROM credentials WHERE credential_type = 'jwt_rsa_public_key' LIMIT 1",
         )
         .fetch_optional(&self.pool)
         .await
         .unwrap_or(None);
 
-        if let Some((pem,)) = row {
+        if let Some((json_val,)) = row {
+            let pem = json_val.as_str().unwrap_or_default().to_string();
             // Strip PEM headers and whitespace to get raw base64 for X509Certificate element
             let cert = pem
                 .replace("-----BEGIN PUBLIC KEY-----", "")
@@ -534,12 +535,10 @@ impl IdentityCredentialStore for Auth9OidcCredentialStore {
         .map_err(|e| AppError::Internal(anyhow!("failed to check password temporary status: {}", e)))?;
 
         if let Some(row) = row {
-            let data: String = row
+            let data: serde_json::Value = row
                 .try_get("credential_data")
                 .map_err(|e| AppError::Internal(anyhow!("{}", e)))?;
-            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&data) {
-                return Ok(parsed.get("temporary").and_then(|v| v.as_bool()).unwrap_or(false));
-            }
+            return Ok(data.get("temporary").and_then(|v| v.as_bool()).unwrap_or(false));
         }
         Ok(false)
     }

@@ -534,6 +534,18 @@ pub async fn token<
                 .verify_oidc_refresh_token(&refresh_token, &client_id)
                 .map_err(|e| AppError::Unauthorized(format!("Invalid refresh token: {}", e)))?;
 
+            // Check if this refresh token has been used before (replay protection)
+            if !refresh_claims.jti.is_empty()
+                && state
+                    .cache()
+                    .is_token_blacklisted(&refresh_claims.jti)
+                    .await?
+            {
+                return Err(AppError::Unauthorized(
+                    "Refresh token has already been used".to_string(),
+                ));
+            }
+
             // Verify session binding
             let session_id_str = state
                 .cache()
@@ -576,12 +588,19 @@ pub async fn token<
             let new_refresh_token =
                 jwt_manager.create_oidc_refresh_token(*user.id, &client_id, session_id)?;
 
-            // Rotate: unbind old, bind new
+            // Rotate: unbind old, bind new, and blacklist old token's JTI
             let refresh_ttl = state.config().jwt.refresh_token_ttl_secs.max(1) as u64;
             state
                 .cache()
                 .remove_refresh_token_session(&refresh_token)
                 .await?;
+            // Blacklist the old refresh token's JTI to prevent replay
+            if !refresh_claims.jti.is_empty() {
+                state
+                    .cache()
+                    .add_to_token_blacklist(&refresh_claims.jti, refresh_ttl)
+                    .await?;
+            }
             state
                 .cache()
                 .bind_refresh_token_session(&new_refresh_token, &session_id_str, refresh_ttl)

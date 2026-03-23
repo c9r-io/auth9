@@ -84,7 +84,15 @@ curl -s "http://localhost:8080/api/v1/scim/v2/Users" \
 
 ### 预期结果
 - 所有情况均返回 HTTP 401
-- 响应体：
+- 响应体（无 header / 空 token）：
+```json
+{
+  "schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"],
+  "status": "401",
+  "detail": "Missing or invalid Authorization header"
+}
+```
+- 响应体（JWT token / 格式正确但无效的 token）：
 ```json
 {
   "schemas": ["urn:ietf:params:scim:api:messages:2.0:Error"],
@@ -92,6 +100,8 @@ curl -s "http://localhost:8080/api/v1/scim/v2/Users" \
   "detail": "Invalid or expired SCIM token"
 }
 ```
+> **注意**: 空 Bearer token 在技术上等同于"缺失"（Authorization header 存在但值为空），返回 "Missing or invalid" 是正确行为。"Invalid or expired SCIM token" 仅用于格式正确但内容无效/过期的 token。
+
 - JWT token 不被 SCIM 中间件接受（鉴权体系完全隔离）
 
 ---

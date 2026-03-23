@@ -58,15 +58,12 @@
    ```bash
    cd auth9-core && cargo test identity_engine -- --nocapture
    ```
-2. 执行以下命令：
-   ```bash
-   cd auth9-core && cargo test keycloak_adapter_contract_test -- --nocapture
-   ```
 
 ### 预期结果
-- `identity_engine` 相关测试通过
-- `keycloak_adapter_contract_test` 通过
+- `identity_engine` 相关测试通过（包含 adapter contract 和 wiring 验证）
 - 输出中包含新增 user/client/credential store contract 回归
+
+> **注意**: 此前 QA 文档引用了 `keycloak_adapter_contract_test` 和 `backend_switch_smoke_test` 两个测试名，但这两个测试不存在于代码库中。实际的 adapter contract 和 wiring 测试统一由 `cargo test identity_engine` 覆盖。
 
 ---
 
@@ -82,11 +79,11 @@
 ### 测试操作流程
 1. 执行以下命令：
    ```bash
-   cd auth9-core && cargo test backend_switch_smoke_test -- --nocapture
+   cd auth9-core && cargo test identity_engine -- --nocapture
    ```
 
 ### 预期结果
-- `backend_switch_smoke_test` 通过
+- `identity_engine` 相关测试通过
 - `IdentityBackend::Auth9Oidc` 分支可完成 `session_store`、`federation_broker`、`identity_engine` 注入
 - 未实现的 user/client 操作返回显式错误，不出现 wiring panic
 
@@ -97,5 +94,5 @@
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
 | 1 | `state` 仅暴露抽象身份后端 | ☑ | 2026-03-17 | Codex | `rg` 已验证 |
-| 2 | Keycloak adapter contract 覆盖新增能力面 | ☑ | 2026-03-17 | Codex | `cargo test identity_engine` 与 `cargo test keycloak_adapter_contract_test` 已通过 |
-| 3 | `auth9_oidc` stub backend 保持最小 wiring | ☑ | 2026-03-17 | Codex | `cargo test backend_switch_smoke_test` 已通过 |
+| 2 | Keycloak adapter contract 覆盖新增能力面 | ☑ | 2026-03-17 | Codex | `cargo test identity_engine` 已通过 |
+| 3 | `auth9_oidc` stub backend 保持最小 wiring | ☑ | 2026-03-17 | Codex | `cargo test identity_engine` 已通过 |

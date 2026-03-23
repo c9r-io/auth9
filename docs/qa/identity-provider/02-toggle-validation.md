@@ -30,6 +30,8 @@
 -- Auth9 管理 API 验证
 -- GET /api/v1/identity-providers/{alias}
 -- enabled 字段应与开关状态一致
+-- 注意：社交提供商数据存储在 social_providers 表中（非 identity_providers）
+SELECT enabled FROM social_providers WHERE alias = 'google';
 ```
 
 ### 托管认证页验证
@@ -45,18 +47,19 @@
 
 ## 场景 2：创建重复别名的提供商
 
+> **设计说明**: 别名 (alias) 字段由提供商类型自动生成（如选择 Google 则 alias 自动为 `google`），在 UI 中为隐藏字段。重复别名冲突通过后端 409 Conflict 在 API 层处理。
+
 ### 初始状态
 - 管理员已登录
 - 已存在 alias 为 `google` 的提供商
 
 ### 目的
-验证别名唯一性约束
+验证别名唯一性约束（后端 API 层）
 
 ### 测试操作流程
 1. 进入「设置」→「身份提供商」
 2. 点击「Add provider」
-3. 选择任意类型
-4. 填写 Alias：`google`（与已存在的相同）
+3. 选择与已存在提供商相同的类型（如 Google）
 5. 点击「Add provider」
 
 ### 预期结果
