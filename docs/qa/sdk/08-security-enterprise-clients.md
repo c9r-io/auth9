@@ -186,7 +186,7 @@ curl -s -X POST http://localhost:8080/api/v1/tenants/$TENANT_ID/abac/policies \
   -d '{"change_note":"SDK Test Policy","policy":{"rules":[{"id":"allow-admin-docs","effect":"allow","actions":["read","write"],"resource_types":["document"],"priority":10,"condition":{"var":"subject.roles","op":"contains","value":"admin"}}]}}' | jq .
 ```
 
-**预期**: 返回新建的 draft 版本，包含 `data.version_id` 和 `data.status` = "draft"
+**预期**: 返回新建的 draft 版本，包含 `data.id`（版本 ID）和 `data.status` = "draft"
 
 > **注意**: ABAC 策略使用版本化模型。请求体结构为 `{ change_note, policy: { rules: [...] } }`，
 > 其中每条 rule 必须包含 `id`（字符串标识）和 `effect`（"allow"/"deny"）。
@@ -205,13 +205,17 @@ curl -s http://localhost:8080/api/v1/tenants/$TENANT_ID/abac/policies \
 
 ```bash
 POLICY_VID=$(curl -s http://localhost:8080/api/v1/tenants/$TENANT_ID/abac/policies \
-  -H "Authorization: Bearer $TOKEN" | jq -r '.data.versions[0].version_id')
+  -H "Authorization: Bearer $TOKEN" | jq -r '.data.versions[0].id')
 
 curl -s -X POST http://localhost:8080/api/v1/tenants/$TENANT_ID/abac/policies/$POLICY_VID/publish \
-  -H "Authorization: Bearer $TOKEN" | jq '.data.status'
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}' | jq .
 ```
 
-**预期**: 返回 "published"
+**预期**: 返回 `{"message":"ABAC policy published"}`
+
+> **注意**: publish 端点要求 `Content-Type: application/json`，请求体为空 JSON `{}`。响应为顶层 `message` 字段，不包含 `data` 包装。
 
 4. **模拟策略评估**
 

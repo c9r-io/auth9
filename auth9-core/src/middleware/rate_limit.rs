@@ -226,6 +226,7 @@ impl RateLimitState {
         if !self.is_enabled() {
             return Ok(RateLimitResult {
                 allowed: true,
+                limit: u64::MAX,
                 remaining: u64::MAX,
                 reset_at: 0,
             });
@@ -302,6 +303,7 @@ impl RateLimitState {
         if allowed {
             Ok(RateLimitResult {
                 allowed: true,
+                limit: max_requests,
                 remaining: max_requests.saturating_sub(current_count + 1),
                 reset_at: now + window_secs,
             })
@@ -315,6 +317,7 @@ impl RateLimitState {
 
             Ok(RateLimitResult {
                 allowed: false,
+                limit: max_requests,
                 remaining: 0,
                 reset_at: now + retry_after,
             })
@@ -327,6 +330,8 @@ impl RateLimitState {
 pub struct RateLimitResult {
     /// Whether the request is allowed
     pub allowed: bool,
+    /// Maximum requests allowed in current window
+    pub limit: u64,
     /// Remaining requests in current window
     pub remaining: u64,
     /// Unix timestamp when the rate limit resets
@@ -498,6 +503,10 @@ pub async fn rate_limit_middleware(
             let mut response = next.run(request).await;
 
             // Add rate limit headers
+            response.headers_mut().insert(
+                "X-RateLimit-Limit",
+                result.limit.to_string().parse().unwrap(),
+            );
             response.headers_mut().insert(
                 "X-RateLimit-Remaining",
                 result.remaining.to_string().parse().unwrap(),
@@ -714,6 +723,7 @@ mod tests {
     fn test_rate_limit_result_debug() {
         let result = RateLimitResult {
             allowed: true,
+            limit: 100,
             remaining: 99,
             reset_at: 1000000,
         };

@@ -162,15 +162,15 @@ WHERE entity_id = 'https://bad-mapping.example.com';
 
 ### 测试操作流程
 
-**API 操作 — 用租户 B 的路径获取租户 A 的 app**:
+**4a. 用租户 B 的路径获取租户 A 的 app**:
 ```bash
 # 使用租户 B 的 tenant_id 尝试获取属于租户 A 的 app_id
 curl -s "http://localhost:8080/api/v1/tenants/{tenant_b_id}/saml-apps/{app_id}" \
   -H "Authorization: Bearer $TOKEN_B" | jq .
-# 预期: 404 Not Found
+# 预期: 403 Forbidden
 ```
 
-**API 操作 — 用租户 A 的路径但租户 B 的 Token**:
+**4b. 用租户 A 的路径但租户 B 的 Token**:
 ```bash
 curl -s "http://localhost:8080/api/v1/tenants/{tenant_a_id}/saml-apps/{app_id}" \
   -H "Authorization: Bearer $TOKEN_B" | jq .
@@ -178,10 +178,10 @@ curl -s "http://localhost:8080/api/v1/tenants/{tenant_a_id}/saml-apps/{app_id}" 
 ```
 
 ### 预期结果
-- **跨租户路径 + 正确 Token**（路径 tenant_b + TOKEN_B → 查 app 不属于 B）返回 **404**（数据不可见）
+- **跨租户路径 + 正确 Token**（路径 tenant_b + TOKEN_B → 查 app 不属于 B）返回 **403**（policy 层拦截）
 - **越权 Token**（路径 tenant_a + TOKEN_B → policy 拒绝）返回 **403**（policy enforcement 先于数据查询）
 
-> **重要区分**: 403 和 404 取决于请求组合。Token 的 tenant 与路径的 tenant 不匹配时返回 403（policy 层拦截）；匹配时查询数据不存在则返回 404。测试时必须注意使用正确的 path + token 组合。
+> **安全设计说明**: 所有跨租户请求统一返回 403，而非根据数据是否存在返回 404。这是有意的安全设计——policy 层在数据查询之前拦截所有跨租户访问，防止攻击者通过 404 vs 403 的差异探测其他租户中是否存在特定资源（信息泄露防护）。
 
 ---
 

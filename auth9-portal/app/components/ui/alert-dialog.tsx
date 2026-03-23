@@ -39,7 +39,7 @@ const AlertDialogContent = React.forwardRef<
         "gap-4 p-6 rounded-[20px]",
         "bg-[var(--glass-bg)] backdrop-blur-[24px] backdrop-saturate-[180%]",
         "border border-[var(--glass-border)]",
-        "shadow-[0_25px_50px_-12px_var(--glass-shadow-strong)]",
+        "shadow-[0_8px_32px_var(--glass-shadow),inset_0_1px_0_var(--glass-highlight)]",
         "duration-200",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",

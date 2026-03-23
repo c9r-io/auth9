@@ -37,6 +37,8 @@
 ### 验证要点
 - `gap-3`、`max-h-64`、`overflow-y-auto` 样式位于角色 Checkbox 列表的**直接容器**上（带有 `border` 和 `rounded-xl` 的 `<div>`），而非外层的 `space-y-4` 布局容器。自动化测试应定位到包含 Checkbox 项的滚动容器元素（CSS 选择器示例：`[class*="overflow-y-auto"]`），而非其父级。
 
+> **实现状态**: `manage-user-roles-dialog.tsx` 已包含所有要求的样式类——容器为 `flex max-h-64 flex-col gap-3 overflow-y-auto`，每个角色项为 `flex h-10 min-h-[40px] items-center gap-3`。本场景已合规，无需代码修改。
+
 ---
 
 ## 3. 表格头部文字大小与间距

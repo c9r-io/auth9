@@ -291,8 +291,8 @@ export default function WebhooksPage() {
           {webhooks.length === 0 ? (
             <div className="text-center py-12">
               <RocketIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">{t("tenants.webhooks.emptyTitle")}</h3>
-              <p className="text-[var(--text-secondary)] mb-4">{t("tenants.webhooks.emptyDescription")}</p>
+              <h3 className="text-[17px] font-semibold text-[var(--text-primary)] mb-2">{t("tenants.webhooks.emptyTitle")}</h3>
+              <p className="text-[13px] text-[var(--text-secondary)] mb-4">{t("tenants.webhooks.emptyDescription")}</p>
               <Button onClick={openCreateDialog}>
                 <PlusIcon className="h-4 w-4 mr-2" />
                 {t("tenants.webhooks.addFirstWebhook")}

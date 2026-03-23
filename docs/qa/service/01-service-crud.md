@@ -77,7 +77,7 @@ SELECT client_id FROM clients c JOIN services s ON s.id = c.service_id WHERE s.n
 1. 尝试创建同名服务
 
 ### 预期结果
-- 显示错误：「服务名称已存在」
+- 显示错误：`"A resource with this identifier already exists."`（英文错误消息）
 
 ### 预期数据状态
 ```sql

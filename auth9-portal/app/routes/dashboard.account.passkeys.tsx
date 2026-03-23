@@ -288,10 +288,10 @@ export default function AccountPasskeysPage() {
               <div className="mx-auto w-12 h-12 bg-[var(--sidebar-item-hover)] rounded-full flex items-center justify-center mb-4">
                 <LockClosedIcon className="h-6 w-6 text-[var(--text-tertiary)]" />
               </div>
-              <h3 className="text-lg font-medium text-[var(--text-primary)] mb-2">
+              <h3 className="text-[17px] font-semibold text-[var(--text-primary)] mb-2">
                 {t("accountPasskeys.yourPasskeys")}
               </h3>
-              <p className="text-[var(--text-secondary)] mb-4">
+              <p className="text-[13px] text-[var(--text-secondary)] mb-4">
                 {t("accountPasskeys.description")}
               </p>
               <Button onClick={handleRegisterPasskey} disabled={registering || isSubmitting}>
