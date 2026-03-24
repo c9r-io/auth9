@@ -2,7 +2,7 @@
 
 > **模块**: analytics / identity-provider
 > **关联 FR**: Phase4 FR5 — 联邦审计与安全事件
-> **前置条件**: 系统已启动且 API 可访问，至少配置一个 Social Provider (Google/GitHub) 和一个 Enterprise SSO Connector (OIDC/SAML)
+> **前置条件**: 系统已启动且 API 可访问，**且已配置至少一个 Social Provider (Google/GitHub) 和一个 Enterprise SSO Connector (OIDC/SAML)**。默认 Docker 环境不包含这些配置——如果 `social_providers` 和 `enterprise_sso_connectors` 表为空，则本文档所有场景均无法执行，应跳过而非标记为失败
 >
 > **重要**: 联邦事件 (`federation_success`, `federation_failed`, `identity_linked`, `identity_unlinked`) 只有在 **实际执行对应操作** 后才会产生。仅查询数据库不构成测试——必须先完成真实的社交登录/SAML SSO/身份绑定流程。种子数据中的 `success`/`social`/`failed_password` 事件是基础登录事件，不包含联邦事件。
 

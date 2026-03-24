@@ -25,15 +25,40 @@
 | created_at | TIMESTAMP | 操作时间 |
 
 ### action 类型
+
+**注意**: action 值采用 `{domain}.{operation}` 命名空间格式，而非简单动词。
+
 | 值 | 说明 |
 |----|------|
-| create | 创建资源 |
-| update | 更新资源 |
-| delete | 删除资源 |
-| enable | 启用 |
-| disable | 禁用 |
-| assign | 分配（如角色分配） |
-| unassign | 取消分配 |
+| tenant.create | 创建租户 |
+| tenant.update | 更新租户 |
+| tenant.delete | 删除租户 |
+| user.create | 创建用户 |
+| user.update | 更新用户 |
+| user.delete | 删除用户 |
+| user.add_to_tenant | 用户加入租户 |
+| user.remove_from_tenant | 用户移出租户 |
+| user.update_role_in_tenant | 更新用户租户角色 |
+| user.mfa.enable | 启用 MFA |
+| user.mfa.disable | 禁用 MFA |
+| role.create | 创建角色 |
+| role.update | 更新角色 |
+| role.delete | 删除角色 |
+| role.assign_permission | 角色分配权限 |
+| role.remove_permission | 角色移除权限 |
+| rbac.assign_roles | 分配角色 |
+| rbac.unassign_role | 取消角色分配 |
+| permission.create | 创建权限 |
+| permission.delete | 删除权限 |
+| service.create | 创建服务 |
+| service.update | 更新服务 |
+| service.delete | 删除服务 |
+| hosted_login.password | 密码登录 |
+| hosted_login.logout | 登出 |
+| hosted_login.mfa_challenge | MFA 验证 |
+| token_exchange.rest.succeeded | Token 交换成功 |
+| invitation.created | 创建邀请 |
+| invitation.accepted | 接受邀请 |
 
 ### resource_type 类型
 | 值 | 说明 |
@@ -47,6 +72,14 @@
 | invitation | 邀请 |
 | identity_provider | 身份提供商 |
 | system_settings | 系统设置 |
+
+### 排错指南
+
+| 现象 | 原因 | 解决方案 |
+|------|------|----------|
+| 登录超时 (30s+) / "fetch failed" | auth9-core 内存压力导致 V8 heap limit 错误 | 运行 `./scripts/reset-docker.sh` 重启环境，确认 `docker logs auth9-core` 无 OOM 错误后重试 |
+| 审计日志 action 为 `hosted_login.password` 而非 `create` | action 采用 `{domain}.{operation}` 命名空间格式 | 参考上方 action 类型表，使用完整的命名空间值进行筛选和断言 |
+| 刚重置后审计日志条目很少 | 环境重置清空数据，只有重置后的操作（登录、Token交换）会产生审计日志 | 先执行若干管理操作（创建租户/用户/角色等），再验证审计日志 |
 
 ---
 

@@ -173,7 +173,7 @@ http://localhost:3000/force-update-password?action_id=test-123
 ## 场景 4：Complete Profile 页面渲染与提交
 
 ### 步骤 0（Gate Check）
-- 用户已登录 Portal（有有效 session）
+- 用户已登录 Portal（有有效 session）——**需要一个有密码凭证且无 MFA 的测试用户**。默认 Docker 环境中 `admin@auth9.local` 可能启用了 MFA，OIDC 创建的用户无密码。如果无法通过密码登录 Portal，此场景应标记为 BLOCKED 而非 FAILED
 - 存在 `complete_profile` 类型的 pending action
 
 ### 初始状态

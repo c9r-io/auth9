@@ -333,12 +333,17 @@ pub async fn password_login<
     // Record successful login event
     {
         use crate::domains::security_observability::service::analytics::LoginEventMetadata;
+        use crate::models::session::parse_user_agent;
         let mut metadata = LoginEventMetadata::new(user.id, user.email.clone());
         if let Some(ref ip) = ip_address {
             metadata = metadata.with_ip_address(ip.clone());
         }
         if let Some(ref ua) = user_agent {
             metadata = metadata.with_user_agent(ua.clone());
+            let (device_type, _device_name) = parse_user_agent(ua);
+            if let Some(dt) = device_type {
+                metadata = metadata.with_device_type(dt);
+            }
         }
         metadata = metadata.with_session_id(session.id);
         if let Err(e) = state.analytics_service().record_successful_login(metadata).await {
