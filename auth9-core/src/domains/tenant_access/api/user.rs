@@ -429,6 +429,16 @@ pub async fn create<S: HasServices + HasBranding>(
         if let Err(errors) = policy.validate_password(password) {
             return Err(AppError::Validation(errors.join("; ")));
         }
+
+        // Check if password has been found in a data breach
+        if let Some(breach_svc) = state.breached_password_service() {
+            let result = breach_svc.check_password(password).await;
+            if result.is_breached {
+                return Err(AppError::Validation(
+                    "This password has been found in a data breach. Please choose a different password.".to_string(),
+                ));
+            }
+        }
     }
 
     let credentials = input.password.map(|password| {

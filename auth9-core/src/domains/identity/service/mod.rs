@@ -1,3 +1,4 @@
+pub mod breached_password;
 pub mod email_verification;
 pub mod identity_provider;
 pub mod otp;
@@ -8,6 +9,7 @@ pub mod session;
 pub mod totp;
 pub mod webauthn;
 
+pub use breached_password::BreachedPasswordService;
 pub use email_verification::EmailVerificationService;
 pub use identity_provider::IdentityProviderService;
 pub use otp::{OtpChannel, OtpChannelType, OtpManager, OtpRateLimitConfig};

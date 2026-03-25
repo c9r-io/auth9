@@ -1795,6 +1795,7 @@ export default {
     duplicateEntry: "该名称已存在，请使用其他名称。",
     ssrfBlocked: "提供的 URL 不被允许。",
     internalIpBlocked: "提供的 URL 指向内部地址，不被允许。",
+    breachedPassword: "此密码已出现在已知的数据泄漏事件中，请选择其他密码。",
     fields: {
       slug: "Slug",
       name: "名称",

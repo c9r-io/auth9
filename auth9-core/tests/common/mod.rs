@@ -58,6 +58,10 @@ pub fn test_config() -> Config {
             hmac_key: "test-password-reset-hmac-key".to_string(),
             token_ttl_secs: 3600,
         },
+        hibp: auth9_core::config::HibpConfig {
+            enabled: false,
+            ..auth9_core::config::HibpConfig::default()
+        },
         async_action: auth9_core::models::action::AsyncActionConfig::default(),
         branding_allowed_domains: vec![],
         admin_password: None,

@@ -1803,7 +1803,10 @@ export default {
     conflict: "A resource with this identifier already exists.",
     duplicateEntry: "This name already exists. Please use a different one.",
     ssrfBlocked: "The provided URL is not allowed.",
-    internalIpBlocked: "The provided URL points to an internal address and is not allowed.",
+    internalIpBlocked:
+      "The provided URL points to an internal address and is not allowed.",
+    breachedPassword:
+      "This password has appeared in a known data breach. Please choose a different password.",
     fields: {
       slug: "Slug",
       name: "Name",

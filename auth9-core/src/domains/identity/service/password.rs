@@ -27,6 +27,8 @@ use sha2::Sha256;
 use std::sync::Arc;
 use validator::Validate;
 
+use super::BreachedPasswordService;
+
 pub struct PasswordService<
     P: PasswordResetRepository,
     U: UserRepository,
@@ -44,6 +46,7 @@ pub struct PasswordService<
     action_engine: Option<Arc<ActionEngine<AR>>>,
     identity_sync: Option<Arc<IdentitySyncService>>,
     hmac_key: String,
+    breached_password_service: Option<Arc<BreachedPasswordService>>,
 }
 
 impl<P: PasswordResetRepository, U: UserRepository, S: SystemSettingsRepository>
@@ -65,6 +68,7 @@ impl<P: PasswordResetRepository, U: UserRepository, S: SystemSettingsRepository>
             action_engine: None,
             identity_sync: None,
             hmac_key,
+            breached_password_service: None,
         }
     }
 }
@@ -94,6 +98,7 @@ impl<
             action_engine: None,
             identity_sync: Some(identity_sync),
             hmac_key,
+            breached_password_service: None,
         }
     }
 
@@ -117,7 +122,14 @@ impl<
             action_engine: Some(action_engine),
             identity_sync: Some(identity_sync),
             hmac_key,
+            breached_password_service: None,
         }
+    }
+
+    /// Set the breached password detection service (builder pattern).
+    pub fn with_breached_password_service(mut self, svc: Arc<BreachedPasswordService>) -> Self {
+        self.breached_password_service = Some(svc);
+        self
     }
 
     /// Request a password reset email
@@ -189,6 +201,9 @@ impl<
             return Err(AppError::Validation(errors.join("; ")));
         }
 
+        // Check if password has been found in a data breach
+        self.check_breached_password(&input.new_password).await?;
+
         // Check password history before changing
         self.check_password_history(
             reset_token.user_id,
@@ -258,6 +273,9 @@ impl<
         if let Err(errors) = policy.validate_password(&input.new_password) {
             return Err(AppError::Validation(errors.join("; ")));
         }
+
+        // Check if password has been found in a data breach
+        self.check_breached_password(&input.new_password).await?;
 
         // Verify current password with identity backend
         let is_valid = self
@@ -412,6 +430,20 @@ impl<
         }
 
         Ok(updated)
+    }
+
+    /// Check if the password has been found in a data breach (HIBP).
+    /// Returns Ok(()) if not breached or if the service is not configured.
+    async fn check_breached_password(&self, password: &str) -> Result<()> {
+        if let Some(ref svc) = self.breached_password_service {
+            let result = svc.check_password(password).await;
+            if result.is_breached {
+                return Err(AppError::Validation(
+                    "This password has been found in a data breach. Please choose a different password.".to_string(),
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// Check if the new password matches any of the user's recent passwords.

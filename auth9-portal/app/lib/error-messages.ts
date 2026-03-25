@@ -67,6 +67,14 @@ function mapSpecialApiError(
     return translate(locale, "auth.resetPassword.expiredToken");
   }
 
+  // Breached password detection (HIBP)
+  if (
+    error.code === "validation" &&
+    message.includes("data breach")
+  ) {
+    return translate(locale, "validation.breachedPassword");
+  }
+
   // Credential-specific unauthorized errors should show the actual error,
   // not the generic "session expired" message.
   if (error.code === "unauthorized") {

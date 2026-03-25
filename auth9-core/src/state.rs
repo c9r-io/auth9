@@ -136,6 +136,13 @@ pub trait HasServices: Clone + Send + Sync + 'static {
     fn maybe_db_pool(&self) -> Option<&sqlx::MySqlPool> {
         None
     }
+
+    /// Optional breached password detection service (HIBP integration).
+    fn breached_password_service(
+        &self,
+    ) -> Option<&crate::domains::identity::service::BreachedPasswordService> {
+        None
+    }
 }
 
 /// Trait for states that provide system settings and email services

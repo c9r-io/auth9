@@ -12,8 +12,8 @@ use crate::grpc::TokenExchangeService;
 pub const FILE_DESCRIPTOR_SET: &[u8] = tonic::include_file_descriptor_set!("auth9_descriptor");
 use crate::domains::authorization::service::{ClientService, RbacService};
 use crate::domains::identity::service::{
-    EmailVerificationService, IdentityProviderService, PasswordService, RecoveryCodeService,
-    RequiredActionService, SessionService, TotpService, WebAuthnService,
+    BreachedPasswordService, EmailVerificationService, IdentityProviderService, PasswordService,
+    RecoveryCodeService, RequiredActionService, SessionService, TotpService, WebAuthnService,
 };
 use crate::domains::integration::service::{ActionEngine, ActionService, WebhookService};
 use crate::domains::platform::service::{
@@ -166,6 +166,7 @@ pub struct AppState {
     pub required_actions_service: Arc<RequiredActionService>,
     pub totp_service: Arc<TotpService>,
     pub recovery_code_service: Arc<RecoveryCodeService>,
+    pub breached_password_service: Arc<BreachedPasswordService>,
 }
 
 /// Implement HasServices trait for production AppState
@@ -256,6 +257,10 @@ impl HasServices for AppState {
 
     fn maybe_db_pool(&self) -> Option<&sqlx::MySqlPool> {
         Some(&self.db_pool)
+    }
+
+    fn breached_password_service(&self) -> Option<&BreachedPasswordService> {
+        Some(&self.breached_password_service)
     }
 }
 
@@ -678,17 +683,23 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         app_base_url.clone(),
     ));
 
+    // Create breached password detection service (HIBP)
+    let breached_password_service = Arc::new(BreachedPasswordService::new(&config.hibp));
+
     // Create new services for 5 features
-    let password_service = Arc::new(PasswordService::with_action_engine(
-        password_reset_repo.clone(),
-        user_repo.clone(),
-        email_service.clone(),
-        identity_engine.clone(),
-        tenant_repo.clone(),
-        action_engine.clone(),
-        identity_sync_service.clone(),
-        config.password_reset.hmac_key.clone(),
-    ));
+    let password_service = Arc::new(
+        PasswordService::with_action_engine(
+            password_reset_repo.clone(),
+            user_repo.clone(),
+            email_service.clone(),
+            identity_engine.clone(),
+            tenant_repo.clone(),
+            action_engine.clone(),
+            identity_sync_service.clone(),
+            config.password_reset.hmac_key.clone(),
+        )
+        .with_breached_password_service(breached_password_service.clone()),
+    );
 
     let session_service = Arc::new(SessionService::new(
         session_repo.clone(),
@@ -824,6 +835,7 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         required_actions_service,
         totp_service,
         recovery_code_service,
+        breached_password_service,
     };
 
     // Create rate limit state for middleware

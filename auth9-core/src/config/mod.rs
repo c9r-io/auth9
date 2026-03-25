@@ -77,6 +77,27 @@ pub struct WebAuthnConfig {
     pub challenge_ttl_secs: u64,
 }
 
+/// HIBP (Have I Been Pwned) breached password detection configuration
+#[derive(Debug, Clone)]
+pub struct HibpConfig {
+    /// Whether breached password detection is enabled
+    pub enabled: bool,
+    /// HIBP k-Anonymity API base URL
+    pub api_base_url: String,
+    /// HTTP request timeout in milliseconds
+    pub timeout_ms: u64,
+}
+
+impl Default for HibpConfig {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            api_base_url: "https://api.pwnedpasswords.com".to_string(),
+            timeout_ms: 3000,
+        }
+    }
+}
+
 /// Password reset security configuration
 #[derive(Clone)]
 pub struct PasswordResetConfig {
@@ -135,6 +156,8 @@ pub struct Config {
     pub telemetry: TelemetryConfig,
     /// Password reset configuration
     pub password_reset: PasswordResetConfig,
+    /// HIBP breached password detection configuration
+    pub hibp: HibpConfig,
     /// Platform admin email allowlist.
     ///
     /// Identity tokens are intentionally tenant-unscoped. Only Identity tokens whose
@@ -191,6 +214,7 @@ impl fmt::Debug for Config {
             .field("server", &self.server)
             .field("telemetry", &self.telemetry)
             .field("password_reset", &self.password_reset)
+            .field("hibp", &self.hibp)
             .field(
                 "jwt_tenant_access_allowed_audiences",
                 &format!(
@@ -529,6 +553,10 @@ impl Config {
                 hmac_key: "test-password-reset-key".to_string(),
                 token_ttl_secs: 3600,
             },
+            hibp: HibpConfig {
+                enabled: false,
+                ..HibpConfig::default()
+            },
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec![],
             security_headers: SecurityHeadersConfig::default(),
@@ -746,6 +774,12 @@ impl Config {
                 metrics_token: env::var("METRICS_TOKEN").ok(),
             },
             password_reset,
+            hibp: HibpConfig {
+                enabled: parse_bool_env("HIBP_ENABLED", true),
+                api_base_url: env::var("HIBP_API_BASE_URL")
+                    .unwrap_or_else(|_| "https://api.pwnedpasswords.com".to_string()),
+                timeout_ms: parse_u64_env("HIBP_TIMEOUT_MS", 3000),
+            },
             platform_admin_emails: parse_csv_env(
                 "PLATFORM_ADMIN_EMAILS",
                 vec!["admin@auth9.local".to_string()],
@@ -1024,6 +1058,7 @@ mod tests {
                 hmac_key: "production-hmac-key".to_string(),
                 token_ttl_secs: 3600,
             },
+            hibp: HibpConfig::default(),
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec![],
             security_headers: SecurityHeadersConfig::default(),
@@ -1688,6 +1723,7 @@ mod tests {
                 hmac_key: "password-reset-hmac-secret".to_string(),
                 token_ttl_secs: 3600,
             },
+            hibp: HibpConfig::default(),
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec!["auth9-portal".to_string()],
             security_headers: SecurityHeadersConfig::default(),
