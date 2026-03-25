@@ -214,7 +214,7 @@ pub struct LdapGroupRoleMapping {
 
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct CreateLdapGroupRoleMappingInput {
-    #[validate(length(min = 1, max = 1024))]
+    #[validate(length(min = 1, max = 512))]
     pub ldap_group_dn: String,
     pub ldap_group_display_name: Option<String>,
     pub role_id: StringUuid,
