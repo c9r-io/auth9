@@ -41,6 +41,9 @@ vi.mock("~/services/api", () => ({
     identityProviderApi: {
         listEnabledPublic: vi.fn().mockResolvedValue({ data: [] }),
     },
+    captchaApi: {
+        getConfig: vi.fn().mockResolvedValue({ enabled: false, provider: "turnstile", site_key: "", mode: "disabled" }),
+    },
 }));
 
 describe("Login Page", () => {
@@ -66,6 +69,9 @@ describe("Login Page", () => {
             branding: defaultBranding,
             loginChallenge: undefined,
             socialProviders: [],
+            ldapView: false,
+            ldapConnectorAlias: undefined,
+            captchaConfig: { enabled: false, provider: "turnstile", site_key: "", mode: "disabled" },
         });
     });
 
@@ -80,6 +86,9 @@ describe("Login Page", () => {
             branding: defaultBranding,
             loginChallenge: undefined,
             socialProviders: [],
+            ldapView: false,
+            ldapConnectorAlias: undefined,
+            captchaConfig: { enabled: false, provider: "turnstile", site_key: "", mode: "disabled" },
         });
     });
 
@@ -94,6 +103,9 @@ describe("Login Page", () => {
             branding: defaultBranding,
             loginChallenge: undefined,
             socialProviders: [],
+            ldapView: false,
+            ldapConnectorAlias: undefined,
+            captchaConfig: { enabled: false, provider: "turnstile", site_key: "", mode: "disabled" },
         });
     });
 
@@ -119,6 +131,9 @@ describe("Login Page", () => {
             branding: { ...defaultBranding, allow_registration: true },
             loginChallenge: undefined,
             socialProviders: [],
+            ldapView: false,
+            ldapConnectorAlias: undefined,
+            captchaConfig: { enabled: false, provider: "turnstile", site_key: "", mode: "disabled" },
         });
     });
 
@@ -346,6 +361,9 @@ describe("Login Page", () => {
             branding: defaultBranding,
             loginChallenge: undefined,
             socialProviders: [],
+            ldapView: false,
+            ldapConnectorAlias: undefined,
+            captchaConfig: { enabled: false, provider: "turnstile", site_key: "", mode: "disabled" },
         });
     });
 });

@@ -7,7 +7,7 @@ import SecuritySettingsPage, {
   action,
 } from "~/routes/dashboard.settings.security";
 import { I18nProvider } from "~/i18n";
-import { passwordApi, systemApi, tenantApi } from "~/services/api";
+import { passwordApi, systemApi, tenantApi, riskApi, adaptiveMfaApi } from "~/services/api";
 
 // Mock the API
 vi.mock("~/services/api", () => ({
@@ -21,6 +21,14 @@ vi.mock("~/services/api", () => ({
   systemApi: {
     getMaliciousIpBlacklist: vi.fn(),
     updateMaliciousIpBlacklist: vi.fn(),
+  },
+  riskApi: {
+    getRiskPolicy: vi.fn(),
+    updateRiskPolicy: vi.fn(),
+  },
+  adaptiveMfaApi: {
+    getPolicy: vi.fn(),
+    updatePolicy: vi.fn(),
   },
 }));
 
@@ -74,6 +82,23 @@ const mockBlacklist = [
   },
 ];
 
+const mockRiskPolicy = {
+  tenant_id: "tenant-1",
+  mfa_threshold: 50,
+  block_threshold: 80,
+  notify_admin: true,
+  auto_lock_account: false,
+};
+
+const mockAdaptiveMfaPolicy = {
+  tenant_id: "tenant-1",
+  mode: "disabled" as const,
+  risk_threshold: 50,
+  always_require_for_admins: false,
+  trust_device_days: 30,
+  step_up_operations: [],
+};
+
 if (!HTMLElement.prototype.hasPointerCapture) {
   HTMLElement.prototype.hasPointerCapture = () => false;
 }
@@ -104,6 +129,12 @@ describe("Security Settings Page", () => {
     vi.mocked(systemApi.getMaliciousIpBlacklist).mockResolvedValue({
       data: mockBlacklist,
     });
+    vi.mocked(riskApi.getRiskPolicy).mockResolvedValue({
+      data: mockRiskPolicy,
+    });
+    vi.mocked(adaptiveMfaApi.getPolicy).mockResolvedValue({
+      data: mockAdaptiveMfaPolicy,
+    });
   });
 
   // ============================================================================
@@ -121,6 +152,10 @@ describe("Security Settings Page", () => {
       policyError: null,
       blacklist: mockBlacklist,
       blacklistError: null,
+      riskPolicy: mockRiskPolicy,
+      riskPolicyError: null,
+      adaptiveMfaPolicy: mockAdaptiveMfaPolicy,
+      adaptiveMfaPolicyError: null,
     });
     expect(tenantApi.list).toHaveBeenCalledWith(1, 100, undefined, undefined);
   });
@@ -306,8 +341,9 @@ describe("Security Settings Page", () => {
     expect(screen.getByLabelText("Require numbers")).toBeInTheDocument();
     expect(screen.getByLabelText("Require symbols")).toBeInTheDocument();
 
-    // Verify Save button
-    expect(screen.getByRole("button", { name: "Save policy" })).toBeInTheDocument();
+    // Verify Save buttons are present (password policy, risk policy, and adaptive MFA all have one)
+    const saveButtons = screen.getAllByRole("button", { name: "Save policy" });
+    expect(saveButtons.length).toBeGreaterThanOrEqual(1);
 
     // Verify the API was called with the selected tenant
     expect(passwordApi.getPasswordPolicy).toHaveBeenCalledWith("tenant-1", undefined);
@@ -409,8 +445,8 @@ describe("Security Settings Page", () => {
       expect(screen.queryByLabelText("Minimum length")).not.toBeInTheDocument();
     });
 
-    // Policy form should be gone
-    expect(screen.queryByRole("button", { name: "Save policy" })).not.toBeInTheDocument();
+    // Password policy form should be gone (but risk policy and adaptive MFA "Save policy" buttons remain)
+    expect(screen.queryByLabelText("Minimum length")).not.toBeInTheDocument();
   });
 
   it("handles policy loading error gracefully", async () => {
@@ -442,11 +478,10 @@ describe("Security Settings Page", () => {
       expect(passwordApi.getPasswordPolicy).toHaveBeenCalledWith("tenant-1", undefined);
     });
 
-    // The form should not be shown because policy is null after error
+    // The password policy form should not be shown because policy is null after error
     await waitFor(() => {
       expect(screen.queryByLabelText("Minimum length")).not.toBeInTheDocument();
     });
-    expect(screen.queryByRole("button", { name: "Save policy" })).not.toBeInTheDocument();
   });
 
   it("shows loading indicator while policy is being fetched", async () => {
@@ -665,9 +700,9 @@ describe("Security Settings Page", () => {
       expect(screen.getByLabelText("Minimum length")).toBeInTheDocument();
     });
 
-    // Click Save policy button
-    const saveButton = screen.getByRole("button", { name: "Save policy" });
-    await user.click(saveButton);
+    // Click the first Save policy button (password policy form)
+    const saveButtons = screen.getAllByRole("button", { name: "Save policy" });
+    await user.click(saveButtons[0]);
 
     // The form should have been submitted (we can verify the action was called
     // by checking the form still renders after submission)

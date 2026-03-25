@@ -2,7 +2,7 @@ import { createRoutesStub } from "react-router";
 import { render, screen } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import Register, { loader, action } from "~/routes/register";
-import { userApi, publicBrandingApi } from "~/services/api";
+import { userApi, publicBrandingApi, captchaApi } from "~/services/api";
 
 const defaultBranding = {
     company_name: "Auth9",
@@ -31,6 +31,9 @@ vi.mock("~/services/api", () => ({
     publicBrandingApi: {
         get: vi.fn(),
     },
+    captchaApi: {
+        getConfig: vi.fn(),
+    },
 }));
 
 describe("Register Page", () => {
@@ -52,11 +55,20 @@ describe("Register Page", () => {
                     allow_registration: true,
                 },
             });
+            vi.mocked(captchaApi.getConfig).mockResolvedValue({
+                enabled: false,
+                provider: "turnstile",
+                site_key: "",
+                mode: "disabled",
+            });
 
             const response = await loader({ request: new Request("http://localhost/register"), params: {}, context: {} });
 
             expect(publicBrandingApi.get).toHaveBeenCalled();
-            expect(response).toEqual({ branding: expect.objectContaining({ allow_registration: true }) });
+            expect(response).toEqual({
+                branding: expect.objectContaining({ allow_registration: true }),
+                captchaConfig: { enabled: false, provider: "turnstile", site_key: "", mode: "disabled" },
+            });
         });
 
         it("redirects to /login when registration is not allowed", async () => {
