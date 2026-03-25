@@ -503,6 +503,12 @@ export default {
     required: "この項目は必須です。", email: "有効なメールアドレスを入力してください。", slug: "スラッグは小文字、数字、ハイフンのみ使用できます。先頭または末尾にハイフンは使えません。", length: "長さは1〜63文字である必要があります。", alreadyExists: "この値はすでに存在します。別の値を使用してください。", notFound: "リクエストされたリソースが見つかりません。", conflict: "この識別子のリソースはすでに存在します。", duplicateEntry: "この名前はすでに存在します。別の名前を使用してください。",
     ssrfBlocked: "指定されたURLは許可されていません。",
     internalIpBlocked: "指定されたURLは内部アドレスを指しており、許可されていません。",
+    breachedPassword: "このパスワードは既知のデータ漏洩で確認されています。別のパスワードを選択してください。",
+    passwordMinLength: "パスワードは{{ count }}文字以上である必要があります。", // pragma: allowlist secret
+    passwordRequireUppercase: "パスワードには大文字を1つ以上含める必要があります。",
+    passwordRequireLowercase: "パスワードには小文字を1つ以上含める必要があります。",
+    passwordRequireNumber: "パスワードには数字を1つ以上含める必要があります。",
+    passwordRequireSymbol: "パスワードには記号を1つ以上含める必要があります。",
     fields: { slug: "スラッグ", name: "名前", email: "メール", logo_url: "ロゴURL" },
   },
   legal: {

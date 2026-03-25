@@ -1796,6 +1796,11 @@ export default {
     ssrfBlocked: "提供的 URL 不被允许。",
     internalIpBlocked: "提供的 URL 指向内部地址，不被允许。",
     breachedPassword: "此密码已出现在已知的数据泄漏事件中，请选择其他密码。",
+    passwordMinLength: "密码长度至少为 {{ count }} 个字符。", // pragma: allowlist secret
+    passwordRequireUppercase: "密码必须包含至少一个大写字母。",
+    passwordRequireLowercase: "密码必须包含至少一个小写字母。",
+    passwordRequireNumber: "密码必须包含至少一个数字。",
+    passwordRequireSymbol: "密码必须包含至少一个特殊符号。",
     fields: {
       slug: "Slug",
       name: "名称",

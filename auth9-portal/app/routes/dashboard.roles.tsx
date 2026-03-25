@@ -515,10 +515,9 @@ export default function RolesPage() {
               {data.entries.map((entry) => {
                 // Build hierarchy tree
                 const rootRoles = entry.roles.filter(r => !r.parent_role_id);
-                const childRoles = entry.roles.filter(r => r.parent_role_id);
 
                 const renderRoleTree = (role: Role, level: number = 0): React.ReactNode => {
-                  const children = childRoles.filter(r => r.parent_role_id === role.id);
+                  const children = entry.roles.filter(r => r.parent_role_id === role.id);
                   return (
                     <div key={role.id} className="relative">
                       <div
@@ -586,19 +585,25 @@ export default function RolesPage() {
                       )}
                     </div>
 
-                    {childRoles.filter(r => !entry.roles.some(p => p.id === r.parent_role_id)).length > 0 && (
-                      <div className="mt-4 pt-4 border-t border-[var(--glass-border-subtle)]">
-                        <div className="text-xs text-[var(--accent-orange)] mb-2">{t("rolesPage.orphanedRoles")}</div>
-                        {childRoles
-                          .filter(r => !entry.roles.some(p => p.id === r.parent_role_id))
-                          .map(role => (
+                    {(() => {
+                      const renderedIds = new Set<string>();
+                      const collectIds = (role: Role) => {
+                        renderedIds.add(role.id);
+                        entry.roles.filter(r => r.parent_role_id === role.id).forEach(collectIds);
+                      };
+                      rootRoles.forEach(collectIds);
+                      const orphanedRoles = entry.roles.filter(r => r.parent_role_id && !renderedIds.has(r.id));
+                      return orphanedRoles.length > 0 ? (
+                        <div className="mt-4 pt-4 border-t border-[var(--glass-border-subtle)]">
+                          <div className="text-xs text-[var(--accent-orange)] mb-2">{t("rolesPage.orphanedRoles")}</div>
+                          {orphanedRoles.map(role => (
                             <div key={role.id} className="text-sm text-[var(--text-secondary)] pl-4">
                               {role.name}
                             </div>
-                          ))
-                        }
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
                   </div>
                 );
               })}

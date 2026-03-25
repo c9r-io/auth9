@@ -828,10 +828,11 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
         .to_string();
 
         // Replace existing password credential (table created by auth9-oidc migrations)
-        // credentials.user_id stores identity_subject, not the users.id UUID
+        // credentials.user_id stores users.id UUID; also clean up any legacy identity_subject keys
         match sqlx::query(
-            "DELETE FROM credentials WHERE user_id = ? AND credential_type = 'password'",
+            "DELETE FROM credentials WHERE (user_id = ? OR user_id = ?) AND credential_type = 'password'",
         )
+        .bind(&actual_user_id)
         .bind(&identity_subject)
         .execute(&pool)
         .await
@@ -841,7 +842,7 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
                     "INSERT INTO credentials (id, user_id, credential_type, credential_data) VALUES (?, ?, 'password', ?)",
                 )
                 .bind(uuid::Uuid::new_v4().to_string())
-                .bind(&identity_subject)
+                .bind(&actual_user_id)
                 .bind(&cred_data)
                 .execute(&pool)
                 .await

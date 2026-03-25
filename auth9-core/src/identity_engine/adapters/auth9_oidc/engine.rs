@@ -31,6 +31,19 @@ impl Auth9OidcUserStore {
         Self { pool }
     }
 
+    /// Resolve identity_subject to the user's actual UUID (users.id).
+    /// Falls back to the input value when the user record doesn't exist yet
+    /// (e.g. during initial user creation).
+    async fn resolve_user_id(&self, identity_subject: &str) -> String {
+        sqlx::query_scalar::<_, String>("SELECT id FROM users WHERE identity_subject = ?")
+            .bind(identity_subject)
+            .fetch_optional(&self.pool)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| identity_subject.to_string())
+    }
+
     /// Hash a password with argon2id and store/replace the credential row.
     async fn upsert_password_credential(
         &self,
@@ -38,6 +51,9 @@ impl Auth9OidcUserStore {
         password: &str,
         temporary: bool,
     ) -> Result<()> {
+        // Resolve identity_subject → user UUID for consistent credential storage
+        let effective_user_id = self.resolve_user_id(user_id).await;
+
         let salt = SaltString::generate(&mut OsRng);
         // OWASP recommended Argon2id parameters: m=65536KB, t=3, p=4
         let params = Params::new(65536, 3, 4, None)
@@ -55,7 +71,9 @@ impl Auth9OidcUserStore {
         });
 
         // Atomic replace: delete old password credential, insert new one
-        sqlx::query("DELETE FROM credentials WHERE user_id = ? AND credential_type = 'password'")
+        // Also clean up any legacy credentials keyed by identity_subject
+        sqlx::query("DELETE FROM credentials WHERE (user_id = ? OR user_id = ?) AND credential_type = 'password'")
+            .bind(&effective_user_id)
             .bind(user_id)
             .execute(&self.pool)
             .await
@@ -68,7 +86,7 @@ impl Auth9OidcUserStore {
             "INSERT INTO credentials (id, user_id, credential_type, credential_data) VALUES (?, ?, 'password', ?)",
         )
         .bind(&id)
-        .bind(user_id)
+        .bind(&effective_user_id)
         .bind(&data)
         .execute(&self.pool)
         .await
@@ -151,21 +169,24 @@ impl IdentityUserStore for Auth9OidcUserStore {
     }
 
     async fn delete_user(&self, user_id: &str) -> Result<()> {
+        let effective_user_id = self.resolve_user_id(user_id).await;
         // Clean up auth9-oidc related tables for this user
-        sqlx::query("DELETE FROM credentials WHERE user_id = ?")
+        // Delete by both resolved UUID and identity_subject to handle legacy data
+        sqlx::query("DELETE FROM credentials WHERE user_id = ? OR user_id = ?")
+            .bind(&effective_user_id)
             .bind(user_id)
             .execute(&self.pool)
             .await
             .map_err(|e| AppError::Internal(anyhow!("failed to delete credentials: {}", e)))?;
 
         sqlx::query("DELETE FROM pending_actions WHERE user_id = ?")
-            .bind(user_id)
+            .bind(&effective_user_id)
             .execute(&self.pool)
             .await
             .map_err(|e| AppError::Internal(anyhow!("failed to delete pending actions: {}", e)))?;
 
         sqlx::query("DELETE FROM email_verification_tokens WHERE user_id = ?")
-            .bind(user_id)
+            .bind(&effective_user_id)
             .execute(&self.pool)
             .await
             .map_err(|e| {
@@ -173,7 +194,7 @@ impl IdentityUserStore for Auth9OidcUserStore {
             })?;
 
         sqlx::query("DELETE FROM user_verification_status WHERE user_id = ?")
-            .bind(user_id)
+            .bind(&effective_user_id)
             .execute(&self.pool)
             .await
             .map_err(|e| {
@@ -204,10 +225,11 @@ impl IdentityUserStore for Auth9OidcUserStore {
     }
 
     async fn validate_user_password(&self, user_id: &str, password: &str) -> Result<bool> {
+        let effective_user_id = self.resolve_user_id(user_id).await;
         let row: Option<(serde_json::Value,)> = sqlx::query_as(
             "SELECT credential_data FROM credentials WHERE user_id = ? AND credential_type = 'password' AND is_active = 1 LIMIT 1",
         )
-        .bind(user_id)
+        .bind(&effective_user_id)
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::Internal(anyhow!("failed to query password credential: {}", e)))?;
@@ -230,10 +252,11 @@ impl IdentityUserStore for Auth9OidcUserStore {
     }
 
     async fn get_user_password_hash(&self, user_id: &str) -> Result<Option<String>> {
+        let effective_user_id = self.resolve_user_id(user_id).await;
         let row: Option<(serde_json::Value,)> = sqlx::query_as(
             "SELECT credential_data FROM credentials WHERE user_id = ? AND credential_type = 'password' AND is_active = 1 LIMIT 1",
         )
-        .bind(user_id)
+        .bind(&effective_user_id)
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::Internal(anyhow!("failed to query password credential: {}", e)))?;
@@ -420,6 +443,17 @@ impl Auth9OidcCredentialStore {
     fn new(pool: MySqlPool) -> Self {
         Self { pool }
     }
+
+    /// Resolve identity_subject to user UUID, falling back to the input value.
+    async fn resolve_user_id(&self, identity_subject: &str) -> String {
+        sqlx::query_scalar::<_, String>("SELECT id FROM users WHERE identity_subject = ?")
+            .bind(identity_subject)
+            .fetch_optional(&self.pool)
+            .await
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| identity_subject.to_string())
+    }
 }
 
 #[async_trait]
@@ -429,10 +463,11 @@ impl IdentityCredentialStore for Auth9OidcCredentialStore {
         user_id: &str,
     ) -> Result<Vec<IdentityCredentialRepresentation>> {
         use sqlx::Row;
+        let effective_user_id = self.resolve_user_id(user_id).await;
         let rows = match sqlx::query(
             "SELECT id, credential_type, user_label, created_at FROM credentials WHERE user_id = ? AND is_active = 1",
         )
-        .bind(user_id)
+        .bind(&effective_user_id)
         .fetch_all(&self.pool)
         .await
         {
@@ -465,8 +500,9 @@ impl IdentityCredentialStore for Auth9OidcCredentialStore {
     }
 
     async fn remove_totp_credentials(&self, user_id: &str) -> Result<()> {
+        let effective_user_id = self.resolve_user_id(user_id).await;
         sqlx::query("DELETE FROM credentials WHERE user_id = ? AND credential_type = 'totp'")
-            .bind(user_id)
+            .bind(&effective_user_id)
             .execute(&self.pool)
             .await
             .map_err(|e| AppError::Internal(anyhow!("failed to remove totp credentials: {}", e)))?;
@@ -478,10 +514,11 @@ impl IdentityCredentialStore for Auth9OidcCredentialStore {
         user_id: &str,
     ) -> Result<Vec<IdentityCredentialRepresentation>> {
         use sqlx::Row;
+        let effective_user_id = self.resolve_user_id(user_id).await;
         let rows = sqlx::query(
             "SELECT id, credential_type, user_label, created_at FROM credentials WHERE user_id = ? AND credential_type = 'webauthn' AND is_active = 1",
         )
-        .bind(user_id)
+        .bind(&effective_user_id)
         .fetch_all(&self.pool)
         .await
         .map_err(|e| AppError::Internal(anyhow!("failed to list webauthn credentials: {}", e)))?;
@@ -526,10 +563,11 @@ impl IdentityCredentialStore for Auth9OidcCredentialStore {
 
     async fn is_password_temporary(&self, user_id: &str) -> Result<bool> {
         use sqlx::Row;
+        let effective_user_id = self.resolve_user_id(user_id).await;
         let row = sqlx::query(
             "SELECT credential_data FROM credentials WHERE user_id = ? AND credential_type = 'password' AND is_active = 1 LIMIT 1",
         )
-        .bind(user_id)
+        .bind(&effective_user_id)
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| AppError::Internal(anyhow!("failed to check password temporary status: {}", e)))?;

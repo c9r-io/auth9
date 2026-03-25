@@ -194,7 +194,7 @@ export default function NewActionPage() {
 
             <div className="p-4 bg-muted rounded-md space-y-2">
               <div className="font-semibold text-sm">{t("serviceActions.contextStructure")}</div>
-              <pre className="text-xs overflow-x-auto">{getActionContextReference()}</pre>
+              <pre className="bg-[#0d1117] text-[#c9d1d9] font-mono text-sm rounded-lg p-4 overflow-x-auto">{getActionContextReference()}</pre>
             </div>
           </CardContent>
         </Card>

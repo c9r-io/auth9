@@ -1807,6 +1807,11 @@ export default {
       "The provided URL points to an internal address and is not allowed.",
     breachedPassword:
       "This password has appeared in a known data breach. Please choose a different password.",
+    passwordMinLength: "Password must be at least {{ count }} characters.", // pragma: allowlist secret
+    passwordRequireUppercase: "Password must contain at least one uppercase letter.", // pragma: allowlist secret
+    passwordRequireLowercase: "Password must contain at least one lowercase letter.", // pragma: allowlist secret
+    passwordRequireNumber: "Password must contain at least one number.", // pragma: allowlist secret
+    passwordRequireSymbol: "Password must contain at least one symbol.", // pragma: allowlist secret
     fields: {
       slug: "Slug",
       name: "Name",

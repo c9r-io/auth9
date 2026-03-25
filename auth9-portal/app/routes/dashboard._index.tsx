@@ -81,7 +81,7 @@ export default function DashboardIndex() {
               <p className="mt-2 text-sm leading-relaxed text-[var(--text-secondary)]">
                 {t("dashboardHome.emptyDescription")}
               </p>
-              <Button asChild className="mt-5 h-11 w-full !flex px-4 md:h-10 md:w-auto">
+              <Button asChild className="mt-5 flex h-11 w-full px-4 md:h-10 md:w-auto">
                 <Link to="/dashboard/tenants/new">
                   <PlusIcon className="mr-2 h-4 w-4" />
                   {t("dashboardHome.emptyAction")}
@@ -151,9 +151,9 @@ function StatsCard({
     <Card className={`animate-fade-in-up ${delay} relative overflow-hidden h-full p-5 shadow-[0_12px_44px_var(--glass-shadow-strong),inset_0_1px_0_var(--glass-highlight),inset_0_-1px_0_rgba(0,0,0,0.05)] hover:-translate-y-[2px] hover:shadow-[0_16px_48px_var(--glass-shadow-strong),inset_0_1px_0_var(--glass-highlight),inset_0_-1px_0_rgba(0,0,0,0.05)]`}>
       <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses[color]} pointer-events-none`} />
       <CardContent className="!p-0 relative h-full flex flex-col">
-        <p className="text-[13px] font-medium text-[var(--text-secondary)]">{title}</p>
+        <p className="text-[14px] font-semibold text-[var(--text-secondary)]">{title}</p>
         <p className="mt-1 text-[28px] font-bold text-[var(--text-primary)] tracking-tight">{value}</p>
-        <Button asChild variant="outline" size="sm" className="mt-4 -mx-5 -mb-5 h-11 w-[calc(100%+2.5rem)] rounded-t-none !flex justify-between px-4 text-xs sm:mt-3 sm:mx-0 sm:mb-0 sm:h-8 sm:w-auto sm:rounded-md sm:gap-1 sm:px-3 sm:justify-center relative">
+        <Button asChild variant="outline" size="sm" className="mt-4 -mx-5 -mb-5 flex h-11 w-[calc(100%+2.5rem)] rounded-t-none justify-between px-4 text-xs sm:mt-3 sm:mx-0 sm:mb-0 sm:h-8 sm:w-auto sm:rounded-md sm:gap-1 sm:px-3 sm:justify-center relative">
           <Link to={href}>
             {t("dashboardHome.viewDetails")}
             <ArrowRightIcon className="h-3.5 w-3.5" />

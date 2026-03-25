@@ -424,7 +424,7 @@ export default function TenantsIndexPage() {
                   <tr>
                     <td className="px-4 py-12 text-center" colSpan={5}>
                       <MagnifyingGlassIcon className="mx-auto h-8 w-8 text-[var(--text-tertiary)]" />
-                      <p className="mt-3 text-sm font-medium text-[var(--text-primary)]">
+                      <p className="mt-3 text-base font-semibold text-[var(--text-primary)]">
                         {data.search ? t("tenants.emptySearchTitle") : t("tenants.empty")}
                       </p>
                       {data.search && (

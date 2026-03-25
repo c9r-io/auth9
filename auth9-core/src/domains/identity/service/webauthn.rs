@@ -359,8 +359,26 @@ impl WebAuthnService {
             ));
         }
 
-        // Native credential
-        self.repo.delete(credential_id, user_id).await
+        // Native credential - try by record ID first, then by credential_id
+        match self.repo.delete(credential_id, user_id).await {
+            Ok(()) => Ok(()),
+            Err(_) => {
+                // credential_id might be the WebAuthn credential_id, not the record UUID
+                let passkey = self
+                    .repo
+                    .find_by_credential_id(credential_id)
+                    .await?
+                    .ok_or_else(|| {
+                        AppError::NotFound("WebAuthn credential not found".to_string())
+                    })?;
+                if passkey.user_id != user_id {
+                    return Err(AppError::NotFound(
+                        "WebAuthn credential not found".to_string(),
+                    ));
+                }
+                self.repo.delete(&passkey.id, user_id).await
+            }
+        }
     }
 }
 

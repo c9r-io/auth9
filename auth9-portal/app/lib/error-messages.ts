@@ -75,6 +75,11 @@ function mapSpecialApiError(
     return translate(locale, "validation.breachedPassword");
   }
 
+  // Password policy validation errors
+  if (message.includes("password must")) {
+    return mapPasswordValidationErrors(error.message, locale);
+  }
+
   // Credential-specific unauthorized errors should show the actual error,
   // not the generic "session expired" message.
   if (error.code === "unauthorized") {
@@ -90,6 +95,32 @@ function mapSpecialApiError(
   }
 
   return null;
+}
+
+const PASSWORD_ERROR_PATTERNS: Array<{ pattern: RegExp; key: string }> = [
+  { pattern: /password must be at least (\d+) characters/i, key: "validation.passwordMinLength" },
+  { pattern: /password must contain at least one uppercase letter/i, key: "validation.passwordRequireUppercase" },
+  { pattern: /password must contain at least one lowercase letter/i, key: "validation.passwordRequireLowercase" },
+  { pattern: /password must contain at least one number/i, key: "validation.passwordRequireNumber" },
+  { pattern: /password must contain at least one symbol/i, key: "validation.passwordRequireSymbol" },
+];
+
+function mapPasswordValidationErrors(
+  rawMessage: string,
+  locale: AppLocale
+): string {
+  const errors: string[] = [];
+  for (const { pattern, key } of PASSWORD_ERROR_PATTERNS) {
+    const match = rawMessage.match(pattern);
+    if (match) {
+      if (key === "validation.passwordMinLength" && match[1]) {
+        errors.push(translate(locale, key, { count: match[1] }));
+      } else {
+        errors.push(translate(locale, key));
+      }
+    }
+  }
+  return errors.length > 0 ? errors.join("; ") : rawMessage;
 }
 
 const ERROR_MESSAGES: Record<string, string> = {

@@ -117,7 +117,7 @@ export default function EditActionPage() {
           <CardHeader><CardTitle>{t("serviceActions.script")}</CardTitle><CardDescription>{t("serviceActions.scriptEditDescription")}</CardDescription></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2"><Label htmlFor="script">{t("serviceActions.scriptCode")} *</Label><Textarea id="script" name="script" value={script} onChange={(e) => setScript(e.target.value)} className="font-mono text-sm min-h-[400px]" required /></div>
-            <div className="p-4 bg-muted rounded-md space-y-2"><div className="font-semibold text-sm">{t("serviceActions.contextStructure")}</div><pre className="text-xs overflow-x-auto">{getActionContextReference()}</pre></div>
+            <div className="p-4 bg-muted rounded-md space-y-2"><div className="font-semibold text-sm">{t("serviceActions.contextStructure")}</div><pre className="bg-[#0d1117] text-[#c9d1d9] font-mono text-sm rounded-lg p-4 overflow-x-auto">{getActionContextReference()}</pre></div>
           </CardContent>
         </Card>
 

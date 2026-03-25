@@ -351,24 +351,14 @@ export default function UsersPage() {
     );
   };
 
-  const handleRoleCheckedChange = (roleId: string, checked: boolean, wasOriginallyAssigned: boolean) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleRoleCheckedChange = (roleId: string, checked: boolean, _wasOriginallyAssigned: boolean) => {
     const nextAssignedRoleIds = new Set(assignedRoleIds);
 
     if (checked) {
       nextAssignedRoleIds.add(roleId);
     } else {
       nextAssignedRoleIds.delete(roleId);
-      if (wasOriginallyAssigned && managingRoles) {
-        submit(
-          {
-            intent: "unassign_role",
-            user_id: managingRoles.user.id,
-            tenant_id: managingRoles.tenant.id,
-            role_id: roleId,
-          },
-          { method: "post" }
-        );
-      }
     }
 
     setAssignedRoleIds(nextAssignedRoleIds);
