@@ -37,6 +37,7 @@ COPY auth9-core/ ./
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/auth9-core/target \
+    touch src/main.rs && \
     cargo build --release && \
     cp /app/auth9-core/target/release/auth9-core /app/auth9-core-bin
 

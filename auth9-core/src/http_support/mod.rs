@@ -127,11 +127,21 @@ impl<T: Serialize> PaginatedResponse<T> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SuccessResponse<T> {
     pub data: T,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_warning: Option<String>,
 }
 
 impl<T: Serialize> SuccessResponse<T> {
     pub fn new(data: T) -> Self {
-        Self { data }
+        Self {
+            data,
+            password_warning: None,
+        }
+    }
+
+    pub fn with_password_warning(mut self, warning: Option<String>) -> Self {
+        self.password_warning = warning;
+        self
     }
 }
 
@@ -139,13 +149,21 @@ impl<T: Serialize> SuccessResponse<T> {
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct MessageResponse {
     pub message: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_warning: Option<String>,
 }
 
 impl MessageResponse {
     pub fn new(message: impl Into<String>) -> Self {
         Self {
             message: message.into(),
+            password_warning: None,
         }
+    }
+
+    pub fn with_password_warning(mut self, warning: Option<String>) -> Self {
+        self.password_warning = warning;
+        self
     }
 }
 

@@ -72,6 +72,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const locale = await resolveLocale(request);
   const error = url.searchParams.get("error");
+  const passwordWarning = url.searchParams.get("password_warning");
   const loginChallenge = url.searchParams.get("login_challenge") || undefined;
   const ldapView = url.searchParams.get("view") === "ldap";
   const ldapConnectorAlias = url.searchParams.get("connector") || undefined;
@@ -103,7 +104,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // CAPTCHA config unavailable — continue without it.
   }
 
-  return { error, apiBaseUrl, locale, branding, loginChallenge, socialProviders, ldapView, ldapConnectorAlias, captchaConfig };
+  return { error, passwordWarning, apiBaseUrl, locale, branding, loginChallenge, socialProviders, ldapView, ldapConnectorAlias, captchaConfig };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -393,6 +394,7 @@ function SocialProviderIcon({ providerType }: { providerType: string }) {
 export default function Login() {
   const loaderData = (useLoaderData<typeof loader>() ?? {}) as {
     error: string | null;
+    passwordWarning: string | null;
     apiBaseUrl: string;
     locale: string;
     branding: BrandingConfig;
@@ -400,6 +402,7 @@ export default function Login() {
   };
   const data = {
     error: loaderData.error ?? null,
+    passwordWarning: loaderData.passwordWarning ?? null,
     apiBaseUrl: loaderData.apiBaseUrl ?? "http://localhost:8080",
     locale: loaderData.locale ?? "zh-CN",
     branding: { ...DEFAULT_PUBLIC_BRANDING, ...(loaderData.branding ?? {}) },
@@ -578,6 +581,11 @@ export default function Login() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {data.passwordWarning && (
+              <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+                {data.passwordWarning}
+              </div>
+            )}
             {view === "password" ? (
               /* ── Password Login View ── */
               <div className="space-y-4">

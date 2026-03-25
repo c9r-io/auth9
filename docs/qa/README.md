@@ -90,7 +90,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (26 个文档, 122 个场景)
+### 认证流程 (27 个文档, 127 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 4 |
@@ -100,6 +100,7 @@
 | [auth/05-boundary.md](./auth/05-boundary.md) | 边界测试 | 3 |
 | [auth/06-client-credentials.md](./auth/06-client-credentials.md) | Client Credentials、服务对服务授权 | 5 |
 | [auth/07-public-endpoints.md](./auth/07-public-endpoints.md) | Public 端点访问控制与最小暴露 | 5 |
+| [auth/07-breached-password-enhancements.md](./auth/07-breached-password-enhancements.md) | 泄露密码增强（Login-time async breach check、租户级 breach_check_mode/min_breach_count、Warn 模式 password_warning） | 5 |
 | [auth/08-demo-auth-flow.md](./auth/08-demo-auth-flow.md) | Auth9 Demo 完整认证流程回归（等价 **Sign in with password** 路径） | 5 |
 | [auth/09-enterprise-sso-discovery.md](./auth/09-enterprise-sso-discovery.md) | 企业 SSO 域名发现与登录路由（API 主路径） | 5 |
 | [auth/10-b2b-onboarding-flow.md](./auth/10-b2b-onboarding-flow.md) | B2B 首次入驻流程（三种登录方式均可触发） | 5 |

@@ -415,6 +415,7 @@ pub async fn create<S: HasServices + HasBranding>(
     input.user.validate()?;
 
     // Validate password against tenant password policy if provided
+    let mut breach_warning: Option<String> = None;
     if let Some(ref password) = input.password {
         // Determine tenant for policy: explicit tenant_id > caller's token tenant > default
         let policy = if let Some(tenant_id) = effective_tenant_id {
@@ -430,13 +431,18 @@ pub async fn create<S: HasServices + HasBranding>(
             return Err(AppError::Validation(errors.join("; ")));
         }
 
-        // Check if password has been found in a data breach
-        if let Some(breach_svc) = state.breached_password_service() {
-            let result = breach_svc.check_password(password).await;
-            if result.is_breached {
-                return Err(AppError::Validation(
-                    "This password has been found in a data breach. Please choose a different password.".to_string(),
-                ));
+        // Check if password has been found in a data breach (respects tenant policy)
+        if policy.breach_check_mode != "disabled" {
+            if let Some(breach_svc) = state.breached_password_service() {
+                let result = breach_svc.check_password(password).await;
+                if result.is_breached && result.breach_count >= policy.min_breach_count {
+                    let msg = "This password has been found in a data breach. Please choose a different password.".to_string();
+                    if policy.breach_check_mode == "warn" {
+                        breach_warning = Some(msg);
+                    } else {
+                        return Err(AppError::Validation(msg));
+                    }
+                }
             }
         }
     }
@@ -507,7 +513,10 @@ pub async fn create<S: HasServices + HasBranding>(
         serde_json::to_value(&user).ok(),
     )
     .await;
-    Ok((StatusCode::CREATED, Json(SuccessResponse::new(user))))
+    Ok((
+        StatusCode::CREATED,
+        Json(SuccessResponse::new(user).with_password_warning(breach_warning)),
+    ))
 }
 
 /// Get current user's own profile

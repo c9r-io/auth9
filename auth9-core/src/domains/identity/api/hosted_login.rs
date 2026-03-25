@@ -170,6 +170,54 @@ pub async fn password_login<
         let _ = state.user_service().update_locked_until(user.id, None).await;
     }
 
+    // Async breach check: after successful password auth, check HIBP in background.
+    // If breached, create a required action to force password change on next login.
+    // Respects tenant-level breach_check_on_login and min_breach_count settings.
+    if let Some(breach_svc) = state.breached_password_service() {
+        // Resolve tenant password policy for breach check settings
+        let breach_policy = {
+            let memberships = state.user_service().get_user_tenants(user.id).await.unwrap_or_default();
+            if let Some(first) = memberships.first() {
+                state.tenant_service().get(first.tenant_id).await
+                    .ok()
+                    .and_then(|t| t.password_policy)
+                    .unwrap_or_default()
+            } else {
+                crate::models::password::PasswordPolicy::default()
+            }
+        };
+
+        if breach_policy.breach_check_on_login && breach_policy.breach_check_mode != "disabled" {
+            let breach_svc = breach_svc.clone();
+            let password_clone = password.clone();
+            let user_id = user.id;
+            let identity_subject = user.identity_subject.clone();
+            let identity_engine = state.identity_engine().clone();
+            let min_breach_count = breach_policy.min_breach_count;
+            tokio::spawn(async move {
+                let result = breach_svc.check_password(&password_clone).await;
+                if result.is_breached && result.breach_count >= min_breach_count {
+                    tracing::warn!(
+                        user_id = %user_id,
+                        breach_count = result.breach_count,
+                        "Breached password detected during login"
+                    );
+                    if let Err(e) = identity_engine
+                        .action_store()
+                        .create_action(
+                            &identity_subject,
+                            crate::domains::identity::service::required_actions::ACTION_UPDATE_PASSWORD,
+                            None,
+                        )
+                        .await
+                    {
+                        tracing::warn!(error = %e, "Failed to create breach password update action");
+                    }
+                }
+            });
+        }
+    }
+
     let ip_address = extract_client_ip(&headers);
     let user_agent = headers
         .get(axum::http::header::USER_AGENT)
@@ -590,7 +638,7 @@ pub async fn complete_password_reset<S: HasPasswordManagement + HasServices>(
     headers: HeaderMap,
     Json(input): Json<ResetPasswordInput>,
 ) -> Result<Json<MessageResponse>> {
-    state.password_service().reset_password(input).await?;
+    let breach_warning = state.password_service().reset_password(input).await?;
 
     let _ = write_audit_log_generic(
         &state,
@@ -603,9 +651,10 @@ pub async fn complete_password_reset<S: HasPasswordManagement + HasServices>(
     )
     .await;
 
-    Ok(Json(MessageResponse::new(
-        "Password has been reset successfully.",
-    )))
+    Ok(Json(
+        MessageResponse::new("Password has been reset successfully.")
+            .with_password_warning(breach_warning),
+    ))
 }
 
 #[cfg(test)]

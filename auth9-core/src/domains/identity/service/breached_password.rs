@@ -15,6 +15,7 @@ pub struct BreachCheckResult {
 }
 
 /// Service for checking passwords against the HIBP Pwned Passwords database.
+#[derive(Clone)]
 pub struct BreachedPasswordService {
     http_client: reqwest::Client,
     enabled: bool,

@@ -49,7 +49,7 @@ pub async fn reset_password<S: HasPasswordManagement + HasServices>(
     State(state): State<S>,
     Json(input): Json<ResetPasswordInput>,
 ) -> Result<Json<MessageResponse>, AppError> {
-    state.password_service().reset_password(input).await?;
+    let breach_warning = state.password_service().reset_password(input).await?;
 
     let _ = write_audit_log_generic(
         &state,
@@ -62,9 +62,10 @@ pub async fn reset_password<S: HasPasswordManagement + HasServices>(
     )
     .await;
 
-    Ok(Json(MessageResponse::new(
-        "Password has been reset successfully.",
-    )))
+    Ok(Json(
+        MessageResponse::new("Password has been reset successfully.")
+            .with_password_warning(breach_warning),
+    ))
 }
 
 #[utoipa::path(
@@ -84,7 +85,7 @@ pub async fn change_password<S: HasPasswordManagement + HasServices>(
     // Extract user ID from JWT token
     let user_id = extract_user_id(&state, &headers)?;
 
-    state
+    let breach_warning = state
         .password_service()
         .change_password(user_id, input)
         .await?;
@@ -100,9 +101,10 @@ pub async fn change_password<S: HasPasswordManagement + HasServices>(
     )
     .await;
 
-    Ok(Json(MessageResponse::new(
-        "Password has been changed successfully.",
-    )))
+    Ok(Json(
+        MessageResponse::new("Password has been changed successfully.")
+            .with_password_warning(breach_warning),
+    ))
 }
 
 #[utoipa::path(

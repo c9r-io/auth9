@@ -64,6 +64,15 @@ pub struct PasswordPolicy {
     /// Lockout duration in minutes
     #[serde(default = "default_lockout_duration")]
     pub lockout_duration_mins: u32,
+    /// Breached password check mode: "block" (default), "warn", or "disabled"
+    #[serde(default = "default_breach_check_mode")]
+    pub breach_check_mode: String,
+    /// Minimum breach count threshold before blocking/warning (default 1)
+    #[serde(default = "default_min_breach_count")]
+    pub min_breach_count: u64,
+    /// Check password against HIBP on login (async, default true)
+    #[serde(default = "default_true")]
+    pub breach_check_on_login: bool,
 }
 
 impl Default for PasswordPolicy {
@@ -78,6 +87,9 @@ impl Default for PasswordPolicy {
             history_count: 5,
             lockout_threshold: 5,
             lockout_duration_mins: 15,
+            breach_check_mode: "block".to_string(),
+            min_breach_count: 1,
+            breach_check_on_login: true,
         }
     }
 }
@@ -100,6 +112,14 @@ fn default_lockout_threshold() -> u32 {
 
 fn default_lockout_duration() -> u32 {
     15
+}
+
+fn default_breach_check_mode() -> String {
+    "block".to_string()
+}
+
+fn default_min_breach_count() -> u64 {
+    1
 }
 
 /// Input for requesting a password reset
@@ -153,6 +173,12 @@ pub struct UpdatePasswordPolicyInput {
     pub lockout_threshold: Option<u32>,
     #[validate(range(min = 1, max = 1440))]
     pub lockout_duration_mins: Option<u32>,
+    /// Breached password check mode: "block", "warn", or "disabled"
+    pub breach_check_mode: Option<String>,
+    /// Minimum breach count threshold
+    pub min_breach_count: Option<u64>,
+    /// Check password on login (async)
+    pub breach_check_on_login: Option<bool>,
 }
 
 impl PasswordPolicy {
@@ -221,6 +247,9 @@ mod tests {
         assert_eq!(policy.history_count, 5);
         assert_eq!(policy.lockout_threshold, 5);
         assert_eq!(policy.lockout_duration_mins, 15);
+        assert_eq!(policy.breach_check_mode, "block");
+        assert_eq!(policy.min_breach_count, 1);
+        assert!(policy.breach_check_on_login);
     }
 
     #[test]
@@ -362,6 +391,9 @@ mod tests {
             history_count: Some(5),
             lockout_threshold: Some(5),
             lockout_duration_mins: Some(30),
+            breach_check_mode: None,
+            min_breach_count: None,
+            breach_check_on_login: None,
         };
         assert!(input.validate().is_ok());
     }
@@ -378,6 +410,9 @@ mod tests {
             history_count: None,
             lockout_threshold: None,
             lockout_duration_mins: None,
+            breach_check_mode: None,
+            min_breach_count: None,
+            breach_check_on_login: None,
         };
         assert!(input.validate().is_err());
     }
@@ -394,6 +429,9 @@ mod tests {
             history_count: 5,
             lockout_threshold: 5,
             lockout_duration_mins: 30,
+            breach_check_mode: "block".to_string(),
+            min_breach_count: 1,
+            breach_check_on_login: true,
         };
 
         let json = serde_json::to_string(&policy).unwrap();

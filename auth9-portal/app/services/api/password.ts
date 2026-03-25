@@ -10,6 +10,9 @@ export interface PasswordPolicy {
   history_count: number;
   lockout_threshold: number;
   lockout_duration_mins: number;
+  breach_check_mode: string;
+  min_breach_count: number;
+  breach_check_on_login: boolean;
 }
 
 export const passwordApi = {

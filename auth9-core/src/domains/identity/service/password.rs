@@ -173,8 +173,9 @@ impl<
         Ok(())
     }
 
-    /// Reset password using a token
-    pub async fn reset_password(&self, input: ResetPasswordInput) -> Result<()> {
+    /// Reset password using a token.
+    /// Returns Ok(None) on success, Ok(Some(warning)) if breached password in warn mode.
+    pub async fn reset_password(&self, input: ResetPasswordInput) -> Result<Option<String>> {
         input.validate()?;
 
         // Hash the provided token to look up in database
@@ -202,7 +203,9 @@ impl<
         }
 
         // Check if password has been found in a data breach
-        self.check_breached_password(&input.new_password).await?;
+        let breach_warning = self
+            .check_breached_password(&input.new_password, &policy)
+            .await?;
 
         // Check password history before changing
         self.check_password_history(
@@ -249,15 +252,16 @@ impl<
 
         self.execute_post_change_password_actions(&user).await;
 
-        Ok(())
+        Ok(breach_warning)
     }
 
-    /// Change password for authenticated user
+    /// Change password for authenticated user.
+    /// Returns Ok(None) on success, Ok(Some(warning)) if breached password in warn mode.
     pub async fn change_password(
         &self,
         user_id: StringUuid,
         input: ChangePasswordInput,
-    ) -> Result<()> {
+    ) -> Result<Option<String>> {
         input.validate()?;
 
         // Get the user
@@ -275,7 +279,9 @@ impl<
         }
 
         // Check if password has been found in a data breach
-        self.check_breached_password(&input.new_password).await?;
+        let breach_warning = self
+            .check_breached_password(&input.new_password, &policy)
+            .await?;
 
         // Verify current password with identity backend
         let is_valid = self
@@ -341,7 +347,7 @@ impl<
 
         self.execute_post_change_password_actions(&user).await;
 
-        Ok(())
+        Ok(breach_warning)
     }
 
     /// Admin set password for a user (supports temporary passwords)
@@ -416,6 +422,15 @@ impl<
             lockout_duration_mins: input
                 .lockout_duration_mins
                 .unwrap_or(current.lockout_duration_mins),
+            breach_check_mode: input
+                .breach_check_mode
+                .unwrap_or(current.breach_check_mode),
+            min_breach_count: input
+                .min_breach_count
+                .unwrap_or(current.min_breach_count),
+            breach_check_on_login: input
+                .breach_check_on_login
+                .unwrap_or(current.breach_check_on_login),
         };
 
         if let Some(ref tenant_repo) = self.tenant_repo {
@@ -433,17 +448,28 @@ impl<
     }
 
     /// Check if the password has been found in a data breach (HIBP).
-    /// Returns Ok(()) if not breached or if the service is not configured.
-    async fn check_breached_password(&self, password: &str) -> Result<()> {
+    /// Returns Ok(None) if not breached or not configured.
+    /// Returns Ok(Some(warning)) in warn mode.
+    /// Returns Err in block mode.
+    async fn check_breached_password(
+        &self,
+        password: &str,
+        policy: &PasswordPolicy,
+    ) -> Result<Option<String>> {
+        if policy.breach_check_mode == "disabled" {
+            return Ok(None);
+        }
         if let Some(ref svc) = self.breached_password_service {
             let result = svc.check_password(password).await;
-            if result.is_breached {
-                return Err(AppError::Validation(
-                    "This password has been found in a data breach. Please choose a different password.".to_string(),
-                ));
+            if result.is_breached && result.breach_count >= policy.min_breach_count {
+                let msg = "This password has been found in a data breach. Please choose a different password.".to_string();
+                if policy.breach_check_mode == "warn" {
+                    return Ok(Some(msg));
+                }
+                return Err(AppError::Validation(msg));
             }
         }
-        Ok(())
+        Ok(None)
     }
 
     /// Check if the new password matches any of the user's recent passwords.
@@ -943,6 +969,9 @@ mod tests {
             history_count: None,
             lockout_threshold: None,
             lockout_duration_mins: None,
+            breach_check_mode: None,
+            min_breach_count: None,
+            breach_check_on_login: None,
         };
 
         let policy = service.update_policy(tenant_id, input).await.unwrap();
@@ -1498,6 +1527,9 @@ mod tests {
             history_count: None,
             lockout_threshold: None,
             lockout_duration_mins: None,
+            breach_check_mode: None,
+            min_breach_count: None,
+            breach_check_on_login: None,
         };
 
         let policy = service.update_policy(tenant_id, input).await.unwrap();

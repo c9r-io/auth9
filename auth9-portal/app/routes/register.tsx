@@ -55,11 +55,15 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    await userApi.create({
+    const result = await userApi.create({
       email: String(email),
       display_name: displayName ? String(displayName) : undefined,
       password: String(password),
     });
+    const warning = result?.password_warning;
+    if (warning) {
+      return redirect(`/login?password_warning=${encodeURIComponent(warning)}`);
+    }
     return redirect("/login");
   } catch (error) {
     return Response.json(

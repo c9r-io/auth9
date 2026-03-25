@@ -64,6 +64,7 @@ describe("Login Page", () => {
 
         expect(result).toEqual({
             error: null,
+            passwordWarning: null,
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: defaultBranding,
@@ -81,6 +82,7 @@ describe("Login Page", () => {
 
         expect(result).toEqual({
             error: "access_denied",
+            passwordWarning: null,
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: defaultBranding,
@@ -98,6 +100,7 @@ describe("Login Page", () => {
 
         expect(result).toEqual({
             error: "server_error",
+            passwordWarning: null,
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: defaultBranding,
@@ -126,6 +129,7 @@ describe("Login Page", () => {
 
         expect(result).toEqual({
             error: null,
+            passwordWarning: null,
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: { ...defaultBranding, allow_registration: true },
@@ -356,6 +360,7 @@ describe("Login Page", () => {
 
         expect(result).toEqual({
             error: null,
+            passwordWarning: null,
             apiBaseUrl: "http://localhost:8080",
             locale: "zh-CN",
             branding: defaultBranding,

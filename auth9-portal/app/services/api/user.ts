@@ -61,7 +61,7 @@ export const userApi = {
   create: async (
     input: CreateUserInput & { password?: string; tenant_id?: string },
     accessToken?: string
-  ): Promise<{ data: User }> => {
+  ): Promise<{ data: User; password_warning?: string }> => {
     const response = await fetch(`${API_BASE_URL}/api/v1/users`, {
       method: "POST",
       headers: getHeaders(accessToken),

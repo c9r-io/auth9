@@ -123,6 +123,9 @@ export async function action({ request }: ActionFunctionArgs) {
         history_count: parseInt(formData.get("historyCount") as string) || 0,
         lockout_threshold: parseInt(formData.get("lockoutThreshold") as string) || 0,
         lockout_duration_mins: parseInt(formData.get("lockoutDurationMins") as string) || 15,
+        breach_check_mode: (formData.get("breachCheckMode") as string) || "block",
+        min_breach_count: parseInt(formData.get("minBreachCount") as string) || 1,
+        breach_check_on_login: formData.get("breachCheckOnLogin") === "true",
       };
 
       await passwordApi.updatePasswordPolicy(tenantId, policy, accessToken || undefined);
@@ -328,6 +331,45 @@ export default function SecuritySettingsPage() {
                         <Switch id="requireSymbols" defaultChecked={policy.require_symbols} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("requireSymbols-hidden", checked)} />
                         <input id="requireSymbols-hidden" type="hidden" name="requireSymbols" value={policy.require_symbols ? "true" : "false"} />
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">{t("settings.securitySettings.breachProtectionTitle")}</h4>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="breachCheckMode">{t("settings.securitySettings.breachCheckMode")}</Label>
+                      <Select
+                        defaultValue={policy.breach_check_mode || "block"}
+                        onValueChange={(value) => {
+                          const input = document.getElementById("breachCheckMode-hidden") as HTMLInputElement | null;
+                          if (input) input.value = value;
+                        }}
+                      >
+                        <SelectTrigger id="breachCheckMode">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="block">{t("settings.securitySettings.breachModeBlock")}</SelectItem>
+                          <SelectItem value="warn">{t("settings.securitySettings.breachModeWarn")}</SelectItem>
+                          <SelectItem value="disabled">{t("settings.securitySettings.breachModeDisabled")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <input id="breachCheckMode-hidden" type="hidden" name="breachCheckMode" defaultValue={policy.breach_check_mode || "block"} />
+                      <p className="text-xs text-[var(--text-secondary)]">{t("settings.securitySettings.breachCheckModeHint")}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="minBreachCount">{t("settings.securitySettings.minBreachCount")}</Label>
+                      <Input id="minBreachCount" name="minBreachCount" type="number" min={1} max={1000000} defaultValue={policy.min_breach_count} />
+                      <p className="text-xs text-[var(--text-secondary)]">{t("settings.securitySettings.minBreachCountHint")}</p>
+                    </div>
+                  </div>
+                  <div className="flex min-h-[48px] items-center justify-between gap-4">
+                    <Label htmlFor="breachCheckOnLogin">{t("settings.securitySettings.breachCheckOnLogin")}</Label>
+                    <div className="shrink-0">
+                      <Switch id="breachCheckOnLogin" defaultChecked={policy.breach_check_on_login} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("breachCheckOnLogin-hidden", checked)} />
+                      <input id="breachCheckOnLogin-hidden" type="hidden" name="breachCheckOnLogin" value={policy.breach_check_on_login ? "true" : "false"} />
                     </div>
                   </div>
                 </div>
