@@ -68,7 +68,7 @@
 | [invitation/02-accept.md](./invitation/02-accept.md) | 接受邀请流程 | 5 |
 | [invitation/03-manage.md](./invitation/03-manage.md) | 撤销、删除、过滤 | 5 |
 
-### 会话与安全 (8 个文档, 39 个场景)
+### 会话与安全 (10 个文档, 49 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [session/01-session.md](./session/01-session.md) | 会话管理、撤销 | 5 |
@@ -79,6 +79,8 @@
 | [session/06-token-blacklist-failsafe.md](./session/06-token-blacklist-failsafe.md) | Token 黑名单 Fail-Closed 策略（Redis 故障 503、重试机制、向后兼容） | 4 |
 | [session/07-oauth-state-csrf.md](./session/07-oauth-state-csrf.md) | OAuth State CSRF 校验（cookie 存储、回调校验、过期、安全属性） | 5 |
 | [session/08-identity-token-whitelist-tenant-token-enforcement.md](./session/08-identity-token-whitelist-tenant-token-enforcement.md) | Identity Token 白名单、Tenant Token 强制校验、切租户 token 边界 | 5 |
+| [session/09-dynamic-audience-validation.md](./session/09-dynamic-audience-validation.md) | Tenant Access Token audience 动态验证（Redis SET 种子、Service CRUD 联动） | 5 |
+| [session/10-portal-session-redis.md](./session/10-portal-session-redis.md) | Portal Session Redis 后端迁移（Cookie opaque ID、Redis 存储、即时撤销、优雅降级） | 5 |
 
 ### Webhook (4 个文档, 17 个场景)
 | 文档 | 描述 | 场景数 |

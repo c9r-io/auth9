@@ -165,8 +165,10 @@ services:
       AUTH9_CORE_PUBLIC_URL: http://localhost:8080
       SESSION_SECRET: dev-session-secret-change-in-production
       SECURE_COOKIES: "false"  # Local Docker runs on HTTP; NODE_ENV=production is for build optimizations only
+      REDIS_URL: redis://redis:6379
     depends_on:
       - auth9-core
+      - redis
     networks:
       - auth9-network
     restart: unless-stopped

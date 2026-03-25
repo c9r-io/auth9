@@ -1,6 +1,7 @@
 import { createCookie, redirect } from "react-router";
 import { authApi } from "~/services/api";
 import { ApiResponseError } from "~/services/api/client";
+import { getRedis } from "~/services/redis.server";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -12,6 +13,9 @@ const isSecureCookies =
     : isProduction;
 const SESSION_MAX_AGE = 8 * 60 * 60;
 const DEFAULT_SESSION_SECRET = "default-secret-change-me"; // pragma: allowlist secret
+
+const SESSION_PREFIX = "portal:session:";
+const SESSION_TTL = SESSION_MAX_AGE;
 
 function resolveSessionSecret(): string {
   const sessionSecret = process.env.SESSION_SECRET;
@@ -31,6 +35,7 @@ export const NO_STORE_HEADERS: HeadersInit = {
   Expires: "0",
 };
 
+// Cookie now only stores an opaque session ID — all session data lives in Redis
 export const sessionCookie = createCookie("auth9_session", {
   secrets: [cookieSecret],
   path: "/",
@@ -41,6 +46,8 @@ export const sessionCookie = createCookie("auth9_session", {
 });
 
 export interface SessionData {
+  /** @internal — not persisted to Redis, used to track session ID across spreads */
+  _sid?: string;
   accessToken?: string;
   identityAccessToken?: string;
   tenantAccessToken?: string;
@@ -93,6 +100,46 @@ export async function clearOAuthStateCookie(): Promise<string> {
   return oauthStateCookie.serialize("", { maxAge: 0 });
 }
 
+// ==================== Redis Session Helpers ====================
+
+async function loadSession(sid: string): Promise<SessionData | null> {
+  try {
+    const raw = await getRedis().get(SESSION_PREFIX + sid);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null; // Redis unavailable → treat as no session
+  }
+}
+
+async function saveSession(sid: string, data: SessionData): Promise<string> {
+  try {
+    // Strip internal _sid before persisting
+    const { _sid, ...toStore } = data;
+    void _sid;
+    await getRedis().set(
+      SESSION_PREFIX + sid,
+      JSON.stringify(toStore),
+      "EX",
+      SESSION_TTL
+    );
+  } catch {
+    // Redis unavailable — cookie is set but data won't persist;
+    // next request will see no session and redirect to login
+  }
+  return sessionCookie.serialize({ sid });
+}
+
+async function removeSession(sid: string): Promise<void> {
+  try {
+    await getRedis().del(SESSION_PREFIX + sid);
+  } catch {
+    // Best-effort cleanup
+  }
+}
+
+// ==================== Session Normalization ====================
+
 function normalizeSession(session: SessionData | null): SessionData | null {
   if (!session) return null;
   const identityAccessToken = session.identityAccessToken || session.accessToken;
@@ -106,31 +153,36 @@ function normalizeSession(session: SessionData | null): SessionData | null {
   };
 }
 
+// ==================== Public Session API ====================
+
 export async function getSession(request: Request): Promise<SessionData | null> {
   const cookieHeader = request.headers.get("Cookie");
-  const raw = (await sessionCookie.parse(cookieHeader)) || null;
-  return normalizeSession(raw);
+  const cookie = await sessionCookie.parse(cookieHeader);
+  if (!cookie || !cookie.sid) return null;
+  const raw = await loadSession(cookie.sid);
+  const normalized = normalizeSession(raw);
+  if (normalized) normalized._sid = cookie.sid;
+  return normalized;
 }
 
-export async function commitSession(session: SessionData) {
+export async function commitSession(session: SessionData): Promise<string> {
+  const sid = session._sid || crypto.randomUUID();
   const normalized = normalizeSession(session) || session;
-  // Strip redundant and re-derivable fields to keep cookie under browser 4096-byte limit.
-  // - accessToken / expiresAt are aliases for identityAccessToken / identityExpiresAt
-  //   (normalizeSession reconstructs them on read).
-  // - tenantAccessToken / tenantExpiresAt can be re-exchanged on the server from
-  //   identityAccessToken + activeTenantId via ensureTenantSession().
-  const compact = { ...normalized };
-  delete compact.accessToken;
-  delete compact.expiresAt;
-  delete compact.tenantAccessToken;
-  delete compact.tenantExpiresAt;
-  return sessionCookie.serialize(compact);
+  // Strip redundant alias fields (reconstructed by normalizeSession on read)
+  const { _sid, accessToken, expiresAt, ...compact } = normalized;
+  void _sid;
+  void accessToken;
+  void expiresAt;
+  return saveSession(sid, compact as SessionData);
 }
 
-export async function destroySession(session: SessionData) {
-  void session;
+export async function destroySession(session: SessionData): Promise<string> {
+  const sid = session._sid;
+  if (sid) await removeSession(sid);
   return sessionCookie.serialize("", { maxAge: 0 });
 }
+
+// ==================== Token Lifecycle ====================
 
 function isTokenExpired(expiresAt?: number): boolean {
   if (!expiresAt) return true;

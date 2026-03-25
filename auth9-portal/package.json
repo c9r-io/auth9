@@ -44,6 +44,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "i18next": "^25.8.14",
+    "ioredis": "^5.10.1",
     "isbot": "^5.0.0",
     "lucide-react": "^0.469.0",
     "qrcode": "^1.5.4",
