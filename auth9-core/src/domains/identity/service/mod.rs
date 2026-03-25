@@ -1,3 +1,4 @@
+pub mod adaptive_mfa;
 pub mod breached_password;
 pub mod email_verification;
 pub mod identity_provider;
@@ -8,8 +9,10 @@ pub mod recovery_code;
 pub mod required_actions;
 pub mod session;
 pub mod totp;
+pub mod trusted_device;
 pub mod webauthn;
 
+pub use adaptive_mfa::{AdaptiveMfaEngine, AdaptiveMfaMode, AdaptiveMfaPolicy, MfaDecision};
 pub use breached_password::BreachedPasswordService;
 pub use email_verification::EmailVerificationService;
 pub use identity_provider::IdentityProviderService;
@@ -19,4 +22,5 @@ pub use recovery_code::RecoveryCodeService;
 pub use required_actions::RequiredActionService;
 pub use session::SessionService;
 pub use totp::TotpService;
+pub use trusted_device::TrustedDeviceService;
 pub use webauthn::WebAuthnService;

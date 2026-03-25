@@ -88,7 +88,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (25 个文档, 117 个场景)
+### 认证流程 (26 个文档, 122 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 4 |
@@ -122,8 +122,9 @@
 | [auth/30-mfa-self-service-portal.md](./auth/30-mfa-self-service-portal.md) | Portal MFA 自助管理页面（TOTP 设置/移除、恢复码生成弹窗、导航入口、警告阈值） | 5 |
 | [auth/31-email-otp-user-toggle.md](./auth/31-email-otp-user-toggle.md) | 用户级 Email OTP 开关（MFA 页面卡片、启用/停用、登录双重检查、认证保护） | 5 |
 | [auth/32-breached-password-detection.md](./auth/32-breached-password-detection.md) | 泄露密码检测 HIBP（注册/修改/重置拦截、k-Anonymity、Fail-open 降级、HIBP_ENABLED 开关） | 5 |
+| [auth/adaptive_mfa.md](./auth/adaptive_mfa.md) | Adaptive MFA 风险驱动策略（策略 GET/PUT、可信设备列表、持久化验证、认证保护） | 5 |
 
-### 系统设置 (4 个文档, 20 个场景)
+### 系统设置 (6 个文档, 30 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [settings/01-branding.md](./settings/01-branding.md) | 登录页品牌设置 | 5 |
@@ -131,6 +132,7 @@
 | [settings/03-email-templates.md](./settings/03-email-templates.md) | 邮件模板管理 | 5 |
 | [settings/04-security-malicious-ip-blacklist.md](./settings/04-security-malicious-ip-blacklist.md) | 平台级恶意 IP 黑名单配置、校验与 suspicious_ip 告警联动 | 5 |
 | [settings/captcha_bot_protection.md](./settings/captcha_bot_protection.md) | Bot 防护 CAPTCHA 集成（配置端点、Always/Adaptive 模式、前端组件） | 5 |
+| [settings/risk_policy.md](./settings/risk_policy.md) | 风险策略配置（Risk Policy API、阈值 CRUD、部分更新、认证保护） | 5 |
 
 ### 身份提供商 (5 个文档, 24 个场景)
 | 文档 | 描述 | 场景数 |
@@ -252,7 +254,7 @@
 | 邀请管理 | 3 | 15 |
 | 会话与安全 | 8 | 39 |
 | Webhook | 4 | 17 |
-| 认证流程 | 25 | 117 |
+| 认证流程 | 26 | 122 |
 | 系统设置 | 4 | 20 |
 | 身份提供商 | 3 | 15 |
 | Passkeys | 3 | 15 |
@@ -264,7 +266,7 @@
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
 | Identity Engine | 1 | 5 |
-| **总计** | **121** | **574** |
+| **总计** | **122** | **579** |
 
 ### 文档对齐记录
 

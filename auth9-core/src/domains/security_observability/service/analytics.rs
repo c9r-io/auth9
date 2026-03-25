@@ -113,6 +113,9 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
 
         self.login_event_repo.create(&input).await
@@ -141,6 +144,9 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
             failure_reason: Some(failure_reason.to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
 
         self.login_event_repo.create(&input).await
@@ -168,6 +174,9 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
 
         self.login_event_repo.create(&input).await
@@ -188,6 +197,9 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
             failure_reason: None,
             provider_alias: Some(metadata.provider_alias),
             provider_type: Some(metadata.provider_type),
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
 
         self.login_event_repo.create(&input).await
@@ -212,6 +224,9 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
             failure_reason: Some(reason.to_string()),
             provider_alias: Some(metadata.provider_alias),
             provider_type: Some(metadata.provider_type),
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
 
         self.login_event_repo.create(&input).await
@@ -237,6 +252,9 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
             failure_reason: None,
             provider_alias: Some(provider_alias.to_string()),
             provider_type: Some(provider_type.to_string()),
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
 
         self.login_event_repo.create(&input).await
@@ -262,6 +280,9 @@ impl<R: LoginEventRepository> AnalyticsService<R> {
             failure_reason: None,
             provider_alias: Some(provider_alias.to_string()),
             provider_type: Some(provider_type.to_string()),
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
 
         self.login_event_repo.create(&input).await
@@ -516,6 +537,9 @@ mod tests {
             failure_reason: Some("Account locked".to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
 
         let result = service.record_login_event(input).await;

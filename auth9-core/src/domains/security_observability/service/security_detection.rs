@@ -844,6 +844,10 @@ mod tests {
             failure_reason: Some("invalid_password".to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -938,6 +942,10 @@ mod tests {
             failure_reason: Some("invalid_password".to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1033,6 +1041,10 @@ mod tests {
             failure_reason: Some("invalid_password".to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1175,6 +1187,10 @@ mod tests {
             failure_reason: Some("invalid_password".to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1240,6 +1256,10 @@ mod tests {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1284,6 +1304,10 @@ mod tests {
                 failure_reason: None,
                 provider_alias: None,
                 provider_type: None,
+                latitude: None,
+                longitude: None,
+                country_code: None,
+                risk_score: None,
                 created_at: Utc::now() - Duration::hours(1),
             }])
         });
@@ -1325,6 +1349,10 @@ mod tests {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1369,6 +1397,10 @@ mod tests {
                 failure_reason: None,
                 provider_alias: None,
                 provider_type: None,
+                latitude: None,
+                longitude: None,
+                country_code: None,
+                risk_score: None,
                 created_at: Utc::now() - Duration::hours(1),
             }])
         });
@@ -1409,6 +1441,10 @@ mod tests {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1453,6 +1489,10 @@ mod tests {
                 failure_reason: None,
                 provider_alias: None,
                 provider_type: None,
+                latitude: None,
+                longitude: None,
+                country_code: None,
+                risk_score: None,
                 created_at: Utc::now() - Duration::minutes(30), // Only 30 minutes ago
             }])
         });
@@ -1494,6 +1534,10 @@ mod tests {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1540,6 +1584,10 @@ mod tests {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1608,6 +1656,10 @@ mod tests {
             failure_reason: Some("invalid_user_credentials".to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1829,6 +1881,10 @@ mod tests {
             failure_reason: Some("invalid_password".to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1902,6 +1958,10 @@ mod tests {
             failure_reason: Some("invalid_password".to_string()),
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 

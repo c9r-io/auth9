@@ -175,7 +175,8 @@ export const hostedLoginApi = {
 
   challengeTotp: async (
     mfaSessionToken: string,
-    code: string
+    code: string,
+    trustDevice?: boolean
   ): Promise<HostedLoginTokenResponse> => {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/mfa/challenge/totp`,
@@ -185,6 +186,7 @@ export const hostedLoginApi = {
         body: JSON.stringify({
           mfa_session_token: mfaSessionToken,
           code,
+          ...(trustDevice ? { trust_device: true } : {}),
         }),
       }
     );
@@ -193,7 +195,8 @@ export const hostedLoginApi = {
 
   challengeRecoveryCode: async (
     mfaSessionToken: string,
-    code: string
+    code: string,
+    trustDevice?: boolean
   ): Promise<HostedLoginTokenResponse> => {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/mfa/challenge/recovery-code`,
@@ -203,6 +206,7 @@ export const hostedLoginApi = {
         body: JSON.stringify({
           mfa_session_token: mfaSessionToken,
           code,
+          ...(trustDevice ? { trust_device: true } : {}),
         }),
       }
     );

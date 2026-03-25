@@ -1,14 +1,27 @@
 //! MFA API handlers
 //!
 //! Endpoints for TOTP enrollment/verification, recovery code management,
-//! MFA status, and MFA challenge verification during login.
+//! MFA status, MFA challenge verification during login, trusted device
+//! management, and adaptive MFA policy configuration.
 
 use crate::cache::CacheOperations;
+use crate::domains::identity::service::adaptive_mfa::{
+    AdaptiveMfaMode, AdaptiveMfaPolicy,
+};
 use crate::domains::identity::service::totp::TotpEnrollmentResponse;
+use crate::domains::identity::service::trusted_device::TrustedDevice;
 use crate::error::{AppError, Result};
-use crate::http_support::SuccessResponse;
+use crate::http_support::{MessageResponse, SuccessResponse};
+use crate::middleware::auth::AuthUser;
 use crate::models::common::StringUuid;
-use crate::state::{HasCache, HasMfa, HasServices, HasSessionManagement, HasWebAuthn};
+use crate::repository::adaptive_mfa_policy::{
+    AdaptiveMfaPolicyRepository, AdaptiveMfaPolicyRow,
+};
+use crate::state::{
+    HasAdaptiveMfa, HasCache, HasMfa, HasServices, HasSessionManagement, HasTrustedDevices,
+    HasWebAuthn,
+};
+use axum::extract::Path;
 use axum::{extract::State, Json};
 use axum_extra::headers::{authorization::Bearer, Authorization};
 use axum_extra::TypedHeader;
@@ -42,6 +55,8 @@ pub struct TotpEnrollVerifyRequest {
 pub struct MfaChallengeVerifyRequest {
     pub mfa_session_token: String,
     pub code: String,
+    #[serde(default)]
+    pub trust_device: Option<bool>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -50,6 +65,7 @@ pub struct MfaChallengeResponse {
     pub mfa_session_token: String,
     pub mfa_methods: Vec<String>,
     pub expires_in: u64,
+    pub trust_device_available: bool,
 }
 
 /// MFA session data stored in Redis
@@ -61,6 +77,7 @@ pub struct MfaSessionData {
     pub identity_subject: String,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
+    pub device_fingerprint: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -68,6 +85,27 @@ pub struct HostedLoginTokenResponse {
     pub access_token: String,
     pub token_type: String,
     pub expires_in: i64,
+}
+
+/// Adaptive MFA policy response
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct AdaptiveMfaPolicyResponse {
+    pub tenant_id: String,
+    pub mode: AdaptiveMfaMode,
+    pub risk_threshold: u8,
+    pub always_require_for_admins: bool,
+    pub trust_device_days: u16,
+    pub step_up_operations: Vec<String>,
+}
+
+/// Update adaptive MFA policy request
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct UpdateAdaptiveMfaPolicyRequest {
+    pub mode: Option<AdaptiveMfaMode>,
+    pub risk_threshold: Option<u8>,
+    pub always_require_for_admins: Option<bool>,
+    pub trust_device_days: Option<u16>,
+    pub step_up_operations: Option<Vec<String>>,
 }
 
 pub const MFA_SESSION_TTL_SECS: u64 = 300;
@@ -172,7 +210,7 @@ pub async fn totp_enroll_verify<S: HasMfa + HasServices>(
 pub async fn totp_remove<S: HasMfa + HasServices + HasWebAuthn>(
     State(state): State<S>,
     TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
-) -> Result<Json<crate::http_support::MessageResponse>> {
+) -> Result<Json<MessageResponse>> {
     let claims = HasServices::jwt_manager(&state).verify_identity_token(bearer.token())?;
     let user_id = &claims.sub;
 
@@ -191,9 +229,7 @@ pub async fn totp_remove<S: HasMfa + HasServices + HasWebAuthn>(
         }
     }
 
-    Ok(Json(crate::http_support::MessageResponse::new(
-        "TOTP removed successfully.",
-    )))
+    Ok(Json(MessageResponse::new("TOTP removed successfully.")))
 }
 
 /// POST /api/v1/mfa/recovery-codes/generate
@@ -236,11 +272,20 @@ pub async fn email_otp_enable<S: HasMfa + HasWebAuthn + HasServices>(
 
     let uid = parse_user_id(user_id)?;
     let user = state.user_service().get(uid).await?;
-    state.user_service().set_email_otp_enabled(user.id, true).await?;
+    state
+        .user_service()
+        .set_email_otp_enabled(user.id, true)
+        .await?;
 
     let totp_enabled = state.totp_service().has_totp(user_id).await?;
-    let webauthn_creds = state.webauthn_service().list_credentials(user_id, None).await?;
-    let recovery_codes_remaining = state.recovery_code_service().remaining_count(user_id).await?;
+    let webauthn_creds = state
+        .webauthn_service()
+        .list_credentials(user_id, None)
+        .await?;
+    let recovery_codes_remaining = state
+        .recovery_code_service()
+        .remaining_count(user_id)
+        .await?;
 
     Ok(Json(SuccessResponse::new(MfaStatusResponse {
         totp_enabled,
@@ -260,11 +305,20 @@ pub async fn email_otp_disable<S: HasMfa + HasWebAuthn + HasServices>(
 
     let uid = parse_user_id(user_id)?;
     let user = state.user_service().get(uid).await?;
-    state.user_service().set_email_otp_enabled(user.id, false).await?;
+    state
+        .user_service()
+        .set_email_otp_enabled(user.id, false)
+        .await?;
 
     let totp_enabled = state.totp_service().has_totp(user_id).await?;
-    let webauthn_creds = state.webauthn_service().list_credentials(user_id, None).await?;
-    let recovery_codes_remaining = state.recovery_code_service().remaining_count(user_id).await?;
+    let webauthn_creds = state
+        .webauthn_service()
+        .list_credentials(user_id, None)
+        .await?;
+    let recovery_codes_remaining = state
+        .recovery_code_service()
+        .remaining_count(user_id)
+        .await?;
 
     Ok(Json(SuccessResponse::new(MfaStatusResponse {
         totp_enabled,
@@ -277,7 +331,9 @@ pub async fn email_otp_disable<S: HasMfa + HasWebAuthn + HasServices>(
 // ==================== MFA Challenge Endpoints (public, during login) ====================
 
 /// POST /api/v1/mfa/challenge/totp
-pub async fn challenge_totp<S: HasMfa + HasCache + HasServices + HasSessionManagement>(
+pub async fn challenge_totp<
+    S: HasMfa + HasCache + HasServices + HasSessionManagement + HasTrustedDevices + HasAdaptiveMfa,
+>(
     State(state): State<S>,
     Json(input): Json<MfaChallengeVerifyRequest>,
 ) -> Result<Json<HostedLoginTokenResponse>> {
@@ -292,11 +348,16 @@ pub async fn challenge_totp<S: HasMfa + HasCache + HasServices + HasSessionManag
         return Err(AppError::Unauthorized("Invalid TOTP code.".to_string()));
     }
 
+    // Optionally trust the device after successful MFA
+    maybe_trust_device(&state, &session_data, input.trust_device).await;
+
     issue_token_after_mfa(&state, &session_data).await
 }
 
 /// POST /api/v1/mfa/challenge/recovery-code
-pub async fn challenge_recovery_code<S: HasMfa + HasCache + HasServices + HasSessionManagement>(
+pub async fn challenge_recovery_code<
+    S: HasMfa + HasCache + HasServices + HasSessionManagement + HasTrustedDevices + HasAdaptiveMfa,
+>(
     State(state): State<S>,
     Json(input): Json<MfaChallengeVerifyRequest>,
 ) -> Result<Json<HostedLoginTokenResponse>> {
@@ -313,7 +374,202 @@ pub async fn challenge_recovery_code<S: HasMfa + HasCache + HasServices + HasSes
         ));
     }
 
+    // Optionally trust the device after successful MFA
+    maybe_trust_device(&state, &session_data, input.trust_device).await;
+
     issue_token_after_mfa(&state, &session_data).await
+}
+
+// ==================== Trusted Device Endpoints (authenticated) ====================
+
+/// GET /api/v1/mfa/trusted-devices
+pub async fn list_trusted_devices<S: HasServices + HasTrustedDevices>(
+    State(state): State<S>,
+    TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
+) -> Result<Json<SuccessResponse<Vec<TrustedDevice>>>> {
+    let claims = HasServices::jwt_manager(&state).verify_identity_token(bearer.token())?;
+    let user_id = parse_user_id(&claims.sub)?;
+
+    let devices = state.trusted_device_service().list_devices(user_id).await?;
+    Ok(Json(SuccessResponse::new(devices)))
+}
+
+/// DELETE /api/v1/mfa/trusted-devices/{id}
+pub async fn revoke_trusted_device<S: HasServices + HasTrustedDevices>(
+    State(state): State<S>,
+    TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
+    Path(device_id): Path<String>,
+) -> Result<Json<MessageResponse>> {
+    let _claims = HasServices::jwt_manager(&state).verify_identity_token(bearer.token())?;
+
+    let device_uuid = uuid::Uuid::parse_str(&device_id)
+        .map_err(|_| AppError::BadRequest("Invalid device ID".to_string()))?;
+
+    state
+        .trusted_device_service()
+        .revoke_device(StringUuid::from(device_uuid))
+        .await?;
+
+    Ok(Json(MessageResponse::new(
+        "Trusted device revoked successfully.",
+    )))
+}
+
+/// DELETE /api/v1/mfa/trusted-devices
+pub async fn revoke_all_trusted_devices<S: HasServices + HasTrustedDevices>(
+    State(state): State<S>,
+    TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
+) -> Result<Json<MessageResponse>> {
+    let claims = HasServices::jwt_manager(&state).verify_identity_token(bearer.token())?;
+    let user_id = parse_user_id(&claims.sub)?;
+
+    let count = state
+        .trusted_device_service()
+        .revoke_all(user_id)
+        .await?;
+
+    Ok(Json(MessageResponse::new(&format!(
+        "Revoked {} trusted device(s).",
+        count
+    ))))
+}
+
+// ==================== Adaptive MFA Policy Endpoints (authenticated) ====================
+
+/// GET /api/v1/mfa/adaptive-policy
+pub async fn get_adaptive_mfa_policy<S: HasServices + HasAdaptiveMfa>(
+    State(state): State<S>,
+    auth: AuthUser,
+) -> Result<Json<SuccessResponse<AdaptiveMfaPolicyResponse>>> {
+    use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
+
+    enforce(
+        state.config(),
+        &auth,
+        &PolicyInput {
+            action: PolicyAction::SecurityAlertRead,
+            scope: ResourceScope::Global,
+        },
+    )?;
+
+    let tenant_uuid = auth.tenant_id.unwrap_or(uuid::Uuid::nil());
+    let tenant_id = StringUuid::from(tenant_uuid);
+
+    let policy = match state
+        .adaptive_mfa_policy_repo()
+        .find_by_tenant_id(tenant_id)
+        .await?
+    {
+        Some(row) => AdaptiveMfaPolicyResponse {
+            tenant_id: row.tenant_id.to_string(),
+            mode: row
+                .mode
+                .parse::<AdaptiveMfaMode>()
+                .unwrap_or(AdaptiveMfaMode::Always),
+            risk_threshold: row.risk_threshold,
+            always_require_for_admins: row.always_require_for_admins,
+            trust_device_days: row.trust_device_days,
+            step_up_operations: row.step_up_operations,
+        },
+        None => {
+            let default = AdaptiveMfaPolicy::default_for_tenant(&tenant_id.to_string());
+            AdaptiveMfaPolicyResponse {
+                tenant_id: default.tenant_id,
+                mode: default.mode,
+                risk_threshold: default.risk_threshold,
+                always_require_for_admins: default.always_require_for_admins,
+                trust_device_days: default.trust_device_days,
+                step_up_operations: default.step_up_operations,
+            }
+        }
+    };
+
+    Ok(Json(SuccessResponse::new(policy)))
+}
+
+/// PUT /api/v1/mfa/adaptive-policy
+pub async fn update_adaptive_mfa_policy<S: HasServices + HasAdaptiveMfa>(
+    State(state): State<S>,
+    auth: AuthUser,
+    Json(body): Json<UpdateAdaptiveMfaPolicyRequest>,
+) -> Result<Json<SuccessResponse<AdaptiveMfaPolicyResponse>>> {
+    use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
+
+    enforce(
+        state.config(),
+        &auth,
+        &PolicyInput {
+            action: PolicyAction::SecurityAlertResolve, // write permission
+            scope: ResourceScope::Global,
+        },
+    )?;
+
+    let tenant_uuid = auth.tenant_id.unwrap_or(uuid::Uuid::nil());
+    let tenant_id = StringUuid::from(tenant_uuid);
+
+    let existing: Option<AdaptiveMfaPolicyRow> = state
+        .adaptive_mfa_policy_repo()
+        .find_by_tenant_id(tenant_id)
+        .await?;
+
+    let default = AdaptiveMfaPolicy::default_for_tenant(&tenant_id.to_string());
+
+    let mode = body
+        .mode
+        .unwrap_or_else(|| {
+            existing
+                .as_ref()
+                .and_then(|r| r.mode.parse::<AdaptiveMfaMode>().ok())
+                .unwrap_or(default.mode)
+        });
+
+    let row = AdaptiveMfaPolicyRow {
+        id: existing
+            .as_ref()
+            .map(|r| r.id)
+            .unwrap_or_else(StringUuid::new_v4),
+        tenant_id,
+        mode: mode.to_string(),
+        risk_threshold: body
+            .risk_threshold
+            .unwrap_or(existing.as_ref().map(|r| r.risk_threshold).unwrap_or(default.risk_threshold)),
+        always_require_for_admins: body.always_require_for_admins.unwrap_or(
+            existing
+                .as_ref()
+                .map(|r| r.always_require_for_admins)
+                .unwrap_or(default.always_require_for_admins),
+        ),
+        trust_device_days: body.trust_device_days.unwrap_or(
+            existing
+                .as_ref()
+                .map(|r| r.trust_device_days)
+                .unwrap_or(default.trust_device_days),
+        ),
+        step_up_operations: body.step_up_operations.unwrap_or_else(|| {
+            existing
+                .as_ref()
+                .map(|r| r.step_up_operations.clone())
+                .unwrap_or(default.step_up_operations)
+        }),
+        created_at: existing
+            .as_ref()
+            .map(|r| r.created_at)
+            .unwrap_or_else(chrono::Utc::now),
+        updated_at: chrono::Utc::now(),
+    };
+
+    state.adaptive_mfa_policy_repo().upsert(&row).await?;
+
+    let policy = AdaptiveMfaPolicyResponse {
+        tenant_id: row.tenant_id.to_string(),
+        mode,
+        risk_threshold: row.risk_threshold,
+        always_require_for_admins: row.always_require_for_admins,
+        trust_device_days: row.trust_device_days,
+        step_up_operations: row.step_up_operations,
+    };
+
+    Ok(Json(SuccessResponse::new(policy)))
 }
 
 // ==================== Helpers ====================
@@ -331,6 +587,71 @@ async fn consume_mfa_session<S: HasCache>(state: &S, token: &str) -> Result<MfaS
 
     serde_json::from_str(&session_json)
         .map_err(|e| AppError::Internal(anyhow::anyhow!("Failed to parse MFA session data: {}", e)))
+}
+
+/// After successful MFA verification, optionally trust the device.
+async fn maybe_trust_device<S: HasServices + HasTrustedDevices + HasAdaptiveMfa>(
+    state: &S,
+    session_data: &MfaSessionData,
+    trust_device: Option<bool>,
+) {
+    if trust_device != Some(true) {
+        return;
+    }
+    let fingerprint = match &session_data.device_fingerprint {
+        Some(fp) => fp.clone(),
+        None => return,
+    };
+
+    let user_id = match parse_user_id(&session_data.user_id) {
+        Ok(uid) => uid,
+        Err(_) => return,
+    };
+
+    // Load policy to get trust_device_days
+    let trust_days = {
+        let tenant_memberships = state
+            .user_service()
+            .get_user_tenants(user_id)
+            .await
+            .unwrap_or_default();
+
+        if let Some(first) = tenant_memberships.first() {
+            match state
+                .adaptive_mfa_policy_repo()
+                .find_by_tenant_id(first.tenant_id)
+                .await
+            {
+                Ok(Some(row)) => row.trust_device_days,
+                _ => 30, // default
+            }
+        } else {
+            30
+        }
+    };
+
+    let tenant_id = {
+        let memberships = state
+            .user_service()
+            .get_user_tenants(user_id)
+            .await
+            .unwrap_or_default();
+        memberships.first().map(|m| m.tenant_id)
+    };
+
+    if let Err(e) = state
+        .trusted_device_service()
+        .trust_device(
+            user_id,
+            tenant_id,
+            &fingerprint,
+            Some("Browser (via MFA)"),
+            trust_days,
+        )
+        .await
+    {
+        tracing::warn!(error = %e, "Failed to trust device after MFA");
+    }
 }
 
 async fn issue_token_after_mfa<S: HasServices + HasSessionManagement>(
@@ -378,11 +699,21 @@ mod tests {
             identity_subject: "sub-1".to_string(),
             ip_address: Some("127.0.0.1".to_string()),
             user_agent: Some("Mozilla/5.0".to_string()),
+            device_fingerprint: Some("abc123".to_string()),
         };
         let json = serde_json::to_string(&data).unwrap();
         let parsed: MfaSessionData = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.user_id, "user-1");
         assert_eq!(parsed.email, "test@example.com");
+        assert_eq!(parsed.device_fingerprint, Some("abc123".to_string()));
+    }
+
+    #[test]
+    fn test_mfa_session_data_backward_compat() {
+        // Ensure old sessions without device_fingerprint still deserialize
+        let json = r#"{"user_id":"u1","email":"e@e.com","display_name":null,"identity_subject":"s1","ip_address":null,"user_agent":null}"#;
+        let parsed: MfaSessionData = serde_json::from_str(json).unwrap();
+        assert_eq!(parsed.device_fingerprint, None);
     }
 
     #[test]
@@ -392,9 +723,40 @@ mod tests {
             mfa_session_token: "token-123".to_string(),
             mfa_methods: vec!["totp".to_string()],
             expires_in: 300,
+            trust_device_available: true,
         };
         let json = serde_json::to_string(&response).unwrap();
         assert!(json.contains("mfa_required"));
         assert!(json.contains("mfa_session_token"));
+        assert!(json.contains("trust_device_available"));
+    }
+
+    #[test]
+    fn test_mfa_challenge_verify_request_defaults() {
+        let json = r#"{"mfa_session_token":"tok","code":"123456"}"#;
+        let req: MfaChallengeVerifyRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.trust_device, None);
+    }
+
+    #[test]
+    fn test_mfa_challenge_verify_request_with_trust() {
+        let json = r#"{"mfa_session_token":"tok","code":"123456","trust_device":true}"#;
+        let req: MfaChallengeVerifyRequest = serde_json::from_str(json).unwrap();
+        assert_eq!(req.trust_device, Some(true));
+    }
+
+    #[test]
+    fn test_adaptive_mfa_policy_response_serde() {
+        let policy = AdaptiveMfaPolicyResponse {
+            tenant_id: "t1".to_string(),
+            mode: AdaptiveMfaMode::Adaptive,
+            risk_threshold: 40,
+            always_require_for_admins: true,
+            trust_device_days: 30,
+            step_up_operations: vec!["change_password".to_string()],
+        };
+        let json = serde_json::to_string(&policy).unwrap();
+        assert!(json.contains("adaptive"));
+        assert!(json.contains("risk_threshold"));
     }
 }

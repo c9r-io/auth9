@@ -42,6 +42,7 @@ use crate::repository::{
     scim_log::ScimProvisioningLogRepositoryImpl, scim_token::ScimTokenRepositoryImpl,
     security_alert::SecurityAlertRepositoryImpl, service::ServiceRepositoryImpl,
     service_branding::ServiceBrandingRepositoryImpl, session::SessionRepositoryImpl,
+    tenant_risk_policy::TenantRiskPolicyRepositoryImpl,
     system_settings::SystemSettingsRepositoryImpl, tenant::TenantRepositoryImpl,
     user::UserRepositoryImpl, webhook::WebhookRepositoryImpl,
 };
@@ -169,6 +170,13 @@ pub struct AppState {
     pub breached_password_service: Arc<BreachedPasswordService>,
     pub ldap_authenticator:
         Arc<dyn crate::domains::identity::service::ldap::LdapAuthenticator>,
+    pub risk_policy_repo: Arc<TenantRiskPolicyRepositoryImpl>,
+    pub trusted_device_service: Arc<
+        crate::domains::identity::service::TrustedDeviceService<
+            crate::repository::trusted_device::TrustedDeviceRepositoryImpl,
+        >,
+    >,
+    pub adaptive_mfa_policy_repo: Arc<crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepositoryImpl>,
 }
 
 /// Implement HasServices trait for production AppState
@@ -452,6 +460,32 @@ impl crate::state::HasLdapAuth for AppState {
         &self,
     ) -> &dyn crate::domains::identity::service::ldap::LdapAuthenticator {
         &*self.ldap_authenticator
+    }
+}
+
+/// Implement HasRiskPolicy trait for production AppState
+impl crate::domains::security_observability::api::risk::HasRiskPolicy for AppState {
+    type RiskPolicyRepo = TenantRiskPolicyRepositoryImpl;
+    fn risk_policy_repo(&self) -> &Self::RiskPolicyRepo {
+        &self.risk_policy_repo
+    }
+}
+
+/// Implement HasTrustedDevices trait for production AppState
+impl crate::state::HasTrustedDevices for AppState {
+    type TrustedDeviceRepo = crate::repository::trusted_device::TrustedDeviceRepositoryImpl;
+    fn trusted_device_service(
+        &self,
+    ) -> &crate::domains::identity::service::TrustedDeviceService<Self::TrustedDeviceRepo> {
+        &self.trusted_device_service
+    }
+}
+
+/// Implement HasAdaptiveMfa trait for production AppState
+impl crate::state::HasAdaptiveMfa for AppState {
+    type AdaptiveMfaPolicyRepo = crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepositoryImpl;
+    fn adaptive_mfa_policy_repo(&self) -> &Self::AdaptiveMfaPolicyRepo {
+        &self.adaptive_mfa_policy_repo
     }
 }
 
@@ -849,6 +883,19 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         breached_password_service,
         ldap_authenticator: Arc::new(
             crate::domains::identity::service::ldap::DefaultLdapAuthenticator::new(),
+        ),
+        risk_policy_repo: Arc::new(TenantRiskPolicyRepositoryImpl::new(db_pool.clone())),
+        trusted_device_service: Arc::new(
+            crate::domains::identity::service::TrustedDeviceService::new(
+                Arc::new(crate::repository::trusted_device::TrustedDeviceRepositoryImpl::new(
+                    db_pool.clone(),
+                )),
+            ),
+        ),
+        adaptive_mfa_policy_repo: Arc::new(
+            crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepositoryImpl::new(
+                db_pool.clone(),
+            ),
         ),
     };
 
@@ -1374,7 +1421,10 @@ pub fn build_full_router<S>(
     prometheus_handle: Arc<Option<PrometheusHandle>>,
 ) -> Router
 where
-    S: domains::BoundedContextRouterState + HasServices + HasCache,
+    S: domains::BoundedContextRouterState
+        + HasServices
+        + HasCache
+        + crate::domains::security_observability::api::risk::HasRiskPolicy,
 {
     // Capture production flag before state is moved
     let is_production = state.config().is_production();

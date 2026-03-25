@@ -15,8 +15,9 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
             r#"
             INSERT INTO login_events (user_id, email, tenant_id, event_type, ip_address,
                                       user_agent, device_type, location, session_id,
-                                      failure_reason, provider_alias, provider_type, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+                                      failure_reason, provider_alias, provider_type,
+                                      latitude, longitude, country_code, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
             "#,
         )
         .bind(input.user_id)
@@ -31,6 +32,9 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
         .bind(&input.failure_reason)
         .bind(&input.provider_alias)
         .bind(&input.provider_type)
+        .bind(input.latitude)
+        .bind(input.longitude)
+        .bind(&input.country_code)
         .execute(&self.pool)
         .await?;
 
@@ -42,7 +46,7 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
             r#"
             SELECT id, user_id, email, tenant_id, event_type, ip_address, user_agent,
                    device_type, location, session_id, failure_reason, provider_alias,
-                   provider_type, created_at
+                   provider_type, latitude, longitude, country_code, risk_score, created_at
             FROM login_events
             WHERE id = ?
             "#,
@@ -59,7 +63,7 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
             r#"
             SELECT id, user_id, email, tenant_id, event_type, ip_address, user_agent,
                    device_type, location, session_id, failure_reason, provider_alias,
-                   provider_type, created_at
+                   provider_type, latitude, longitude, country_code, risk_score, created_at
             FROM login_events
             ORDER BY created_at DESC
             LIMIT ? OFFSET ?
@@ -83,7 +87,7 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
             r#"
             SELECT id, user_id, email, tenant_id, event_type, ip_address, user_agent,
                    device_type, location, session_id, failure_reason, provider_alias,
-                   provider_type, created_at
+                   provider_type, latitude, longitude, country_code, risk_score, created_at
             FROM login_events
             WHERE user_id = ?
             ORDER BY created_at DESC
@@ -109,7 +113,7 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
             r#"
             SELECT id, user_id, email, tenant_id, event_type, ip_address, user_agent,
                    device_type, location, session_id, failure_reason, provider_alias,
-                   provider_type, created_at
+                   provider_type, latitude, longitude, country_code, risk_score, created_at
             FROM login_events
             WHERE tenant_id = ?
             ORDER BY created_at DESC
@@ -153,7 +157,7 @@ impl LoginEventRepository for LoginEventRepositoryImpl {
             r#"
             SELECT id, user_id, email, tenant_id, event_type, ip_address, user_agent,
                    device_type, location, session_id, failure_reason, provider_alias,
-                   provider_type, created_at
+                   provider_type, latitude, longitude, country_code, risk_score, created_at
             FROM login_events
             WHERE email = ?
             ORDER BY created_at DESC

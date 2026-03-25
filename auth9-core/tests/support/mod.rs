@@ -2644,6 +2644,10 @@ impl LoginEventRepository for TestLoginEventRepository {
             failure_reason: input.failure_reason.clone(),
             provider_alias: input.provider_alias.clone(),
             provider_type: input.provider_type.clone(),
+            latitude: input.latitude,
+            longitude: input.longitude,
+            country_code: input.country_code.clone(),
+            risk_score: None,
             created_at: Utc::now(),
         };
         self.events.write().await.push(event);
@@ -3920,5 +3924,206 @@ impl SamlApplicationRepository for TestSamlApplicationRepository {
         let len_before = apps.len();
         apps.retain(|a| a.tenant_id != tenant_id);
         Ok((len_before - apps.len()) as u64)
+    }
+}
+
+// ============================================================================
+// Test TenantRiskPolicyRepository
+// ============================================================================
+
+use auth9_core::repository::tenant_risk_policy::{
+    TenantRiskPolicyRepository, TenantRiskPolicyRow,
+};
+
+pub struct TestTenantRiskPolicyRepository {
+    rows: RwLock<Vec<TenantRiskPolicyRow>>,
+}
+
+impl TestTenantRiskPolicyRepository {
+    pub fn new() -> Self {
+        Self {
+            rows: RwLock::new(vec![]),
+        }
+    }
+}
+
+impl Default for TestTenantRiskPolicyRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl TenantRiskPolicyRepository for TestTenantRiskPolicyRepository {
+    async fn find_by_tenant_id(
+        &self,
+        tenant_id: StringUuid,
+    ) -> Result<Option<TenantRiskPolicyRow>> {
+        let rows = self.rows.read().await;
+        Ok(rows.iter().find(|r| r.tenant_id == tenant_id).cloned())
+    }
+
+    async fn upsert(&self, row: &TenantRiskPolicyRow) -> Result<()> {
+        let mut rows = self.rows.write().await;
+        rows.retain(|r| r.tenant_id != row.tenant_id);
+        rows.push(row.clone());
+        Ok(())
+    }
+
+    async fn delete_by_tenant_id(&self, tenant_id: StringUuid) -> Result<u64> {
+        let mut rows = self.rows.write().await;
+        let len_before = rows.len();
+        rows.retain(|r| r.tenant_id != tenant_id);
+        Ok((len_before - rows.len()) as u64)
+    }
+}
+
+// ============================================================================
+// Test TrustedDeviceRepository
+// ============================================================================
+
+use auth9_core::domains::identity::service::trusted_device::TrustedDevice;
+use auth9_core::repository::trusted_device::TrustedDeviceRepository;
+
+pub struct TestTrustedDeviceRepository {
+    devices: RwLock<Vec<TrustedDevice>>,
+}
+
+impl TestTrustedDeviceRepository {
+    pub fn new() -> Self {
+        Self {
+            devices: RwLock::new(vec![]),
+        }
+    }
+}
+
+impl Default for TestTrustedDeviceRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl TrustedDeviceRepository for TestTrustedDeviceRepository {
+    async fn find_by_user_and_fingerprint(
+        &self,
+        user_id: StringUuid,
+        fingerprint: &str,
+    ) -> Result<Option<TrustedDevice>> {
+        let devices = self.devices.read().await;
+        Ok(devices
+            .iter()
+            .find(|d| {
+                d.user_id == user_id
+                    && d.device_fingerprint == fingerprint
+                    && !d.revoked
+                    && d.expires_at > chrono::Utc::now()
+            })
+            .cloned())
+    }
+
+    async fn create(&self, device: &TrustedDevice) -> Result<()> {
+        self.devices.write().await.push(device.clone());
+        Ok(())
+    }
+
+    async fn list_by_user(&self, user_id: StringUuid) -> Result<Vec<TrustedDevice>> {
+        let devices = self.devices.read().await;
+        Ok(devices
+            .iter()
+            .filter(|d| d.user_id == user_id)
+            .cloned()
+            .collect())
+    }
+
+    async fn revoke(&self, device_id: StringUuid) -> Result<()> {
+        let mut devices = self.devices.write().await;
+        if let Some(d) = devices.iter_mut().find(|d| d.id == device_id) {
+            d.revoked = true;
+        }
+        Ok(())
+    }
+
+    async fn revoke_all_by_user(&self, user_id: StringUuid) -> Result<u64> {
+        let mut devices = self.devices.write().await;
+        let mut count = 0u64;
+        for d in devices.iter_mut().filter(|d| d.user_id == user_id && !d.revoked) {
+            d.revoked = true;
+            count += 1;
+        }
+        Ok(count)
+    }
+
+    async fn update_last_used(&self, device_id: StringUuid) -> Result<()> {
+        let mut devices = self.devices.write().await;
+        if let Some(d) = devices.iter_mut().find(|d| d.id == device_id) {
+            d.last_used_at = chrono::Utc::now();
+        }
+        Ok(())
+    }
+
+    async fn delete_expired(&self) -> Result<u64> {
+        let mut devices = self.devices.write().await;
+        let len_before = devices.len();
+        devices.retain(|d| d.expires_at > chrono::Utc::now());
+        Ok((len_before - devices.len()) as u64)
+    }
+
+    async fn delete_by_user(&self, user_id: StringUuid) -> Result<u64> {
+        let mut devices = self.devices.write().await;
+        let len_before = devices.len();
+        devices.retain(|d| d.user_id != user_id);
+        Ok((len_before - devices.len()) as u64)
+    }
+}
+
+// ============================================================================
+// Test AdaptiveMfaPolicyRepository
+// ============================================================================
+
+use auth9_core::repository::adaptive_mfa_policy::{
+    AdaptiveMfaPolicyRepository, AdaptiveMfaPolicyRow,
+};
+
+pub struct TestAdaptiveMfaPolicyRepository {
+    rows: RwLock<Vec<AdaptiveMfaPolicyRow>>,
+}
+
+impl TestAdaptiveMfaPolicyRepository {
+    pub fn new() -> Self {
+        Self {
+            rows: RwLock::new(vec![]),
+        }
+    }
+}
+
+impl Default for TestAdaptiveMfaPolicyRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[async_trait]
+impl AdaptiveMfaPolicyRepository for TestAdaptiveMfaPolicyRepository {
+    async fn find_by_tenant_id(
+        &self,
+        tenant_id: StringUuid,
+    ) -> Result<Option<AdaptiveMfaPolicyRow>> {
+        let rows = self.rows.read().await;
+        Ok(rows.iter().find(|r| r.tenant_id == tenant_id).cloned())
+    }
+
+    async fn upsert(&self, row: &AdaptiveMfaPolicyRow) -> Result<()> {
+        let mut rows = self.rows.write().await;
+        rows.retain(|r| r.tenant_id != row.tenant_id);
+        rows.push(row.clone());
+        Ok(())
+    }
+
+    async fn delete_by_tenant_id(&self, tenant_id: StringUuid) -> Result<u64> {
+        let mut rows = self.rows.write().await;
+        let len_before = rows.len();
+        rows.retain(|r| r.tenant_id != tenant_id);
+        Ok((len_before - rows.len()) as u64)
     }
 }

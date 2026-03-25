@@ -9,18 +9,24 @@ use crate::cache::CacheOperations;
 use crate::domains::identity::api::mfa::{
     MfaChallengeResponse, MfaSessionData, MFA_SESSION_TTL_SECS,
 };
+use crate::domains::identity::service::adaptive_mfa::{
+    AdaptiveMfaEngine, AdaptiveMfaPolicy, MfaDecision, MfaEvaluationInput,
+};
+use crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepository;
 use crate::domains::identity::service::required_actions::PendingActionResponse;
+use crate::domains::identity::service::trusted_device::compute_device_fingerprint;
+use crate::domains::security_observability::service::risk_engine::{RiskEngine, RiskInput};
 use crate::error::{AppError, Result};
 use crate::http_support::{write_audit_log_generic, MessageResponse};
 use crate::models::password::{ForgotPasswordInput, ResetPasswordInput};
 use crate::state::{
-    HasAnalytics, HasCache, HasMfa, HasPasswordManagement, HasRequiredActions, HasServices,
-    HasSessionManagement, HasWebAuthn,
+    HasAdaptiveMfa, HasAnalytics, HasCache, HasMfa, HasPasswordManagement, HasRequiredActions,
+    HasServices, HasSessionManagement, HasTrustedDevices, HasWebAuthn,
 };
 use axum::{extract::State, http::HeaderMap, response::IntoResponse, Json};
 use axum_extra::headers::{authorization::Bearer, Authorization};
 use axum_extra::TypedHeader;
-use chrono::Utc;
+use chrono::{Timelike, Utc};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
@@ -80,7 +86,7 @@ fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
 ///
 /// POST /api/v1/hosted-login/password
 pub async fn password_login<
-    S: HasServices + HasSessionManagement + HasCache + HasRequiredActions + HasMfa + HasWebAuthn + HasAnalytics,
+    S: HasServices + HasSessionManagement + HasCache + HasRequiredActions + HasMfa + HasWebAuthn + HasAnalytics + HasTrustedDevices + HasAdaptiveMfa,
 >(
     State(state): State<S>,
     headers: HeaderMap,
@@ -183,8 +189,120 @@ pub async fn password_login<
         .await
         .unwrap_or_default();
     let has_webauthn = !webauthn_creds.is_empty();
+    let has_mfa_enrolled = has_totp || has_webauthn;
 
-    if has_totp || has_webauthn {
+    // Build MFA methods list
+    let mut mfa_methods = Vec::new();
+    if has_totp {
+        mfa_methods.push("totp".to_string());
+    }
+    if has_webauthn {
+        mfa_methods.push("webauthn".to_string());
+    }
+
+    // Adaptive MFA: load policy, compute risk, decide
+    let mfa_decision = {
+        // Get tenant memberships to find the tenant's adaptive MFA policy
+        let tenant_memberships_for_mfa = state
+            .user_service()
+            .get_user_tenants(user.id)
+            .await
+            .unwrap_or_default();
+
+        // Load adaptive MFA policy (use first tenant, or default to Always mode)
+        let policy = if let Some(first_membership) = tenant_memberships_for_mfa.first() {
+            match state
+                .adaptive_mfa_policy_repo()
+                .find_by_tenant_id(first_membership.tenant_id)
+                .await
+            {
+                Ok(Some(row)) => {
+                    use crate::domains::identity::service::adaptive_mfa::AdaptiveMfaMode;
+                    AdaptiveMfaPolicy {
+                        tenant_id: row.tenant_id.to_string(),
+                        mode: row.mode.parse::<AdaptiveMfaMode>().unwrap_or(AdaptiveMfaMode::Always),
+                        risk_threshold: row.risk_threshold,
+                        always_require_for_admins: row.always_require_for_admins,
+                        trust_device_days: row.trust_device_days,
+                        step_up_operations: row.step_up_operations,
+                    }
+                }
+                _ => AdaptiveMfaPolicy::default_for_tenant("default"),
+            }
+        } else {
+            AdaptiveMfaPolicy::default_for_tenant("default")
+        };
+
+        // Compute device fingerprint and check trust
+        let device_fingerprint = match (&user_agent, &ip_address) {
+            (Some(ua), Some(ip)) => Some(compute_device_fingerprint(ua, ip)),
+            _ => None,
+        };
+
+        let device_trusted = if let Some(ref fp) = device_fingerprint {
+            state
+                .trusted_device_service()
+                .is_trusted(user.id, fp)
+                .await
+                .unwrap_or(false)
+        } else {
+            false
+        };
+
+        // Compute risk score using the RiskEngine
+        let fail_key = format!("auth9:login_fail:{}", user.id);
+        let recent_failure_count = state
+            .cache()
+            .get_counter(&fail_key)
+            .await
+            .unwrap_or(0) as i64;
+
+        let login_hour = Utc::now().hour();
+        let risk_input = RiskInput {
+            ip_address: ip_address.as_deref(),
+            user_agent: user_agent.as_deref(),
+            country_code: None,
+            latitude: None,
+            longitude: None,
+            login_hour,
+            is_blacklisted: false,
+            recent_failure_count,
+            has_recent_password_reset: false,
+            has_recent_mfa_change: false,
+            profile: None,
+            prev_latitude: None,
+            prev_longitude: None,
+            prev_login_time: None,
+            current_time: Utc::now(),
+        };
+        let risk_assessment = RiskEngine::assess(&risk_input);
+
+        let eval_input = MfaEvaluationInput {
+            risk_score: risk_assessment.score,
+            is_admin: false, // TODO: check admin role in future
+            device_trusted,
+            has_mfa_enrolled,
+            mfa_methods: mfa_methods.clone(),
+        };
+
+        let decision = AdaptiveMfaEngine::evaluate(&policy, &eval_input);
+
+        tracing::debug!(
+            user_id = %user.id,
+            risk_score = risk_assessment.score,
+            device_trusted = device_trusted,
+            has_mfa = has_mfa_enrolled,
+            mode = %policy.mode,
+            decision = ?decision,
+            "Adaptive MFA evaluation"
+        );
+
+        (decision, device_fingerprint)
+    };
+
+    let (decision, device_fingerprint) = mfa_decision;
+
+    if let MfaDecision::Required { methods, reason: _ } = decision {
         // MFA required — issue temporary MFA session token
         let mfa_token = uuid::Uuid::new_v4().to_string();
         let mfa_data = MfaSessionData {
@@ -192,8 +310,9 @@ pub async fn password_login<
             email: user.email.clone(),
             display_name: user.display_name.clone(),
             identity_subject: user.identity_subject.clone(),
-            ip_address,
-            user_agent,
+            ip_address: ip_address.clone(),
+            user_agent: user_agent.clone(),
+            device_fingerprint: device_fingerprint.clone(),
         };
         let mfa_json = serde_json::to_string(&mfa_data).map_err(|e| {
             AppError::Internal(anyhow::anyhow!("Failed to serialize MFA session: {}", e))
@@ -203,14 +322,6 @@ pub async fn password_login<
             .cache()
             .store_mfa_session(&mfa_token, &mfa_json, MFA_SESSION_TTL_SECS)
             .await?;
-
-        let mut methods = Vec::new();
-        if has_totp {
-            methods.push("totp".to_string());
-        }
-        if has_webauthn {
-            methods.push("webauthn".to_string());
-        }
 
         let _ = write_audit_log_generic(
             &state,
@@ -232,6 +343,7 @@ pub async fn password_login<
             mfa_session_token: mfa_token,
             mfa_methods: methods,
             expires_in: MFA_SESSION_TTL_SECS,
+            trust_device_available: device_fingerprint.is_some(),
         };
 
         return Ok(axum::Json(response).into_response());

@@ -1,4 +1,5 @@
 use crate::domains::security_observability::api as secobs_api;
+use crate::domains::security_observability::api::risk::HasRiskPolicy;
 use crate::domains::security_observability::context::SecurityObservabilityContext;
 use crate::state::HasServices;
 use axum::{
@@ -21,7 +22,7 @@ where
 
 pub fn protected_routes<S>() -> Router<S>
 where
-    S: SecurityObservabilityContext,
+    S: SecurityObservabilityContext + HasRiskPolicy,
 {
     Router::new()
         .route("/api/v1/audit-logs", get(secobs_api::audit::list::<S>))
@@ -44,5 +45,10 @@ where
         .route(
             "/api/v1/security/alerts/{id}/resolve",
             post(secobs_api::security_alert::resolve_alert::<S>),
+        )
+        .route(
+            "/api/v1/security/risk-policy",
+            get(secobs_api::risk::get_risk_policy::<S>)
+                .put(secobs_api::risk::update_risk_policy::<S>),
         )
 }

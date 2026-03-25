@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { redirect, Form, Link, useActionData, useLoaderData, useNavigation, useSearchParams } from "react-router";
 import { useState, useCallback, useRef } from "react";
+import { Checkbox } from "~/components/ui/checkbox";
 import { getBrandMark } from "~/components/auth/AuthBrandPanel";
 import { AuthPageShell } from "~/components/AuthPageShell";
 import { Button } from "~/components/ui/button";
@@ -13,7 +14,7 @@ import { translate } from "~/i18n/translate";
 import { mapApiError } from "~/lib/error-messages";
 import { resolveLocale } from "~/services/locale.server";
 import { commitSession } from "~/services/session.server";
-import { hostedLoginApi, publicBrandingApi, type BrandingConfig } from "~/services/api";
+import { adaptiveMfaApi, hostedLoginApi, publicBrandingApi, type BrandingConfig } from "~/services/api";
 import { DEFAULT_PUBLIC_BRANDING } from "~/services/api/branding";
 
 export const meta: MetaFunction = ({ matches }) => {
@@ -39,12 +40,21 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Fall back to default Portal branding
   }
 
+  let trustDeviceDays = 0;
+  try {
+    const policyResponse = await adaptiveMfaApi.getPolicy();
+    trustDeviceDays = policyResponse.data.trust_device_days;
+  } catch {
+    // Adaptive MFA may not be configured; trust device feature disabled
+  }
+
   return {
     locale,
     branding,
     mfaSessionToken,
     mfaMethods: url.searchParams.get("mfa_methods")?.split(",") ?? ["totp"],
     loginChallenge: url.searchParams.get("login_challenge"),
+    trustDeviceDays,
   };
 }
 
@@ -55,6 +65,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const code = String(formData.get("code") || "").trim();
   const mfaSessionToken = String(formData.get("mfa_session_token") || "");
   const loginChallenge = formData.get("login_challenge") as string | null;
+  const trustDevice = formData.get("trust_device") === "true";
 
   if (!code) {
     return { error: translate(locale, "auth.mfaVerify.codeRequired") };
@@ -67,8 +78,8 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     const result =
       intent === "verify-recovery"
-        ? await hostedLoginApi.challengeRecoveryCode(mfaSessionToken, code)
-        : await hostedLoginApi.challengeTotp(mfaSessionToken, code);
+        ? await hostedLoginApi.challengeRecoveryCode(mfaSessionToken, code, trustDevice)
+        : await hostedLoginApi.challengeTotp(mfaSessionToken, code, trustDevice);
 
     const session = {
       accessToken: result.access_token,
@@ -108,8 +119,10 @@ export default function MfaVerifyPage() {
 
   const mfaSessionToken = loaderData?.mfaSessionToken ?? searchParams.get("mfa_session_token") ?? "";
   const loginChallenge = loaderData?.loginChallenge ?? null;
+  const trustDeviceDays = loaderData?.trustDeviceDays ?? 0;
 
   const [mode, setMode] = useState<"totp" | "recovery">("totp");
+  const [trustDevice, setTrustDevice] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleOtpComplete = useCallback(
@@ -171,6 +184,20 @@ export default function MfaVerifyPage() {
                 autoComplete="off"
                 disabled={isSubmitting}
               />
+            )}
+
+            {trustDeviceDays > 0 && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="trust_device"
+                  checked={trustDevice}
+                  onCheckedChange={(checked) => setTrustDevice(checked === true)}
+                />
+                <input type="hidden" name="trust_device" value={trustDevice ? "true" : "false"} />
+                <label htmlFor="trust_device" className="text-sm text-[var(--text-secondary)] cursor-pointer">
+                  {t("trustedDevices.trustDevice", { days: String(trustDeviceDays) })}
+                </label>
+              </div>
             )}
 
             {actionData?.error ? (

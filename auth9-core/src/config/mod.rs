@@ -98,6 +98,24 @@ impl Default for HibpConfig {
     }
 }
 
+/// GeoIP geolocation configuration
+#[derive(Debug, Clone)]
+pub struct GeoIpConfig {
+    /// Whether GeoIP resolution is enabled
+    pub enabled: bool,
+    /// Path to MaxMind GeoLite2-City.mmdb database file
+    pub database_path: Option<String>,
+}
+
+impl Default for GeoIpConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            database_path: None,
+        }
+    }
+}
+
 /// CAPTCHA bot protection configuration
 #[derive(Debug, Clone)]
 pub struct CaptchaConfig {
@@ -186,6 +204,8 @@ pub struct Config {
     pub hibp: HibpConfig,
     /// CAPTCHA bot protection configuration
     pub captcha: CaptchaConfig,
+    /// GeoIP geolocation configuration
+    pub geoip: GeoIpConfig,
     /// Platform admin email allowlist.
     ///
     /// Identity tokens are intentionally tenant-unscoped. Only Identity tokens whose
@@ -244,6 +264,7 @@ impl fmt::Debug for Config {
             .field("password_reset", &self.password_reset)
             .field("hibp", &self.hibp)
             .field("captcha", &CaptchaConfig { secret_key: "<REDACTED>".to_string(), ..self.captcha.clone() })
+            .field("geoip", &self.geoip)
             .field(
                 "jwt_tenant_access_allowed_audiences",
                 &format!(
@@ -587,6 +608,7 @@ impl Config {
                 ..HibpConfig::default()
             },
             captcha: CaptchaConfig::default(),
+            geoip: GeoIpConfig::default(),
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec![],
             security_headers: SecurityHeadersConfig::default(),
@@ -818,6 +840,10 @@ impl Config {
                 mode: env::var("CAPTCHA_MODE").unwrap_or_else(|_| "disabled".to_string()),
                 score_threshold: env::var("CAPTCHA_SCORE_THRESHOLD").ok().and_then(|s| s.parse().ok()).unwrap_or(0.5),
                 verify_timeout_ms: parse_u64_env("CAPTCHA_VERIFY_TIMEOUT_MS", 5000),
+            },
+            geoip: GeoIpConfig {
+                enabled: parse_bool_env("GEOIP_ENABLED", false),
+                database_path: env::var("GEOIP_DATABASE_PATH").ok(),
             },
             platform_admin_emails: parse_csv_env(
                 "PLATFORM_ADMIN_EMAILS",
@@ -1099,6 +1125,7 @@ mod tests {
             },
             hibp: HibpConfig::default(),
             captcha: CaptchaConfig::default(),
+            geoip: GeoIpConfig::default(),
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec![],
             security_headers: SecurityHeadersConfig::default(),
@@ -1765,6 +1792,7 @@ mod tests {
             },
             hibp: HibpConfig::default(),
             captcha: CaptchaConfig::default(),
+            geoip: GeoIpConfig::default(),
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec!["auth9-portal".to_string()],
             security_headers: SecurityHeadersConfig::default(),

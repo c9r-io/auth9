@@ -1,7 +1,7 @@
 use crate::state::{
-    HasAnalytics, HasBranding, HasCache, HasDbPool, HasEmailVerification, HasIdentityProviders,
-    HasLdapAuth, HasMfa, HasPasswordManagement, HasRequiredActions, HasServices,
-    HasSessionManagement, HasSystemSettings, HasWebAuthn,
+    HasAdaptiveMfa, HasAnalytics, HasBranding, HasCache, HasDbPool, HasEmailVerification,
+    HasIdentityProviders, HasLdapAuth, HasMfa, HasPasswordManagement, HasRequiredActions,
+    HasServices, HasSessionManagement, HasSystemSettings, HasTrustedDevices, HasWebAuthn,
 };
 
 pub trait IdentityContext:
@@ -19,6 +19,8 @@ pub trait IdentityContext:
     + HasRequiredActions
     + HasMfa
     + HasLdapAuth
+    + HasTrustedDevices
+    + HasAdaptiveMfa
 {
 }
 
@@ -37,5 +39,7 @@ impl<T> IdentityContext for T where
         + HasRequiredActions
         + HasMfa
         + HasLdapAuth
+        + HasTrustedDevices
+        + HasAdaptiveMfa
 {
 }

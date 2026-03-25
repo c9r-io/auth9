@@ -8,7 +8,7 @@ import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
 import { mapApiError } from "~/lib/error-messages";
-import { mfaApi, hostedLoginApi, type MfaStatusResponse } from "~/services/api";
+import { adaptiveMfaApi, mfaApi, hostedLoginApi, type MfaStatusResponse, type TrustedDevice } from "~/services/api";
 import { requireIdentityAuthWithUpdate } from "~/services/session.server";
 import { LockClosedIcon, ArrowRightIcon } from "@radix-ui/react-icons";
 import { TotpSetupInline } from "~/components/account/totp-setup-inline";
@@ -20,7 +20,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
     const { session, headers } = await requireIdentityAuthWithUpdate(request);
     const accessToken = session.identityAccessToken || "";
     const status = await mfaApi.status(accessToken);
-    const data = { status, accessToken, error: null as string | null };
+
+    let trustedDevices: TrustedDevice[] = [];
+    try {
+      const devicesResponse = await adaptiveMfaApi.listTrustedDevices(accessToken);
+      trustedDevices = devicesResponse.data;
+    } catch {
+      // Trusted devices may not be available; ignore
+    }
+
+    const data = { status, accessToken, trustedDevices, error: null as string | null };
     if (headers) {
       return Response.json(data, { headers });
     }
@@ -35,6 +44,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
         email_otp_enabled: false,
       } as MfaStatusResponse,
       accessToken: "",
+      trustedDevices: [] as TrustedDevice[],
       error: translate(locale, "accountMfa.loadError"),
     };
   }
@@ -102,6 +112,33 @@ export async function action({ request }: ActionFunctionArgs) {
       return data;
     }
 
+    if (intent === "revoke_trusted_device") {
+      const deviceId = String(formData.get("device_id") || "");
+      await adaptiveMfaApi.revokeTrustedDevice(deviceId, accessToken);
+      const data = {
+        success: true as const,
+        intent: "revoke_trusted_device" as const,
+        message: translate(locale, "trustedDevices.revokeSuccess"),
+        error: undefined as string | undefined,
+        codes: undefined as string[] | undefined,
+      };
+      if (headers) return Response.json(data, { headers });
+      return data;
+    }
+
+    if (intent === "revoke_all_trusted_devices") {
+      await adaptiveMfaApi.revokeAllTrustedDevices(accessToken);
+      const data = {
+        success: true as const,
+        intent: "revoke_all_trusted_devices" as const,
+        message: translate(locale, "trustedDevices.revokeSuccess"),
+        error: undefined as string | undefined,
+        codes: undefined as string[] | undefined,
+      };
+      if (headers) return Response.json(data, { headers });
+      return data;
+    }
+
     if (intent === "generate_recovery_codes") {
       const codes = await mfaApi.recoveryCodesGenerate(accessToken);
       const data = {
@@ -136,7 +173,7 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function AccountMfaPage() {
   const { t } = useI18n();
-  const { status, accessToken, error: loadError } = useLoaderData<typeof loader>();
+  const { status, accessToken, trustedDevices, error: loadError } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
@@ -295,6 +332,67 @@ export default function AccountMfaPage() {
             <p className="text-sm text-[var(--text-tertiary)]">
               {t("accountMfa.recovery.notAvailable")}
             </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Trusted Devices Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{t("trustedDevices.title")}</CardTitle>
+              <CardDescription>{t("trustedDevices.description")}</CardDescription>
+            </div>
+            {trustedDevices.length > 0 && (
+              <Form method="post">
+                <input type="hidden" name="intent" value="revoke_all_trusted_devices" />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="sm"
+                  className="text-[var(--accent-red)] hover:text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10"
+                  disabled={isSubmitting}
+                >
+                  {t("trustedDevices.revokeAll")}
+                </Button>
+              </Form>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {trustedDevices.length === 0 ? (
+            <p className="text-sm text-[var(--text-tertiary)]">{t("trustedDevices.noDevices")}</p>
+          ) : (
+            <div className="space-y-3">
+              {trustedDevices.filter((d) => !d.revoked).map((device) => (
+                <div key={device.id} className="flex items-center justify-between rounded-lg border border-[var(--glass-border-subtle)] p-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      {device.device_name || device.device_fingerprint.slice(0, 12) + "..."}
+                    </p>
+                    <div className="flex gap-4 text-xs text-[var(--text-tertiary)]">
+                      <span>{t("trustedDevices.trustedAt")}: {new Date(device.trusted_at).toLocaleDateString()}</span>
+                      <span>{t("trustedDevices.expiresAt")}: {new Date(device.expires_at).toLocaleDateString()}</span>
+                      <span>{t("trustedDevices.lastUsed")}: {new Date(device.last_used_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                  <Form method="post">
+                    <input type="hidden" name="intent" value="revoke_trusted_device" />
+                    <input type="hidden" name="device_id" value={device.id} />
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      size="sm"
+                      className="text-[var(--accent-red)] hover:text-[var(--accent-red)] hover:bg-[var(--accent-red)]/10"
+                      disabled={isSubmitting}
+                    >
+                      {t("trustedDevices.revoke")}
+                    </Button>
+                  </Form>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

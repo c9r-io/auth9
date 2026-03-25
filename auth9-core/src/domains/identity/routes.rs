@@ -270,4 +270,20 @@ where
             "/api/v1/mfa/email-otp/disable",
             post(identity_api::mfa::email_otp_disable::<S>),
         )
+        // Trusted device management
+        .route(
+            "/api/v1/mfa/trusted-devices",
+            get(identity_api::mfa::list_trusted_devices::<S>)
+                .delete(identity_api::mfa::revoke_all_trusted_devices::<S>),
+        )
+        .route(
+            "/api/v1/mfa/trusted-devices/{id}",
+            delete(identity_api::mfa::revoke_trusted_device::<S>),
+        )
+        // Adaptive MFA policy
+        .route(
+            "/api/v1/mfa/adaptive-policy",
+            get(identity_api::mfa::get_adaptive_mfa_policy::<S>)
+                .put(identity_api::mfa::update_adaptive_mfa_policy::<S>),
+        )
 }

@@ -101,6 +101,10 @@ pub struct LoginEvent {
     pub failure_reason: Option<String>,
     pub provider_alias: Option<String>,
     pub provider_type: Option<String>,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+    pub country_code: Option<String>,
+    pub risk_score: Option<u8>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -119,6 +123,9 @@ pub struct CreateLoginEventInput {
     pub failure_reason: Option<String>,
     pub provider_alias: Option<String>,
     pub provider_type: Option<String>,
+    pub latitude: Option<f64>,
+    pub longitude: Option<f64>,
+    pub country_code: Option<String>,
 }
 
 /// Security alert types
@@ -131,6 +138,7 @@ pub enum SecurityAlertType {
     NewDevice,
     ImpossibleTravel,
     SuspiciousIp,
+    HighRiskLogin,
 }
 
 impl std::str::FromStr for SecurityAlertType {
@@ -144,6 +152,7 @@ impl std::str::FromStr for SecurityAlertType {
             "new_device" => Ok(SecurityAlertType::NewDevice),
             "impossible_travel" => Ok(SecurityAlertType::ImpossibleTravel),
             "suspicious_ip" => Ok(SecurityAlertType::SuspiciousIp),
+            "high_risk_login" => Ok(SecurityAlertType::HighRiskLogin),
             _ => Err(format!("Unknown security alert type: {}", s)),
         }
     }
@@ -158,6 +167,7 @@ impl std::fmt::Display for SecurityAlertType {
             SecurityAlertType::NewDevice => write!(f, "new_device"),
             SecurityAlertType::ImpossibleTravel => write!(f, "impossible_travel"),
             SecurityAlertType::SuspiciousIp => write!(f, "suspicious_ip"),
+            SecurityAlertType::HighRiskLogin => write!(f, "high_risk_login"),
         }
     }
 }
@@ -566,6 +576,10 @@ mod tests {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
+            risk_score: None,
             created_at: Utc::now(),
         };
 
@@ -1099,6 +1113,9 @@ mod tests {
             failure_reason: None,
             provider_alias: None,
             provider_type: None,
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
         assert_eq!(input.event_type, LoginEventType::Success);
         assert!(input.failure_reason.is_none());
@@ -1240,6 +1257,9 @@ mod tests {
             failure_reason: None,
             provider_alias: Some("google".to_string()),
             provider_type: Some("google".to_string()),
+            latitude: None,
+            longitude: None,
+            country_code: None,
         };
         assert_eq!(input.event_type, LoginEventType::FederationSuccess);
         assert_eq!(input.provider_alias.as_deref(), Some("google"));

@@ -365,3 +365,17 @@ pub trait HasMfa: Clone + Send + Sync + 'static {
 pub trait HasLdapAuth: Clone + Send + Sync + 'static {
     fn ldap_authenticator(&self) -> &dyn crate::domains::identity::service::ldap::LdapAuthenticator;
 }
+
+/// Trait for states that provide trusted device services
+pub trait HasTrustedDevices: Clone + Send + Sync + 'static {
+    type TrustedDeviceRepo: crate::repository::TrustedDeviceRepository;
+    fn trusted_device_service(
+        &self,
+    ) -> &crate::domains::identity::service::TrustedDeviceService<Self::TrustedDeviceRepo>;
+}
+
+/// Trait for states that provide adaptive MFA policy services
+pub trait HasAdaptiveMfa: Clone + Send + Sync + 'static {
+    type AdaptiveMfaPolicyRepo: crate::repository::AdaptiveMfaPolicyRepository;
+    fn adaptive_mfa_policy_repo(&self) -> &Self::AdaptiveMfaPolicyRepo;
+}

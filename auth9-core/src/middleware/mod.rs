@@ -16,6 +16,7 @@ pub mod rate_limit;
 pub mod require_auth;
 pub mod scim_auth;
 pub mod security_headers;
+pub mod step_up;
 pub mod trace;
 
 pub use auth::{AuthUser, OptionalAuth, RequireAuth};

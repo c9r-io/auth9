@@ -63,6 +63,7 @@ pub fn test_config() -> Config {
             ..auth9_core::config::HibpConfig::default()
         },
         captcha: auth9_core::config::CaptchaConfig::default(),
+        geoip: auth9_core::config::GeoIpConfig::default(),
         async_action: auth9_core::models::action::AsyncActionConfig::default(),
         branding_allowed_domains: vec![],
         admin_password: None,

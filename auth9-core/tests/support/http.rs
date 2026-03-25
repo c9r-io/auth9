@@ -118,6 +118,7 @@ pub fn create_test_config(_keycloak_url: &str) -> Config {
             ..auth9_core::config::HibpConfig::default()
         },
         captcha: auth9_core::config::CaptchaConfig::default(),
+        geoip: auth9_core::config::GeoIpConfig::default(),
         async_action: auth9_core::models::action::AsyncActionConfig::default(),
         branding_allowed_domains: vec![],
         admin_password: None,
@@ -231,6 +232,13 @@ pub struct TestAppState {
     pub recovery_code_service: Arc<auth9_core::domains::identity::service::RecoveryCodeService>,
     pub ldap_authenticator:
         Arc<dyn auth9_core::domains::identity::service::ldap::LdapAuthenticator>,
+    pub risk_policy_repo: Arc<crate::support::TestTenantRiskPolicyRepository>,
+    pub trusted_device_service: Arc<
+        auth9_core::domains::identity::service::TrustedDeviceService<
+            crate::support::TestTrustedDeviceRepository,
+        >,
+    >,
+    pub adaptive_mfa_policy_repo: Arc<crate::support::TestAdaptiveMfaPolicyRepository>,
 }
 
 impl TestAppState {
@@ -460,6 +468,13 @@ impl TestAppState {
             ldap_authenticator: Arc::new(
                 auth9_core::domains::identity::service::ldap::DefaultLdapAuthenticator::new(),
             ),
+            risk_policy_repo: Arc::new(crate::support::TestTenantRiskPolicyRepository::new()),
+            trusted_device_service: Arc::new(
+                auth9_core::domains::identity::service::TrustedDeviceService::new(
+                    Arc::new(crate::support::TestTrustedDeviceRepository::new()),
+                ),
+            ),
+            adaptive_mfa_policy_repo: Arc::new(crate::support::TestAdaptiveMfaPolicyRepository::new()),
         }
     }
 
@@ -754,6 +769,30 @@ impl auth9_core::state::HasLdapAuth for TestAppState {
         &self,
     ) -> &dyn auth9_core::domains::identity::service::ldap::LdapAuthenticator {
         &*self.ldap_authenticator
+    }
+}
+
+impl auth9_core::domains::security_observability::api::risk::HasRiskPolicy for TestAppState {
+    type RiskPolicyRepo = crate::support::TestTenantRiskPolicyRepository;
+    fn risk_policy_repo(&self) -> &Self::RiskPolicyRepo {
+        &self.risk_policy_repo
+    }
+}
+
+impl auth9_core::state::HasTrustedDevices for TestAppState {
+    type TrustedDeviceRepo = crate::support::TestTrustedDeviceRepository;
+    fn trusted_device_service(
+        &self,
+    ) -> &auth9_core::domains::identity::service::TrustedDeviceService<Self::TrustedDeviceRepo>
+    {
+        &self.trusted_device_service
+    }
+}
+
+impl auth9_core::state::HasAdaptiveMfa for TestAppState {
+    type AdaptiveMfaPolicyRepo = crate::support::TestAdaptiveMfaPolicyRepository;
+    fn adaptive_mfa_policy_repo(&self) -> &Self::AdaptiveMfaPolicyRepo {
+        &self.adaptive_mfa_policy_repo
     }
 }
 

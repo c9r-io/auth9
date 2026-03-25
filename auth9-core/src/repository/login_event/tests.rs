@@ -33,6 +33,9 @@ async fn test_mock_create() {
         failure_reason: None,
         provider_alias: None,
         provider_type: None,
+        latitude: None,
+        longitude: None,
+        country_code: None,
     };
 
     let id = mock.create(&input).await.unwrap();

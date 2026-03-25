@@ -561,6 +561,9 @@ pub async fn process_identity_event<
         },
         provider_alias: event.details.identity_provider.clone(),
         provider_type: None,
+        latitude: None,
+        longitude: None,
+        country_code: None,
     };
 
     let event_id = state.analytics_service().record_login_event(input).await?;
@@ -606,6 +609,9 @@ pub async fn process_identity_event<
                     ),
                     provider_alias: None,
                     provider_type: None,
+                    latitude: None,
+                    longitude: None,
+                    country_code: None,
                 };
 
                 match state

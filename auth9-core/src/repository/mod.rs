@@ -24,6 +24,10 @@ pub mod tenant;
 pub mod tenant_service;
 pub mod user;
 pub mod webauthn;
+pub mod adaptive_mfa_policy;
+pub mod tenant_risk_policy;
+pub mod trusted_device;
+pub mod user_login_profile;
 pub mod webhook;
 
 pub use abac::AbacRepository;
@@ -50,6 +54,10 @@ pub use tenant::TenantRepository;
 pub use tenant_service::TenantServiceRepository;
 pub use user::UserRepository;
 pub use webauthn::WebAuthnRepository;
+pub use adaptive_mfa_policy::AdaptiveMfaPolicyRepository;
+pub use tenant_risk_policy::TenantRiskPolicyRepository;
+pub use trusted_device::TrustedDeviceRepository;
+pub use user_login_profile::UserLoginProfileRepository;
 pub use webhook::WebhookRepository;
 
 use sqlx::MySqlPool;

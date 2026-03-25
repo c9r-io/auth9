@@ -101,6 +101,7 @@ export default function Dashboard() {
     { name: t("dashboard.nav.abac"), href: "/dashboard/abac", icon: SlidersIcon },
     { name: t("dashboard.nav.analytics"), href: "/dashboard/analytics", icon: ChartIcon },
     { name: t("dashboard.nav.security"), href: "/dashboard/security/alerts", icon: LockIcon },
+    { name: t("dashboard.nav.securityRisk"), href: "/dashboard/security/risk", icon: ShieldIcon },
     { name: t("dashboard.nav.auditLogs"), href: "/dashboard/audit-logs", icon: ClipboardIcon },
     { name: t("dashboard.nav.settings"), href: "/dashboard/settings", icon: SettingsIcon },
   ];
@@ -202,7 +203,7 @@ export default function Dashboard() {
 
           <div className="nav-section">
             <div className="nav-section-title">{t("dashboard.nav.securityGroup")}</div>
-            {navigation.slice(4, 9).map((item) => {
+            {navigation.slice(4, 10).map((item) => {
               const isActive = location.pathname === item.href ||
                 (item.href !== "/dashboard" && location.pathname.startsWith(item.href));
 
@@ -226,7 +227,7 @@ export default function Dashboard() {
 
           <div className="nav-section">
             <div className="nav-section-title">{t("dashboard.nav.system")}</div>
-            {navigation.slice(9).map((item) => {
+            {navigation.slice(10).map((item) => {
               const isActive = location.pathname === item.href ||
                 (item.href !== "/dashboard" && location.pathname.startsWith(item.href));
 

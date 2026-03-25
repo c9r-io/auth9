@@ -13,12 +13,16 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { translate } from "~/i18n/translate";
 import { mapApiError } from "~/lib/error-messages";
 import {
+  adaptiveMfaApi,
   passwordApi,
+  riskApi,
   systemApi,
   tenantApi,
+  type AdaptiveMfaPolicy,
   type MaliciousIpBlacklistEntry,
   type PasswordPolicy,
   type Tenant,
+  type TenantRiskPolicy,
 } from "~/services/api";
 import { getAccessToken } from "~/services/session.server";
 import { resolveLocale } from "~/services/locale.server";
@@ -65,6 +69,26 @@ export async function loader({ request }: LoaderFunctionArgs) {
     blacklistError = error instanceof Error ? error.message : translate(locale, "settings.securitySettings.loadBlacklistFailed");
   }
 
+  let riskPolicy: TenantRiskPolicy | null = null;
+  let riskPolicyError: string | null = null;
+
+  try {
+    const riskPolicyResponse = await riskApi.getRiskPolicy(accessToken || undefined);
+    riskPolicy = riskPolicyResponse.data;
+  } catch (error) {
+    riskPolicyError = error instanceof Error ? error.message : translate(locale, "riskPolicy.saveFailed");
+  }
+
+  let adaptiveMfaPolicy: AdaptiveMfaPolicy | null = null;
+  let adaptiveMfaPolicyError: string | null = null;
+
+  try {
+    const adaptiveMfaResponse = await adaptiveMfaApi.getPolicy(accessToken || undefined);
+    adaptiveMfaPolicy = adaptiveMfaResponse.data;
+  } catch (error) {
+    adaptiveMfaPolicyError = error instanceof Error ? error.message : translate(locale, "adaptiveMfa.saveFailed");
+  }
+
   return {
     tenants,
     tenantsError,
@@ -73,6 +97,10 @@ export async function loader({ request }: LoaderFunctionArgs) {
     policyError,
     blacklist,
     blacklistError,
+    riskPolicy,
+    riskPolicyError,
+    adaptiveMfaPolicy,
+    adaptiveMfaPolicyError,
   };
 }
 
@@ -101,6 +129,30 @@ export async function action({ request }: ActionFunctionArgs) {
       return { success: true, message: translate(locale, "settings.securitySettings.updated") };
     }
 
+    if (intent === "updateRiskPolicy") {
+      const input = {
+        mfa_threshold: parseInt(formData.get("mfaThreshold") as string) || 50,
+        block_threshold: parseInt(formData.get("blockThreshold") as string) || 80,
+        notify_admin: formData.get("notifyAdmin") === "true",
+        auto_lock_account: formData.get("autoLockAccount") === "true",
+      };
+
+      await riskApi.updateRiskPolicy(input, accessToken || undefined);
+      return { success: true, message: translate(locale, "riskPolicy.saveSuccess") };
+    }
+
+    if (intent === "updateAdaptiveMfaPolicy") {
+      const input = {
+        mode: ((formData.get("mfaMode") as string) || "disabled") as AdaptiveMfaPolicy["mode"],
+        risk_threshold: parseInt(formData.get("riskThreshold") as string) || 50,
+        always_require_for_admins: formData.get("alwaysRequireAdmins") === "true",
+        trust_device_days: parseInt(formData.get("trustDeviceDays") as string) || 30,
+      };
+
+      await adaptiveMfaApi.updatePolicy(input, accessToken || undefined);
+      return { success: true, message: translate(locale, "adaptiveMfa.saveSuccess") };
+    }
+
     if (intent === "update_malicious_ip_blacklist") {
       const raw = (formData.get("maliciousIps") as string) || "";
       const entries = raw
@@ -121,7 +173,7 @@ export async function action({ request }: ActionFunctionArgs) {
 }
 
 export default function SecuritySettingsPage() {
-  const { tenants, tenantsError, selectedTenantId, policy: loadedPolicy, policyError, blacklist, blacklistError } = useLoaderData<typeof loader>();
+  const { tenants, tenantsError, selectedTenantId, policy: loadedPolicy, policyError, blacklist, blacklistError, riskPolicy, riskPolicyError, adaptiveMfaPolicy, adaptiveMfaPolicyError } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const policyFetcher = useFetcher<typeof loader>();
@@ -130,6 +182,7 @@ export default function SecuritySettingsPage() {
   const [selectedTenant, setSelectedTenant] = useState<string>(selectedTenantId);
   const [policy, setPolicy] = useState<PasswordPolicy | null>(loadedPolicy);
   const [blacklistText, setBlacklistText] = useState<string>(blacklist.map((entry) => entry.ip_address).join("\n"));
+  const [mfaMode, setMfaMode] = useState<string>(adaptiveMfaPolicy?.mode ?? "disabled");
 
   const isSubmitting = navigation.state === "submitting";
   const loadingPolicy = policyFetcher.state === "loading";
@@ -310,6 +363,126 @@ export default function SecuritySettingsPage() {
               <span>CAPTCHA_MODE</span>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Risk Policy */}
+      <Card>
+        <CardHeader className="p-5 pb-5 sm:p-6 sm:pb-6">
+          <SettingsSectionHeading
+            title={t("riskPolicy.title")}
+            description={t("riskPolicy.description")}
+          />
+        </CardHeader>
+        <CardContent>
+          <Form method="post" className="space-y-6">
+            <input type="hidden" name="intent" value="updateRiskPolicy" />
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="mfaThreshold">{t("riskPolicy.mfaThreshold")}</Label>
+                <Input id="mfaThreshold" name="mfaThreshold" type="number" min={0} max={100} defaultValue={riskPolicy?.mfa_threshold ?? 50} />
+                <p className="text-xs text-[var(--text-secondary)]">0-100</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="blockThreshold">{t("riskPolicy.blockThreshold")}</Label>
+                <Input id="blockThreshold" name="blockThreshold" type="number" min={0} max={100} defaultValue={riskPolicy?.block_threshold ?? 80} />
+                <p className="text-xs text-[var(--text-secondary)]">0-100</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex min-h-[48px] items-center justify-between gap-4">
+                <Label htmlFor="notifyAdmin">{t("riskPolicy.notifyAdmin")}</Label>
+                <div className="shrink-0">
+                  <Switch id="notifyAdmin" defaultChecked={riskPolicy?.notify_admin ?? true} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("notifyAdmin-hidden", checked)} />
+                  <input id="notifyAdmin-hidden" type="hidden" name="notifyAdmin" value={riskPolicy?.notify_admin ? "true" : "false"} />
+                </div>
+              </div>
+              <div className="flex min-h-[48px] items-center justify-between gap-4">
+                <Label htmlFor="autoLockAccount">{t("riskPolicy.autoLockAccount")}</Label>
+                <div className="shrink-0">
+                  <Switch id="autoLockAccount" defaultChecked={riskPolicy?.auto_lock_account ?? false} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("autoLockAccount-hidden", checked)} />
+                  <input id="autoLockAccount-hidden" type="hidden" name="autoLockAccount" value={riskPolicy?.auto_lock_account ? "true" : "false"} />
+                </div>
+              </div>
+            </div>
+
+            {riskPolicyError && <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--accent-red)]">{riskPolicyError}</div>}
+
+            <div className={actionBarClassName}>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? t("settings.securitySettings.saving") : t("settings.securitySettings.savePolicy")}</Button>
+            </div>
+          </Form>
+        </CardContent>
+      </Card>
+
+      {/* Adaptive MFA Policy */}
+      <Card>
+        <CardHeader className="p-5 pb-5 sm:p-6 sm:pb-6">
+          <SettingsSectionHeading
+            title={t("adaptiveMfa.title")}
+            description={t("adaptiveMfa.description")}
+          />
+        </CardHeader>
+        <CardContent>
+          <Form method="post" className="space-y-6">
+            <input type="hidden" name="intent" value="updateAdaptiveMfaPolicy" />
+            <input id="mfaMode-hidden" type="hidden" name="mfaMode" value={mfaMode} />
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label id="mfaModeLabel" htmlFor="mfaModeTrigger">{t("adaptiveMfa.mode")}</Label>
+                <Select
+                  value={mfaMode}
+                  onValueChange={(value) => {
+                    setMfaMode(value);
+                    const hidden = document.getElementById("mfaMode-hidden") as HTMLInputElement | null;
+                    if (hidden) hidden.value = value;
+                  }}
+                >
+                  <SelectTrigger id="mfaModeTrigger" aria-labelledby="mfaModeLabel">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="disabled">{t("adaptiveMfa.modeDisabled")}</SelectItem>
+                    <SelectItem value="always">{t("adaptiveMfa.modeAlways")}</SelectItem>
+                    <SelectItem value="adaptive">{t("adaptiveMfa.modeAdaptive")}</SelectItem>
+                    <SelectItem value="optional_enroll">{t("adaptiveMfa.modeOptional")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {mfaMode === "adaptive" && (
+                <div className="space-y-2">
+                  <Label htmlFor="riskThreshold">{t("adaptiveMfa.riskThreshold")}</Label>
+                  <Input id="riskThreshold" name="riskThreshold" type="number" min={0} max={100} defaultValue={adaptiveMfaPolicy?.risk_threshold ?? 50} />
+                  <p className="text-xs text-[var(--text-secondary)]">0-100</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="trustDeviceDays">{t("adaptiveMfa.trustDeviceDays")}</Label>
+                <Input id="trustDeviceDays" name="trustDeviceDays" type="number" min={0} max={365} defaultValue={adaptiveMfaPolicy?.trust_device_days ?? 30} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex min-h-[48px] items-center justify-between gap-4">
+                <Label htmlFor="alwaysRequireAdmins">{t("adaptiveMfa.alwaysRequireAdmins")}</Label>
+                <div className="shrink-0">
+                  <Switch id="alwaysRequireAdmins" defaultChecked={adaptiveMfaPolicy?.always_require_for_admins ?? false} onCheckedChange={(checked: boolean) => syncHiddenBooleanField("alwaysRequireAdmins-hidden", checked)} />
+                  <input id="alwaysRequireAdmins-hidden" type="hidden" name="alwaysRequireAdmins" value={adaptiveMfaPolicy?.always_require_for_admins ? "true" : "false"} />
+                </div>
+              </div>
+            </div>
+
+            {adaptiveMfaPolicyError && <div className="rounded-md bg-red-50 p-3 text-sm text-[var(--accent-red)]">{adaptiveMfaPolicyError}</div>}
+
+            <div className={actionBarClassName}>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? t("settings.securitySettings.saving") : t("settings.securitySettings.savePolicy")}</Button>
+            </div>
+          </Form>
         </CardContent>
       </Card>
     </div>
