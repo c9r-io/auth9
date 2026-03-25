@@ -1,5 +1,6 @@
 import type { MetaFunction, ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import { redirect, Form, Link, useActionData, useLoaderData, useNavigation } from "react-router";
+import { useState } from "react";
 import { getBrandMark } from "~/components/auth/AuthBrandPanel";
 import { AuthPageShell } from "~/components/AuthPageShell";
 import { Button } from "~/components/ui/button";
@@ -11,8 +12,9 @@ import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
 import { mapApiError } from "~/lib/error-messages";
-import { userApi, publicBrandingApi, type BrandingConfig } from "~/services/api";
+import { userApi, publicBrandingApi, captchaApi, type BrandingConfig } from "~/services/api";
 import { DEFAULT_PUBLIC_BRANDING } from "~/services/api/branding";
+import { Captcha, type CaptchaConfig, DEFAULT_CAPTCHA_CONFIG } from "~/components/captcha";
 
 export const meta: MetaFunction = ({ matches }) => {
   return buildMeta(resolveMetaLocale(matches), "auth.register.metaTitle");
@@ -29,7 +31,9 @@ export async function loader(args?: LoaderFunctionArgs) {
     if (!branding.allow_registration) {
       return redirect("/login");
     }
-    return { branding };
+    let captchaConfig: CaptchaConfig = DEFAULT_CAPTCHA_CONFIG;
+    try { captchaConfig = await captchaApi.getConfig(); } catch { /* ignore */ }
+    return { branding, captchaConfig };
   } catch {
     // If we can't fetch branding config, default to disallowing registration
     return redirect("/login");
@@ -67,11 +71,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function Register() {
   const { t } = useI18n();
-  const loaderData = (useLoaderData<typeof loader>() ?? {}) as { branding?: BrandingConfig };
+  const loaderData = (useLoaderData<typeof loader>() ?? {}) as { branding?: BrandingConfig; captchaConfig?: CaptchaConfig };
   const branding = { ...DEFAULT_PUBLIC_BRANDING, ...(loaderData.branding ?? {}) };
+  const captchaConfig = loaderData.captchaConfig ?? DEFAULT_CAPTCHA_CONFIG;
   const actionData = useActionData<{ error?: string }>();
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
+  const [captchaToken, setCaptchaToken] = useState("");
 
   return (
     <AuthPageShell
@@ -130,6 +136,10 @@ export default function Register() {
                 autoComplete="new-password"
               />
             </div>
+            <input type="hidden" name="captchaToken" value={captchaToken} />
+            {captchaConfig.enabled && captchaConfig.mode === "always" && (
+              <Captcha config={captchaConfig} onVerify={setCaptchaToken} />
+            )}
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? t("common.buttons.creating") : t("auth.register.submit")}
             </Button>

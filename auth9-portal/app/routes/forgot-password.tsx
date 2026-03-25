@@ -11,8 +11,9 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { useI18n } from "~/i18n";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
-import { passwordApi, publicBrandingApi, type BrandingConfig } from "~/services/api";
+import { passwordApi, publicBrandingApi, captchaApi, type BrandingConfig } from "~/services/api";
 import { DEFAULT_PUBLIC_BRANDING } from "~/services/api/branding";
+import { Captcha, type CaptchaConfig, DEFAULT_CAPTCHA_CONFIG } from "~/components/captcha";
 
 export const meta: MetaFunction = ({ matches }) => {
   return buildMeta(resolveMetaLocale(matches), "auth.forgotPassword.metaTitle");
@@ -23,10 +24,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   try {
     const { data } = await publicBrandingApi.get(clientId);
-    return { branding: { ...DEFAULT_PUBLIC_BRANDING, ...data } };
+    let captchaConfig: CaptchaConfig = DEFAULT_CAPTCHA_CONFIG;
+    try { captchaConfig = await captchaApi.getConfig(); } catch { /* ignore */ }
+    return { branding: { ...DEFAULT_PUBLIC_BRANDING, ...data }, captchaConfig };
   } catch {
     void request;
-    return { branding: DEFAULT_PUBLIC_BRANDING };
+    return { branding: DEFAULT_PUBLIC_BRANDING, captchaConfig: DEFAULT_CAPTCHA_CONFIG };
   }
 }
 
@@ -50,11 +53,13 @@ export async function action({ request }: ActionFunctionArgs) {
 
 export default function ForgotPasswordPage() {
   const { t } = useI18n();
-  const loaderData = (useLoaderData<typeof loader>() ?? {}) as { branding?: BrandingConfig };
+  const loaderData = (useLoaderData<typeof loader>() ?? {}) as { branding?: BrandingConfig; captchaConfig?: CaptchaConfig };
   const branding = { ...DEFAULT_PUBLIC_BRANDING, ...(loaderData.branding ?? {}) };
+  const captchaConfig = loaderData.captchaConfig ?? DEFAULT_CAPTCHA_CONFIG;
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const [email, setEmail] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
 
   const isSubmitting = navigation.state === "submitting";
 
@@ -148,6 +153,10 @@ export default function ForgotPasswordPage() {
               </div>
             )}
 
+            <input type="hidden" name="captchaToken" value={captchaToken} />
+            {captchaConfig.enabled && captchaConfig.mode === "always" && (
+              <Captcha config={captchaConfig} onVerify={setCaptchaToken} />
+            )}
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? t("common.buttons.sending") : t("common.buttons.sendResetLink")}
             </Button>

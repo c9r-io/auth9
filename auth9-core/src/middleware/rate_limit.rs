@@ -189,6 +189,11 @@ impl RateLimitState {
         }
     }
 
+    /// Get a reference to the Redis connection (if available)
+    pub fn redis_connection(&self) -> Option<&ConnectionManager> {
+        self.redis.as_ref()
+    }
+
     /// Check if rate limiting is enabled
     pub fn is_enabled(&self) -> bool {
         self.config.enabled && self.redis.is_some()

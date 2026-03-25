@@ -694,6 +694,12 @@ export default {
       saveBlacklist: "Save blacklist",
       savePolicy: "Save policy",
       saving: "Saving...",
+      captchaTitle: "Bot Protection (CAPTCHA)",
+      captchaDescription: "CAPTCHA verification on login, registration, and password reset endpoints.",
+      captchaEnvNote: "CAPTCHA is configured via environment variables on the auth9-core server:",
+      captchaStatus: "Status:",
+      captchaProvider: "Provider:",
+      captchaMode: "Mode:",
     },
   },
   tenants: {

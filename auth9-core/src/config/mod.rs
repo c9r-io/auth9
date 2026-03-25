@@ -98,6 +98,32 @@ impl Default for HibpConfig {
     }
 }
 
+/// CAPTCHA bot protection configuration
+#[derive(Debug, Clone)]
+pub struct CaptchaConfig {
+    pub enabled: bool,
+    pub provider: String,
+    pub site_key: String,
+    pub secret_key: String,
+    pub mode: String,
+    pub score_threshold: f64,
+    pub verify_timeout_ms: u64,
+}
+
+impl Default for CaptchaConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            provider: "turnstile".to_string(),
+            site_key: String::new(),
+            secret_key: String::new(),
+            mode: "disabled".to_string(),
+            score_threshold: 0.5,
+            verify_timeout_ms: 5000,
+        }
+    }
+}
+
 /// Password reset security configuration
 #[derive(Clone)]
 pub struct PasswordResetConfig {
@@ -158,6 +184,8 @@ pub struct Config {
     pub password_reset: PasswordResetConfig,
     /// HIBP breached password detection configuration
     pub hibp: HibpConfig,
+    /// CAPTCHA bot protection configuration
+    pub captcha: CaptchaConfig,
     /// Platform admin email allowlist.
     ///
     /// Identity tokens are intentionally tenant-unscoped. Only Identity tokens whose
@@ -215,6 +243,7 @@ impl fmt::Debug for Config {
             .field("telemetry", &self.telemetry)
             .field("password_reset", &self.password_reset)
             .field("hibp", &self.hibp)
+            .field("captcha", &CaptchaConfig { secret_key: "<REDACTED>".to_string(), ..self.captcha.clone() })
             .field(
                 "jwt_tenant_access_allowed_audiences",
                 &format!(
@@ -557,6 +586,7 @@ impl Config {
                 enabled: false,
                 ..HibpConfig::default()
             },
+            captcha: CaptchaConfig::default(),
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec![],
             security_headers: SecurityHeadersConfig::default(),
@@ -779,6 +809,15 @@ impl Config {
                 api_base_url: env::var("HIBP_API_BASE_URL")
                     .unwrap_or_else(|_| "https://api.pwnedpasswords.com".to_string()),
                 timeout_ms: parse_u64_env("HIBP_TIMEOUT_MS", 3000),
+            },
+            captcha: CaptchaConfig {
+                enabled: parse_bool_env("CAPTCHA_ENABLED", false),
+                provider: env::var("CAPTCHA_PROVIDER").unwrap_or_else(|_| "turnstile".to_string()),
+                site_key: env::var("CAPTCHA_SITE_KEY").unwrap_or_default(),
+                secret_key: env::var("CAPTCHA_SECRET_KEY").unwrap_or_default(),
+                mode: env::var("CAPTCHA_MODE").unwrap_or_else(|_| "disabled".to_string()),
+                score_threshold: env::var("CAPTCHA_SCORE_THRESHOLD").ok().and_then(|s| s.parse().ok()).unwrap_or(0.5),
+                verify_timeout_ms: parse_u64_env("CAPTCHA_VERIFY_TIMEOUT_MS", 5000),
             },
             platform_admin_emails: parse_csv_env(
                 "PLATFORM_ADMIN_EMAILS",
@@ -1059,6 +1098,7 @@ mod tests {
                 token_ttl_secs: 3600,
             },
             hibp: HibpConfig::default(),
+            captcha: CaptchaConfig::default(),
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec![],
             security_headers: SecurityHeadersConfig::default(),
@@ -1724,6 +1764,7 @@ mod tests {
                 token_ttl_secs: 3600,
             },
             hibp: HibpConfig::default(),
+            captcha: CaptchaConfig::default(),
             platform_admin_emails: vec!["admin@auth9.local".to_string()],
             jwt_tenant_access_allowed_audiences: vec!["auth9-portal".to_string()],
             security_headers: SecurityHeadersConfig::default(),

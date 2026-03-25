@@ -13,7 +13,8 @@ import { mapApiError, mapOAuthError } from "~/lib/error-messages";
 import { LockClosedIcon, GlobeIcon, EnvelopeClosedIcon, IdCardIcon } from "@radix-ui/react-icons";
 import { resolveLocale } from "~/services/locale.server";
 import { commitSession, serializeOAuthState } from "~/services/session.server";
-import { enterpriseSsoApi, hostedLoginApi, publicBrandingApi, identityProviderApi, type BrandingConfig, isMfaChallenge } from "~/services/api";
+import { enterpriseSsoApi, hostedLoginApi, publicBrandingApi, identityProviderApi, captchaApi, type BrandingConfig, isMfaChallenge } from "~/services/api";
+import { Captcha, type CaptchaConfig, DEFAULT_CAPTCHA_CONFIG } from "~/components/captcha";
 import type { PublicSocialProvider } from "~/services/api/identity-provider";
 import { DEFAULT_PUBLIC_BRANDING } from "~/services/api/branding";
 import type { AppLocale } from "~/i18n";
@@ -95,7 +96,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Social providers unavailable — continue without them.
   }
 
-  return { error, apiBaseUrl, locale, branding, loginChallenge, socialProviders, ldapView, ldapConnectorAlias };
+  let captchaConfig: CaptchaConfig = DEFAULT_CAPTCHA_CONFIG;
+  try {
+    captchaConfig = await captchaApi.getConfig();
+  } catch {
+    // CAPTCHA config unavailable — continue without it.
+  }
+
+  return { error, apiBaseUrl, locale, branding, loginChallenge, socialProviders, ldapView, ldapConnectorAlias, captchaConfig };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -261,13 +269,14 @@ export async function action({ request }: ActionFunctionArgs) {
     const email = String(formData.get("email") || "").trim();
     const password = String(formData.get("password") || "").trim();
     const loginChallenge = formData.get("loginChallenge") as string | null;
+    const captchaToken = formData.get("captchaToken") as string | null;
 
     if (!email || !password) {
       return { error: translate(locale, "auth.login.credentialsRequired") };
     }
 
     try {
-      const result = await hostedLoginApi.passwordLogin(email, password);
+      const result = await hostedLoginApi.passwordLogin(email, password, captchaToken || undefined);
 
       // MFA required — redirect to verification page
       if (isMfaChallenge(result)) {
@@ -398,6 +407,7 @@ export default function Login() {
     socialProviders: loaderData.socialProviders ?? [],
     ldapView: (loaderData as Record<string, unknown>).ldapView as boolean | undefined,
     ldapConnectorAlias: (loaderData as Record<string, unknown>).ldapConnectorAlias as string | undefined,
+    captchaConfig: ((loaderData as Record<string, unknown>).captchaConfig as CaptchaConfig | undefined) ?? DEFAULT_CAPTCHA_CONFIG,
   };
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
@@ -408,6 +418,7 @@ export default function Login() {
   );
   const [ssoEmail, setSsoEmail] = useState("");
   const [dismissedError, setDismissedError] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   // Clear dismissed state when new actionData arrives
   const [prevActionData, setPrevActionData] = useState(actionData);
@@ -572,6 +583,7 @@ export default function Login() {
               <div className="space-y-4">
                 <Form method="post" action="/login" className="space-y-3">
                   <input type="hidden" name="intent" value="password-login" />
+                  <input type="hidden" name="captchaToken" value={captchaToken} />
                   {data.loginChallenge && (
                     <input type="hidden" name="loginChallenge" value={data.loginChallenge} />
                   )}
@@ -591,6 +603,9 @@ export default function Login() {
                     autoComplete="current-password"
                     placeholder={t("auth.login.passwordPlaceholder")}
                   />
+                  {data.captchaConfig.enabled && data.captchaConfig.mode === "always" && (
+                    <Captcha config={data.captchaConfig} onVerify={setCaptchaToken} />
+                  )}
 
                   {visibleError && (
                     <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">

@@ -13,6 +13,10 @@ where
     Router::new()
         .route("/health", get(secobs_api::health::health))
         .route("/ready", get(secobs_api::health::ready::<S>))
+        .route(
+            "/api/v1/public/captcha-config",
+            get(secobs_api::captcha::get_captcha_config::<S>),
+        )
 }
 
 pub fn protected_routes<S>() -> Router<S>

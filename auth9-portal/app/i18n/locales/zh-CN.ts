@@ -694,6 +694,12 @@ export default {
       saveBlacklist: "保存黑名单",
       savePolicy: "保存策略",
       saving: "保存中...",
+      captchaTitle: "Bot 防护 (CAPTCHA)",
+      captchaDescription: "在登录、注册和密码重置端点进行 CAPTCHA 验证。",
+      captchaEnvNote: "CAPTCHA 通过 auth9-core 服务器的环境变量配置：",
+      captchaStatus: "状态：",
+      captchaProvider: "提供商：",
+      captchaMode: "模式：",
     },
   },
   tenants: {

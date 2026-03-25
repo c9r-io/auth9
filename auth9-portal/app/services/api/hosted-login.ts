@@ -39,13 +39,18 @@ export interface TotpEnrollmentResponse {
 export const hostedLoginApi = {
   passwordLogin: async (
     email: string,
-    password: string
+    password: string,
+    captchaToken?: string
   ): Promise<PasswordLoginResponse> => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (captchaToken) {
+      headers["X-Captcha-Token"] = captchaToken;
+    }
     const response = await fetch(
       `${API_BASE_URL}/api/v1/hosted-login/password`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ email, password }),
       }
     );

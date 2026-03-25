@@ -117,6 +117,7 @@ pub fn create_test_config(_keycloak_url: &str) -> Config {
             enabled: false,
             ..auth9_core::config::HibpConfig::default()
         },
+        captcha: auth9_core::config::CaptchaConfig::default(),
         async_action: auth9_core::models::action::AsyncActionConfig::default(),
         branding_allowed_domains: vec![],
         admin_password: None,
@@ -795,7 +796,12 @@ impl HasScimServices for TestAppState {
 pub fn build_test_router(state: TestAppState) -> Router {
     // Use the production router with TestAppState and disabled rate limiting
     // This ensures we're testing the actual production handlers
-    build_full_router(state, RateLimitState::noop(), std::sync::Arc::new(None))
+    build_full_router(
+        state,
+        RateLimitState::noop(),
+        auth9_core::middleware::CaptchaState::disabled(),
+        std::sync::Arc::new(None),
+    )
 }
 
 /// Build a router with email template endpoints for testing.

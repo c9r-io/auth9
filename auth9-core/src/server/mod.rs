@@ -918,8 +918,25 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     // Wrap prometheus handle in Arc for sharing
     let prom_handle = Arc::new(prometheus_handle);
 
+    // Build CAPTCHA state
+    let captcha_state = if config.captcha.enabled {
+        use crate::domains::security_observability::service::captcha::turnstile::TurnstileProvider;
+        let provider: std::sync::Arc<dyn crate::domains::security_observability::service::CaptchaProvider> =
+            std::sync::Arc::new(TurnstileProvider::new(
+                config.captcha.secret_key.clone(),
+                config.captcha.verify_timeout_ms,
+            ));
+        let mut cs = crate::middleware::CaptchaState::new(config.captcha.clone(), provider);
+        if let Some(redis) = rate_limit_state.redis_connection() {
+            cs = cs.with_redis(redis.clone());
+        }
+        cs
+    } else {
+        crate::middleware::CaptchaState::disabled()
+    };
+
     // Build HTTP router with all features and rate limiting
-    let app = build_full_router(state, rate_limit_state, prom_handle.clone());
+    let app = build_full_router(state, rate_limit_state, captcha_state, prom_handle.clone());
 
     // Start background metrics tasks (DB pool + business gauges)
     if prom_handle.is_some() {
@@ -1353,6 +1370,7 @@ fn build_cors_layer(config: &CorsConfig) -> CorsLayer {
 pub fn build_full_router<S>(
     state: S,
     rate_limit_state: RateLimitState,
+    captcha_state: crate::middleware::CaptchaState,
     prometheus_handle: Arc<Option<PrometheusHandle>>,
 ) -> Router
 where
@@ -1516,6 +1534,8 @@ where
         // 9. CORS - must be outermost for preflight requests
         .layer(cors)
         .with_state(state)
+        // Inject CaptchaState into request extensions for the captcha middleware
+        .layer(axum::Extension(captcha_state))
         // Nest the metrics route outside .with_state() since it uses its own state
         .merge(metrics_route)
         // Mount OpenAPI documentation endpoints (non-production only)

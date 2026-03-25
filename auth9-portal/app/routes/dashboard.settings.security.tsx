@@ -290,6 +290,28 @@ export default function SecuritySettingsPage() {
           </div>
         </CardContent>
       </Card>
+      {/* CAPTCHA Status (read-only — configured via environment variables) */}
+      <Card>
+        <CardHeader>
+          <SettingsSectionHeading
+            title={t("settings.securitySettings.captchaTitle")}
+            description={t("settings.securitySettings.captchaDescription")}
+          />
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-[var(--text-secondary)] space-y-2">
+            <p>{t("settings.securitySettings.captchaEnvNote")}</p>
+            <div className="grid grid-cols-2 gap-2 max-w-sm">
+              <span className="font-medium">{t("settings.securitySettings.captchaStatus")}</span>
+              <span>CAPTCHA_ENABLED</span>
+              <span className="font-medium">{t("settings.securitySettings.captchaProvider")}</span>
+              <span>CAPTCHA_PROVIDER</span>
+              <span className="font-medium">{t("settings.securitySettings.captchaMode")}</span>
+              <span>CAPTCHA_MODE</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
