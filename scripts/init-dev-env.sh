@@ -71,7 +71,10 @@ echo "[2/3] Generating random secrets..."
 set_if_empty "JWT_SECRET" "$(openssl rand -hex 32)"
 set_if_empty "SESSION_SECRET" "$(openssl rand -hex 32)"
 set_if_empty "PASSWORD_RESET_HMAC_KEY" "$(openssl rand -hex 32)"
-set_if_empty "SETTINGS_ENCRYPTION_KEY" "$(openssl rand -base64 32)"
+# Use hex encoding (no special chars) — the app's from_base64() needs standard base64,
+# so we generate 32 random bytes → base64-encode via openssl, but pipe through tr to
+# remove +/ which are problematic in unquoted .env values. Use only [A-Za-z0-9] subset.
+set_if_empty "SETTINGS_ENCRYPTION_KEY" "$(openssl rand 32 | base64 | tr -d '\n' | tr '+/' 'Aa')"
 
 # Step 3: Generate RSA key pair (delegates to gen-dev-keys.sh)
 echo "[3/3] Generating JWT RSA key pair..."

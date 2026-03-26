@@ -52,13 +52,14 @@ Auth9 密钥类型：
 
 > **重要：开发环境 vs 生产环境的区别**
 >
-> `docker-compose.yml` 中包含的密钥是**开发专用值**，均标记有 `change-in-production` 后缀
-> （如 `dev-jwt-secret-change-in-production`），这是标准开发实践，**不属于安全漏洞**。
+> JWT 签名密钥（RSA 私钥/公钥）已从 `docker-compose.yml` 外部化，通过 `.env` 文件注入
+> （使用 `${VAR:?}` 语法，缺失时 docker-compose 会报错）。
+> 开发者首次设置需运行 `scripts/init-dev-env.sh` 生成所有密钥到 `.env`。
 >
 > 本场景的检查重点是：
 > 1. `.env` 文件被 `.gitignore` 排除（✅ 已实现）
-> 2. 生产部署使用 K8s Secrets（✅ 已实现，见 `deploy/k8s/secrets.yaml.example`）
-> 3. `docker-compose.yml` 中的开发密钥不会被误用于生产
+> 2. `docker-compose.yml` 不包含内联密钥材料（✅ 已实现，使用环境变量引用）
+> 3. 生产部署使用 K8s Secrets（✅ 已实现，见 `deploy/k8s/secrets.yaml.example`）
 > 4. Git 历史中不含真实生产密钥
 
 ### 验证方法
@@ -67,9 +68,13 @@ Auth9 密钥类型：
 grep -n ".env" .gitignore
 # 预期: .env 和 .env.* 被排除，.env.example 例外
 
-# 2. 确认开发密钥有 "change-in-production" 标记
-grep "change-in-production" docker-compose.yml | wc -l
-# 预期: 所有敏感环境变量都包含此标记
+# 2. 确认 docker-compose.yml 不包含内联密钥材料
+grep -c 'BEGIN PRIVATE KEY\|BEGIN PUBLIC KEY' docker-compose.yml  # pragma: allowlist secret
+# 预期: 0（密钥通过 .env 环境变量注入，不在 docker-compose.yml 中）
+
+# 2b. 确认 docker-compose.yml 使用 ${VAR:?} 安全引用
+grep 'JWT_PRIVATE_KEY.*:?' docker-compose.yml | head -1
+# 预期: 包含 ${JWT_PRIVATE_KEY:?...} 格式
 
 # 3. 检查 K8s 生产部署是否使用 Secrets
 ls deploy/k8s/secrets.yaml.example
@@ -94,8 +99,8 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/.git/config
 
 | 症状 | 是否为真实问题 | 说明 |
 |------|--------------|------|
-| docker-compose.yml 含 JWT_PRIVATE_KEY | ❌ 否 | 开发专用密钥，用于本地测试，不用于生产 |
-| docker-compose.yml 含开发默认密码 | ❌ 否 | 本地开发默认值，生产使用 K8s Secrets |
+| docker-compose.yml 含 `${JWT_PRIVATE_KEY:?}` 引用 | ❌ 否 | 仅为环境变量引用，实际密钥在 `.env`（已 gitignore） |
+| docker-compose.yml 含 `dev-*-change-in-production` 默认值 | ❌ 否 | 本地开发 fallback 默认值，生产使用 K8s Secrets |
 | .env 文件含 SETTINGS_ENCRYPTION_KEY | ⚠️ 需确认 | .env 已被 .gitignore 排除；确认该文件未被提交即可 |
 | Git 历史含生产密钥 | ✅ 是 | 需立即轮换密钥并使用 BFG/git-filter-repo 清理历史 |
 

@@ -48,10 +48,6 @@ fi
 PUBLIC_KEY_FILE="$JWT_DIR/public.key"
 openssl rsa -in "$PRIVATE_KEY" -pubout -out "$PUBLIC_KEY_FILE" 2>/dev/null
 
-# Create escaped versions for .env (replace newlines with literal \n)
-ESCAPED_PRIVATE=$(awk '{printf "%s\\n", $0}' "$PRIVATE_KEY" | sed 's/\\n$//')
-ESCAPED_PUBLIC=$(awk '{printf "%s\\n", $0}' "$PUBLIC_KEY_FILE" | sed 's/\\n$//')
-
 echo "JWT dev key generated: $PRIVATE_KEY"
 echo "JWT public key generated: $PUBLIC_KEY_FILE"
 
@@ -60,19 +56,40 @@ ENV_FILE="$PROJECT_DIR/.env"
 if [ -f "$ENV_FILE" ]; then
   CURRENT_PRIVATE=$(grep '^JWT_PRIVATE_KEY=' "$ENV_FILE" | cut -d= -f2- || true)
   if [ -z "$CURRENT_PRIVATE" ] || [ "$FORCE" = true ]; then
-    if grep -q '^JWT_PRIVATE_KEY=' "$ENV_FILE"; then
-      # Use | as sed delimiter since keys contain /
-      sed -i.bak "s|^JWT_PRIVATE_KEY=.*|JWT_PRIVATE_KEY=$ESCAPED_PRIVATE|" "$ENV_FILE"
-      rm -f "$ENV_FILE.bak"
-    else
-      echo "JWT_PRIVATE_KEY=$ESCAPED_PRIVATE" >> "$ENV_FILE"
-    fi
-    if grep -q '^JWT_PUBLIC_KEY=' "$ENV_FILE"; then
-      sed -i.bak "s|^JWT_PUBLIC_KEY=.*|JWT_PUBLIC_KEY=$ESCAPED_PUBLIC|" "$ENV_FILE"
-      rm -f "$ENV_FILE.bak"
-    else
-      echo "JWT_PUBLIC_KEY=$ESCAPED_PUBLIC" >> "$ENV_FILE"
-    fi
+    # Use python3 to read PEM files and write escaped \n values into .env
+    # (shell variables and sed can't reliably handle literal \n in PEM values)
+    python3 -c '
+import sys
+private_key_path, public_key_path, env_path = sys.argv[1], sys.argv[2], sys.argv[3]
+
+with open(private_key_path) as f:
+    escaped_private = f.read().strip().replace("\n", "\\n")
+with open(public_key_path) as f:
+    escaped_public = f.read().strip().replace("\n", "\\n")
+
+with open(env_path, "r") as f:
+    lines = f.readlines()
+
+result = []
+replaced = {"JWT_PRIVATE_KEY": False, "JWT_PUBLIC_KEY": False}
+for line in lines:
+    if line.startswith("JWT_PRIVATE_KEY="):
+        result.append(f"JWT_PRIVATE_KEY={escaped_private}\n")
+        replaced["JWT_PRIVATE_KEY"] = True
+    elif line.startswith("JWT_PUBLIC_KEY="):
+        result.append(f"JWT_PUBLIC_KEY={escaped_public}\n")
+        replaced["JWT_PUBLIC_KEY"] = True
+    else:
+        result.append(line)
+
+if not replaced["JWT_PRIVATE_KEY"]:
+    result.append(f"JWT_PRIVATE_KEY={escaped_private}\n")
+if not replaced["JWT_PUBLIC_KEY"]:
+    result.append(f"JWT_PUBLIC_KEY={escaped_public}\n")
+
+with open(env_path, "w") as f:
+    f.writelines(result)
+' "$PRIVATE_KEY" "$PUBLIC_KEY_FILE" "$ENV_FILE"
     echo "Updated .env with new JWT keys"
   else
     echo "Skipping .env update (JWT_PRIVATE_KEY already set; use --force to overwrite)"

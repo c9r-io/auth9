@@ -248,6 +248,11 @@
 
 ---
 
+### 运维与部署 (1 个文档, 5 个场景)
+| 文档 | 描述 | 场景数 |
+|------|------|--------|
+| [ops/01-deploy-validation.md](./ops/01-deploy-validation.md) | K8s 部署占位符拦截、docker-compose 密钥外部化、开发环境初始化 | 5 |
+
 ## 统计概览
 
 | 模块 | 文档数 | 场景数 |
@@ -271,12 +276,14 @@
 | SAML Application | 4 | 20 |
 | SCIM Provisioning | 5 | 25 |
 | Identity Engine | 1 | 5 |
-| **总计** | **122** | **579** |
+| 运维与部署 | 1 | 5 |
+| **总计** | **123** | **584** |
 
 ### 文档对齐记录
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-03-27 | 5.29.0 | **部署校验与密钥外部化**：新增 `ops/01-deploy-validation.md`（5 场景），覆盖 upgrade.sh 占位符拦截、--skip-validation 旁路、validate-k8s-deploy.sh 全 6 字段检查、init-dev-env.sh 一键初始化、docker-compose 缺失密钥报错；更新 `security/data-security/03-secrets-management.md` 反映 JWT 密钥外部化后的验证方法与误报排查表；共 123 文档 584 场景 |
 | 2026-03-22 | 5.28.0 | **用户级 Email OTP 开关**：新增 `auth/31-email-otp-user-toggle.md`（5 场景），覆盖 MFA 页面 Email OTP 卡片入口可见性、启用/停用流程、登录双重检查、认证保护；更新 `auth/30-mfa-self-service-portal.md` 场景 1 卡片列表（三→四卡片）；更新 `auth/17-email-otp-login.md` 开关说明（新增用户级双重检查）；更新 `security/authentication/03-mfa-security.md` MFA 端点列表和 Email OTP 说明；认证 24 文档 112 场景；共 120 文档 569 场景 |
 | 2026-03-20 | 5.27.0 | **Portal MFA 自助管理页面**：新增 `auth/30-mfa-self-service-portal.md`（5 场景），覆盖 MFA 页面入口可见性、TOTP 内嵌设置流程、恢复码生成弹窗、TOTP 移除确认、恢复码不足警告；认证 25 文档 117 场景；共 126 文档 593 场景 |
 | 2026-03-19 | 5.26.0 | **Phase 5 FR5 基础设施清理**：新增 `integration/qa-infrastructure-keycloak-cleanup.md`（5 场景），覆盖 Docker Compose 无 Keycloak 依赖、Portal 登录模式简化、API 健康检查、K8s 配置清理、脚本清理验证；集成测试 23 文档 106 场景；共 125 文档 588 场景 |
