@@ -140,7 +140,8 @@ jobs:
       - name: Build auth9-core image
         uses: docker/build-push-action@v5
         with:
-          context: ./auth9-core
+          context: .
+          file: auth9-core/Dockerfile
           push: false
           tags: auth9-core:test
           cache-from: type=gha

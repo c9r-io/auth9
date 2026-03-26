@@ -49,7 +49,8 @@ jobs:
         id: build
         uses: docker/build-push-action@v5
         with:
-          context: ./auth9-core
+          context: .
+          file: auth9-core/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.CORE_IMAGE_NAME }}:build-${{ github.sha }}-${{ matrix.arch }}
           cache-from: |
