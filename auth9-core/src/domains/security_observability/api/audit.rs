@@ -1,6 +1,6 @@
 //! Audit log API handlers
 
-use crate::error::Result;
+use crate::error::{AppError, Result};
 use crate::http_support::PaginatedResponse;
 use crate::middleware::auth::AuthUser;
 use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
@@ -36,15 +36,31 @@ pub async fn list<S: HasServices>(
         },
     )?;
 
+    // Validate per_page and page values
+    if let Some(limit) = query.limit {
+        if limit < 1 {
+            return Err(AppError::BadRequest(
+                "per_page must be a positive integer (>= 1)".to_string(),
+            ));
+        }
+    }
+    if let Some(p) = query.page {
+        if p < 1 {
+            return Err(AppError::BadRequest(
+                "page must be a positive integer (>= 1)".to_string(),
+            ));
+        }
+    }
+
     // Resolve per_page and page from query params.
     // `per_page` (alias of `limit`) and `page` take priority over raw `offset`/`limit`.
     let per_page = query
         .limit
         .unwrap_or(50)
-        .clamp(1, crate::http_support::MAX_PER_PAGE);
+        .min(crate::http_support::MAX_PER_PAGE);
 
     let page_param = query.page;
-    let page = page_param.unwrap_or(1).max(1);
+    let page = page_param.unwrap_or(1);
     let offset = if page_param.is_some() {
         // page-based: compute offset from page number
         (page - 1) * per_page

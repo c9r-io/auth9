@@ -12,7 +12,6 @@ import { getAccessToken } from "~/services/session.server";
 import {
   tenantApi,
   samlApplicationApi,
-  SAML_APPLICATION_API_BASE,
   VALID_ATTRIBUTE_SOURCES,
   type CreateSamlApplicationInput,
   type AttributeMapping,
@@ -55,11 +54,13 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       })
     );
 
+    const corePublicUrl = process.env.AUTH9_CORE_PUBLIC_URL || process.env.AUTH9_CORE_URL || "http://localhost:8080";
+
     return {
       tenant: tenantRes.data,
       apps: appsRes.data,
       certInfoMap,
-      apiBaseUrl: SAML_APPLICATION_API_BASE,
+      apiBaseUrl: corePublicUrl,
     };
   } catch {
     throw redirect("/dashboard/tenants");

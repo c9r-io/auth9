@@ -3017,14 +3017,18 @@ impl SecurityAlertRepository for TestSecurityAlertRepository {
         &self,
         offset: i64,
         limit: i64,
-        unresolved_only: bool,
+        resolved_filter: Option<bool>,
         severity: Option<AlertSeverity>,
         alert_type: Option<SecurityAlertType>,
     ) -> Result<Vec<SecurityAlert>> {
         let alerts = self.alerts.read().await;
         Ok(alerts
             .iter()
-            .filter(|a| !unresolved_only || a.resolved_at.is_none())
+            .filter(|a| match resolved_filter {
+                Some(true) => a.resolved_at.is_some(),
+                Some(false) => a.resolved_at.is_none(),
+                None => true,
+            })
             .filter(|a| severity.as_ref().is_none_or(|s| a.severity == *s))
             .filter(|a| alert_type.as_ref().is_none_or(|t| a.alert_type == *t))
             .skip(offset as usize)
@@ -3035,14 +3039,18 @@ impl SecurityAlertRepository for TestSecurityAlertRepository {
 
     async fn count_filtered(
         &self,
-        unresolved_only: bool,
+        resolved_filter: Option<bool>,
         severity: Option<AlertSeverity>,
         alert_type: Option<SecurityAlertType>,
     ) -> Result<i64> {
         let alerts = self.alerts.read().await;
         Ok(alerts
             .iter()
-            .filter(|a| !unresolved_only || a.resolved_at.is_none())
+            .filter(|a| match resolved_filter {
+                Some(true) => a.resolved_at.is_some(),
+                Some(false) => a.resolved_at.is_none(),
+                None => true,
+            })
             .filter(|a| severity.as_ref().is_none_or(|s| a.severity == *s))
             .filter(|a| alert_type.as_ref().is_none_or(|t| a.alert_type == *t))
             .count() as i64)

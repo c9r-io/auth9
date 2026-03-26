@@ -200,6 +200,8 @@ curl -s http://localhost:8080/api/v1/identity-providers \
 - 步骤 3: SISMEMBER 返回 `0`（已移除）
 - 步骤 4: `401 Unauthorized`
 
+> **⚠️ 排查提示**: `remove_audience()` 的 `SREM` 操作已在 Service 删除流程中实现。如果测试发现删除 Service 后 client_id 仍存在于 Redis SET 中，请检查 `cache_manager` 是否为 `None`（即 Redis 未连接）。当 `cache_manager` 为 `None` 时，`SREM` 调用会被跳过（no-op），导致 audience 不会从 Redis 中移除。确认 auth9-core 启动日志中 Redis 连接成功。
+
 ---
 
 ## 场景 5：不存在的 audience 被拒绝

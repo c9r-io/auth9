@@ -87,9 +87,10 @@ console.log(styles.boxShadow);
 
 ### 测试操作流程
 1. **确保浏览器宽度 ≥ 1024px**（侧边栏在桌面端为浮动卡片样式，移动端为全宽抽屉）
-2. 检查左侧导航栏
-3. 观察背景透视效果
-4. 检查导航项的悬停和激活状态
+2. **确保 `data-theme="light"` 已设置**：Portal 的 `theme-init.js` 会在 `prefers-color-scheme: dark` 匹配时自动设置 dark 主题。Playwright 的 `colorScheme` 配置不会阻止此行为。测试前须在 `<html>` 上显式设置 `data-theme="light"`（例如通过 `page.evaluate(() => document.documentElement.setAttribute('data-theme', 'light'))`），否则 Light 模式的颜色断言将失败。
+3. 检查左侧导航栏
+4. 观察背景透视效果
+5. 检查导航项的悬停和激活状态
 
 ### 预期视觉效果
 **侧边栏容器**（桌面端 ≥ 1024px）：

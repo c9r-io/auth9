@@ -154,7 +154,7 @@ impl SecurityAlertRepository for SecurityAlertRepositoryImpl {
         &self,
         offset: i64,
         limit: i64,
-        unresolved_only: bool,
+        resolved_filter: Option<bool>,
         severity: Option<AlertSeverity>,
         alert_type: Option<SecurityAlertType>,
     ) -> Result<Vec<SecurityAlert>> {
@@ -162,8 +162,10 @@ impl SecurityAlertRepository for SecurityAlertRepositoryImpl {
             "SELECT id, user_id, tenant_id, alert_type, severity, details, \
              resolved_at, resolved_by, created_at FROM security_alerts WHERE 1=1",
         );
-        if unresolved_only {
-            sql.push_str(" AND resolved_at IS NULL");
+        match resolved_filter {
+            Some(true) => sql.push_str(" AND resolved_at IS NOT NULL"),
+            Some(false) => sql.push_str(" AND resolved_at IS NULL"),
+            None => {} // no filter
         }
         if severity.is_some() {
             sql.push_str(" AND severity = ?");
@@ -188,13 +190,15 @@ impl SecurityAlertRepository for SecurityAlertRepositoryImpl {
 
     async fn count_filtered(
         &self,
-        unresolved_only: bool,
+        resolved_filter: Option<bool>,
         severity: Option<AlertSeverity>,
         alert_type: Option<SecurityAlertType>,
     ) -> Result<i64> {
         let mut sql = String::from("SELECT COUNT(*) FROM security_alerts WHERE 1=1");
-        if unresolved_only {
-            sql.push_str(" AND resolved_at IS NULL");
+        match resolved_filter {
+            Some(true) => sql.push_str(" AND resolved_at IS NOT NULL"),
+            Some(false) => sql.push_str(" AND resolved_at IS NULL"),
+            None => {}
         }
         if severity.is_some() {
             sql.push_str(" AND severity = ?");

@@ -46,6 +46,11 @@ pub struct MfaStatusResponse {
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
+pub struct TotpEnrollStartRequest {
+    pub current_password: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct TotpEnrollVerifyRequest {
     pub setup_token: String,
     pub code: String,
@@ -155,10 +160,27 @@ pub async fn mfa_status<S: HasMfa + HasWebAuthn + HasServices>(
 pub async fn totp_enroll_start<S: HasMfa + HasServices>(
     State(state): State<S>,
     TypedHeader(Authorization(bearer)): TypedHeader<Authorization<Bearer>>,
+    Json(input): Json<TotpEnrollStartRequest>,
 ) -> Result<Json<SuccessResponse<TotpEnrollmentResponse>>> {
     let claims = HasServices::jwt_manager(&state).verify_identity_token(bearer.token())?;
     let user_id = &claims.sub;
     let email = &claims.email;
+
+    // Verify current password before allowing MFA enrollment (ASVS V7.3)
+    let user = state
+        .user_service()
+        .get_by_email(email)
+        .await?;
+    let password_valid = state
+        .identity_engine()
+        .user_store()
+        .validate_user_password(&user.identity_subject, &input.current_password)
+        .await?;
+    if !password_valid {
+        return Err(AppError::Forbidden(
+            "Current password is incorrect".to_string(),
+        ));
+    }
 
     let enrollment = state
         .totp_service()

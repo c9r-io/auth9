@@ -623,7 +623,7 @@ impl<
         &self,
         page: i64,
         per_page: i64,
-        unresolved_only: bool,
+        resolved_filter: Option<bool>,
         severity: Option<AlertSeverity>,
         alert_type: Option<SecurityAlertType>,
     ) -> Result<(Vec<SecurityAlert>, i64)> {
@@ -633,14 +633,14 @@ impl<
             .list_filtered(
                 offset,
                 per_page,
-                unresolved_only,
+                resolved_filter,
                 severity.clone(),
                 alert_type.clone(),
             )
             .await?;
         let total = self
             .security_alert_repo
-            .count_filtered(unresolved_only, severity, alert_type)
+            .count_filtered(resolved_filter, severity, alert_type)
             .await?;
         Ok((alerts, total))
     }

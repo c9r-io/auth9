@@ -137,7 +137,10 @@ pub async fn list<S: HasServices>(
                 }
             }
             let total = tenants.len() as i64;
-            Ok(Json(PaginatedResponse::new(tenants, 1, total, total)))
+            // Apply pagination
+            let start = ((query.page - 1) * query.per_page) as usize;
+            let paged: Vec<_> = tenants.into_iter().skip(start).take(query.per_page as usize).collect();
+            Ok(Json(PaginatedResponse::new(paged, query.page, query.per_page, total)))
         }
         TenantListMode::TokenTenant(tenant_id) => {
             let tenant = state.tenant_service().get(tenant_id).await?;

@@ -38,14 +38,22 @@ pub async fn list_alerts<S: HasSecurityAlerts + HasServices>(
 
     let page = params.page.unwrap_or(1);
     let per_page = params.per_page.unwrap_or(20);
-    let unresolved_only = params.unresolved_only.unwrap_or(false);
+
+    // Support both `resolved` (true/false) and legacy `unresolved_only` filters
+    let resolved_filter = if let Some(resolved) = params.resolved {
+        Some(resolved)
+    } else if params.unresolved_only.unwrap_or(false) {
+        Some(false) // unresolved_only=true means resolved=false
+    } else {
+        None // no filter
+    };
 
     let (alerts, total) = state
         .security_detection_service()
         .list_filtered(
             page,
             per_page,
-            unresolved_only,
+            resolved_filter,
             params.severity,
             params.alert_type,
         )
@@ -59,7 +67,9 @@ pub async fn list_alerts<S: HasSecurityAlerts + HasServices>(
 pub struct AlertsQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,
-    /// If true, only return unresolved alerts
+    /// Filter by resolved status: true=resolved only, false=unresolved only
+    pub resolved: Option<bool>,
+    /// If true, only return unresolved alerts (legacy, prefer `resolved`)
     pub unresolved_only: Option<bool>,
     /// Filter by severity: low, medium, high, critical
     pub severity: Option<AlertSeverity>,

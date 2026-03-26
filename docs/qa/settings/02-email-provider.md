@@ -33,6 +33,8 @@
 - 管理员已登录
 - 当前无邮件服务商配置（显示 Email Provider Not Configured）
 
+> **⚠️ Docker 开发环境注意**: 执行 `reset-docker.sh` 后，环境并非"未配置"状态。初始化脚本会检测 `DEV_SMTP_HOST` 环境变量并自动 seed mailpit SMTP 配置（host: `mailpit`, port: `1025`, TLS 关闭）。因此 `reset-docker.sh` 后的初始状态是 **已配置 SMTP (mailpit)**，状态卡片显示「Email Provider Active」。要测试"未配置"初始状态，需先手动将 Provider Type 切换为「None (Email disabled)」并保存。
+
 ### 目的
 验证用户可从设置导航发现邮件设置入口，并完成 SMTP 配置
 

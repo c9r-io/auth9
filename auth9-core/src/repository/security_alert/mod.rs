@@ -37,13 +37,13 @@ pub trait SecurityAlertRepository: Send + Sync {
         &self,
         offset: i64,
         limit: i64,
-        unresolved_only: bool,
+        resolved_filter: Option<bool>,
         severity: Option<AlertSeverity>,
         alert_type: Option<SecurityAlertType>,
     ) -> Result<Vec<SecurityAlert>>;
     async fn count_filtered(
         &self,
-        unresolved_only: bool,
+        resolved_filter: Option<bool>,
         severity: Option<AlertSeverity>,
         alert_type: Option<SecurityAlertType>,
     ) -> Result<i64>;
