@@ -53,12 +53,8 @@ jobs:
           file: auth9-core/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.CORE_IMAGE_NAME }}:build-${{ github.sha }}-${{ matrix.arch }}
-          cache-from: |
-            type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.CORE_IMAGE_NAME }}:buildcache-${{ matrix.arch }}
-          cache-to: |
-            type=gha,mode=max
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.CORE_IMAGE_NAME }}:buildcache-${{ matrix.arch }},mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: linux/${{ matrix.arch }}
 
       - name: Export digest
@@ -167,12 +163,8 @@ jobs:
           file: auth9-portal/Dockerfile
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.PORTAL_IMAGE_NAME }}:build-${{ github.sha }}-${{ matrix.arch }}
-          cache-from: |
-            type=gha
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.PORTAL_IMAGE_NAME }}:buildcache-${{ matrix.arch }}
-          cache-to: |
-            type=gha,mode=max
-            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.PORTAL_IMAGE_NAME }}:buildcache-${{ matrix.arch }},mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: linux/${{ matrix.arch }}
 
       - name: Export digest
