@@ -372,7 +372,7 @@ export default {
     emptyTitle: "最初のテナントを作成して始めましょう", emptyDescription: "テナントは各環境や顧客ごとにアイデンティティとポリシーを分離します。作成するとダッシュボードの残りのワークフローが利用できます。", emptyAction: "始める", recentActivity: "最近のアクティビティ", noRecentActivity: "最近のアクティビティはありません", viewDetails: "詳細を見る",
   },
   audit: {
-    metaTitle: "監査ログ - Auth9", title: "監査ログ", description: "テナント間の管理変更を追跡", trail: "監査トレイル", trailDescription: "{{total}}件 • {{totalPages}}ページ中{{page}}ページ目", action: "アクション", resource: "リソース", actor: "実行者", time: "日時", noLogs: "監査ログが見つかりません", page: "{{totalPages}}ページ中{{page}}ページ目", previous: "前へ", next: "次へ",
+    metaTitle: "監査ログ - Auth9", title: "監査ログ", description: "テナント間の管理変更を追跡", trail: "監査トレイル", trailDescription: "{{total}}件 • {{totalPages}}ページ中{{page}}ページ目", action: "アクション", resource: "リソース", actor: "実行者", time: "日時", noLogs: "監査ログが見つかりません", oldValue: "旧値", newValue: "新値", page: "{{totalPages}}ページ中{{page}}ページ目", previous: "前へ", next: "次へ",
   },
   analytics: {
     metaTitle: "分析 - Auth9", loadFailed: "分析の読み込みに失敗しました", title: "分析", description: "ログインアクティビティと統計", lastDays: "過去{{days}}日間", custom: "カスタム", to: "〜", apply: "適用", totalLogins: "総ログイン数", successful: "成功", failed: "失敗", uniqueUsers: "ユニークユーザー数", successRate: "成功率{{rate}}%", byEventType: "イベントタイプ別", byDeviceType: "デバイスタイプ別", noData: "データがありません", dailyTrend: "日次ログイン推移", noTrend: "推移データがありません", successfulLegend: "成功", failedLegend: "失敗", viewLoginEvents: "ログインイベントを見る", viewLoginEventsDescription: "詳細なログインアクティビティを確認し、問題をトラブルシュート", viewEvents: "イベントを見る →",

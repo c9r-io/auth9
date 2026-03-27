@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { MetaFunction, LoaderFunctionArgs } from "react-router";
 import { useLoaderData, Link } from "react-router";
 import { Card, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -21,9 +22,16 @@ export async function loader({ request }: LoaderFunctionArgs) {
   return logs;
 }
 
+function formatValue(value: unknown): string {
+  if (value == null) return "-";
+  if (typeof value === "string") return value;
+  return JSON.stringify(value, null, 2);
+}
+
 export default function AuditLogsPage() {
   const { t } = useI18n();
   const data = useLoaderData<typeof loader>();
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   return (
     <div className="space-y-6">
       <div>
@@ -53,21 +61,55 @@ export default function AuditLogsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--glass-border-subtle)]">
-                {data.data.map((log) => (
-                  <tr key={log.id} className="text-[var(--text-secondary)]">
-                    <td className="px-4 py-3 font-medium text-[var(--text-primary)]">
-                      <code className="rounded bg-[var(--sidebar-item-hover)] px-1.5 py-0.5 font-mono text-xs">{log.action}</code>
-                    </td>
-                    <td className="px-4 py-3">
-                      {log.resource_type}
-                      {log.resource_id ? `:${log.resource_id}` : ""}
-                    </td>
-                    <td className="px-4 py-3">{log.actor_email || log.actor_display_name || "-"}</td>
-                    <td className="px-4 py-3">
-                      <FormattedDate date={log.created_at} />
-                    </td>
-                  </tr>
-                ))}
+                {data.data.map((log) => {
+                  const hasDetail = log.old_value != null || log.new_value != null || log.ip_address;
+                  const isExpanded = expandedId === log.id;
+                  return (
+                    <tr
+                      key={log.id}
+                      className={`text-[var(--text-secondary)] ${hasDetail ? "cursor-pointer hover:bg-[var(--sidebar-item-hover)]" : ""}`}
+                      onClick={() => hasDetail && setExpandedId(isExpanded ? null : log.id)}
+                    >
+                      <td className="px-4 py-3" colSpan={4}>
+                        <div className="flex items-center gap-0">
+                          <div className="flex-1 grid grid-cols-[1fr_1fr_1fr_1fr] gap-0">
+                            <div className="font-medium text-[var(--text-primary)]">
+                              <code className="rounded bg-[var(--sidebar-item-hover)] px-1.5 py-0.5 font-mono text-xs">{log.action}</code>
+                              {hasDetail && (
+                                <span className="ml-1.5 text-[10px] text-[var(--text-tertiary)]">{isExpanded ? "▼" : "▶"}</span>
+                              )}
+                            </div>
+                            <div>{log.resource_type}{log.resource_id ? `:${log.resource_id}` : ""}</div>
+                            <div>{log.actor_email || log.actor_display_name || "-"}</div>
+                            <div><FormattedDate date={log.created_at} /></div>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="mt-3 rounded-lg bg-[var(--sidebar-item-hover)] p-3 text-xs space-y-2">
+                            {log.ip_address && (
+                              <div>
+                                <span className="font-semibold text-[var(--text-primary)]">IP: </span>
+                                <span className="font-mono">{log.ip_address}</span>
+                              </div>
+                            )}
+                            {log.old_value != null && (
+                              <div>
+                                <span className="font-semibold text-[var(--text-primary)]">{t("audit.oldValue")}: </span>
+                                <pre className="mt-1 whitespace-pre-wrap break-all rounded bg-[var(--glass-bg)] p-2 font-mono text-[11px]">{formatValue(log.old_value)}</pre>
+                              </div>
+                            )}
+                            {log.new_value != null && (
+                              <div>
+                                <span className="font-semibold text-[var(--text-primary)]">{t("audit.newValue")}: </span>
+                                <pre className="mt-1 whitespace-pre-wrap break-all rounded bg-[var(--glass-bg)] p-2 font-mono text-[11px]">{formatValue(log.new_value)}</pre>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {data.data.length === 0 && (
                   <tr>
                     <td className="px-4 py-6 text-center text-[var(--text-tertiary)]" colSpan={4}>

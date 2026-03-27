@@ -38,9 +38,9 @@ async function runTests() {
       limit: 10,
     });
 
-    console.log('Total logs:', logs.length);
-    if (logs.length > 0) {
-      console.log('Latest log:', JSON.stringify(logs[0], null, 2));
+    console.log('Total logs:', logs.data.length);
+    if (logs.data.length > 0) {
+      console.log('Latest log:', JSON.stringify(logs.data[0], null, 2));
       console.log('✅ 场景 6 PASS');
     } else {
       console.log('❌ 场景 6 FAIL - No logs returned');

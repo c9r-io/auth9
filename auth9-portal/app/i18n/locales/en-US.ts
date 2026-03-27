@@ -1347,6 +1347,8 @@ export default {
     actor: "Actor",
     time: "Time",
     noLogs: "No audit logs found",
+    oldValue: "Old Value",
+    newValue: "New Value",
     page: "Page {{page}} of {{totalPages}}",
     previous: "Previous",
     next: "Next",

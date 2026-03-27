@@ -59,8 +59,8 @@ async function testLogs() {
     limit: 10,
   });
 
-  console.log('Total logs:', logs.length);
-  console.log('Latest log:', logs[0]);
+  console.log('Total logs:', logs.data.length);
+  console.log('Latest log:', logs.data[0]);
 }
 
 testLogs().catch(console.error);

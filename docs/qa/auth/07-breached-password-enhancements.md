@@ -396,15 +396,16 @@ curl -s -X PUT http://localhost:8080/api/v1/tenants/$TENANT_ID/password-policy \
   }'
 ```
 
-2. 使用常见泄露密码注册（HIBP count 低于阈值）：
+2. 使用常见泄露密码注册（HIBP count 低于阈值，密码需满足策略要求）：
 ```bash
 curl -s -w "\n%{http_code}" -X POST http://localhost:8080/api/v1/users \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "threshold-test@example.com",
-    "password": "password",
-    "name": "Threshold Test"
+    "password": "Password123!!",
+    "name": "Threshold Test",
+    "tenant_id": "'"$TENANT_ID"'"
   }'
 # pragma: allowlist secret
 ```
@@ -420,18 +421,20 @@ curl -s -X PUT http://localhost:8080/api/v1/tenants/$TENANT_ID/password-policy \
   }'
 ```
 
-4. 使用泄露密码注册：
+4. 使用泄露密码注册（密码需满足策略最低要求：12+ 字符、大小写、符号）：
 ```bash
 curl -s -w "\n%{http_code}" -X POST http://localhost:8080/api/v1/users \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "email": "disabled-mode-test@example.com",
-    "password": "123456",
-    "name": "Disabled Mode Test"
+    "password": "Password123!!",
+    "name": "Disabled Mode Test",
+    "tenant_id": "'"$TENANT_ID"'"
   }'
 # pragma: allowlist secret
 ```
+> **注意**: 密码 `123456` 不满足默认密码策略（12字符、大小写、符号），会导致 422 验证错误而非 breach check。必须使用满足策略但仍在 HIBP 泄露列表中的密码。
 
 ### 预期结果
 - 步骤 2：HTTP **201**（或 200），因 `password` 的 HIBP count (~3.8M) 低于 999999999 阈值，不触发拦截

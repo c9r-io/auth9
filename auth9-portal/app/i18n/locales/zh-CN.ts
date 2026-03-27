@@ -1344,6 +1344,8 @@ export default {
     actor: "执行者",
     time: "时间",
     noLogs: "未找到审计日志",
+    oldValue: "旧值",
+    newValue: "新值",
     page: "第 {{page}} / {{totalPages}} 页",
     previous: "上一页",
     next: "下一页",
