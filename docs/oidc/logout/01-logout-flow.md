@@ -106,35 +106,37 @@ post_logout_redirect_uri=https://malicious-site.example.com/callback" \
 
 ---
 
-## 场景 4: 不携带 client_id 和 redirect_uri 的 logout 请求返回错误
+## 场景 4: 参数缺失时的 logout 行为（OIDC RP-Initiated Logout 1.0）
 
-**目的**: 验证缺少必需参数的 logout 请求被正确处理。
+**目的**: 验证不同参数组合下 logout 端点的行为符合 OIDC 规范。
+
+> **注意**: 根据 [OIDC RP-Initiated Logout 1.0](https://openid.net/specs/openid-connect-rpinitiated-1_0.html) 规范第 2 节，所有 logout 参数均为 **OPTIONAL**。无参数请求时 OP 应正常响应（不重定向）。
 
 **步骤**:
 
 ```bash
-# 完全不携带参数
+# 4a. 完全不携带参数 → 200 OK（规范允许，OP 本地结束会话）
 curl -s -o /dev/null -w "%{http_code}" \
   -X GET "http://localhost:8080/api/v1/auth/logout"
 
-# 仅携带 client_id，缺少 redirect_uri
+# 4b. 仅携带 client_id → 200 OK（无 redirect_uri 则不重定向）
 curl -s -o /dev/null -w "%{http_code}" \
   -X GET "http://localhost:8080/api/v1/auth/logout?\
 client_id={client_id}"
 
-# 仅携带 redirect_uri，缺少 client_id
+# 4c. 仅携带 redirect_uri，缺少 client_id → 400 Bad Request
 curl -s -o /dev/null -w "%{http_code}" \
   -X GET "http://localhost:8080/api/v1/auth/logout?\
 post_logout_redirect_uri={redirect_uri}"
-
-# 查看完整响应
-curl -s -X GET "http://localhost:8080/api/v1/auth/logout" | jq .
 ```
 
 **预期结果**:
-- HTTP 状态码 `400` 或其他错误码
-- 响应包含错误信息，指示缺少必需参数
-- 不会执行 logout 操作
+
+| 测试 | 预期状态码 | 说明 |
+|------|-----------|------|
+| 4a. 无参数 | `200` | 所有参数均为 OPTIONAL，OP 本地处理 |
+| 4b. 仅 client_id | `200` | 无 redirect_uri 则不重定向，正常响应 |
+| 4c. 仅 redirect_uri | `400` | `client_id` is required when `post_logout_redirect_uri` is specified |
 
 ---
 
@@ -145,4 +147,4 @@ curl -s -X GET "http://localhost:8080/api/v1/auth/logout" | jq .
 | 1 | GET logout 带有效参数正确重定向 | | | | 需浏览器 |
 | 2 | POST logout 携带 Bearer token 撤销会话 | | | | 需浏览器 |
 | 3 | 无效的 post_logout_redirect_uri 返回错误 | | | | |
-| 4 | 不携带 client_id 和 redirect_uri 返回错误 | | | | |
+| 4 | 参数缺失时的 logout 行为（规范合规） | | | | 200/200/400 |

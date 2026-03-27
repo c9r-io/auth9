@@ -69,11 +69,7 @@ pub async fn openid_configuration<S: HasServices>(State(state): State<S>) -> imp
         userinfo_endpoint: format!("{}/api/v1/auth/userinfo", base_url),
         jwks_uri,
         end_session_endpoint: format!("{}/api/v1/auth/logout", base_url),
-        response_types_supported: vec![
-            "code".to_string(),
-            "token".to_string(),
-            "id_token".to_string(),
-        ],
+        response_types_supported: vec!["code".to_string()],
         grant_types_supported: vec![
             "authorization_code".to_string(),
             "client_credentials".to_string(),
@@ -87,8 +83,8 @@ pub async fn openid_configuration<S: HasServices>(State(state): State<S>) -> imp
             "email".to_string(),
         ],
         token_endpoint_auth_methods_supported: vec![
-            "client_secret_basic".to_string(),
             "client_secret_post".to_string(),
+            "client_secret_basic".to_string(),
         ],
         claims_supported: vec![
             "sub".to_string(),

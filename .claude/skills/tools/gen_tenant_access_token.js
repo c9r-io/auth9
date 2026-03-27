@@ -27,7 +27,7 @@ const now = Math.floor(Date.now() / 1000);
 const payload = {
   sub: userId,
   email: email,
-  iss: "http://localhost:8080",
+  iss: process.env.JWT_ISSUER || "http://localhost:8080",
   aud: "auth9-portal",
   token_type: "access",
   tenant_id: tenantId,

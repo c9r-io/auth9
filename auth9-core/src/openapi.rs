@@ -198,7 +198,7 @@ use utoipa::OpenApi;
         crate::domains::identity::api::auth::authorize,
         crate::domains::identity::api::auth::callback,
         crate::domains::identity::api::auth::enterprise_sso_discovery,
-        crate::domains::identity::api::auth::token,
+        // token endpoint uses raw Bytes extractor (form-urlencoded + JSON), no utoipa path
         crate::domains::identity::api::auth::tenant_token,
         crate::domains::identity::api::auth::logout_redirect,
         crate::domains::identity::api::auth::logout,

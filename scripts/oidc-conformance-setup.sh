@@ -56,6 +56,8 @@ done
 echo -n "Generating admin token..."
 # Use known seed admin user ID
 ADMIN_USER_ID="${ADMIN_USER_ID:-746ceba8-3ddf-4a8b-b021-a1337b7a1a35}"
+# Set JWT_ISSUER to match the API base so tokens pass issuer validation
+export JWT_ISSUER="${API_BASE}"
 TOKEN=$(node "$PROJECT_ROOT/.claude/skills/tools/gen_tenant_access_token.js" \
     "$ADMIN_USER_ID" "" "admin" "rbac:*,user:*,service:*,action:*,tenant:*" "admin@auth9.local" 2>/dev/null)
 if [[ -z "$TOKEN" ]]; then

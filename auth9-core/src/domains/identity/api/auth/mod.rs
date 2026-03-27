@@ -31,7 +31,6 @@ pub use discovery::{__path_jwks, __path_openid_configuration};
 // OIDC flow handlers
 pub use oidc_flow::{
     __path_authorize, __path_authorize_complete, __path_callback, __path_enterprise_sso_discovery,
-    __path_token,
 };
 pub use oidc_flow::{
     authorize, authorize_complete, authorize_post, callback, enterprise_sso_discovery, token,

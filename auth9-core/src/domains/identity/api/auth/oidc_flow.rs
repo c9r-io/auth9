@@ -24,6 +24,7 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
     Json,
 };
+use base64::Engine;
 use url::Url;
 use validator::Validate;
 
@@ -73,6 +74,14 @@ async fn authorize_inner<S: HasServices + HasCache + crate::state::HasDbPool>(
     state: S,
     params: AuthorizeRequest,
 ) -> Result<Response> {
+    // Validate response_type — only "code" is supported (OAuth 2.1, implicit flow removed)
+    if params.response_type != "code" {
+        return Err(AppError::BadRequest(format!(
+            "Unsupported response_type '{}'. Only 'code' is supported.",
+            params.response_type
+        )));
+    }
+
     let service = state
         .client_service()
         .get_by_client_id(&params.client_id)
@@ -367,21 +376,48 @@ pub async fn authorize_complete<S: HasServices + HasCache>(
     )))
 }
 
-#[utoipa::path(
-    post,
-    path = "/api/v1/auth/token",
-    tag = "Identity",
-    responses(
-        (status = 200, description = "Token response")
-    )
-)]
+/// OIDC Token endpoint.
+///
+/// Accepts both `application/x-www-form-urlencoded` (per OIDC Core spec) and
+/// `application/json` (backwards compatibility). Supports `client_secret_basic`
+/// (HTTP Basic) and `client_secret_post` authentication methods.
 pub async fn token<
     S: HasServices + HasSessionManagement + HasCache + HasAnalytics + HasIdentityProviders,
 >(
     State(state): State<S>,
-    _headers: HeaderMap,
-    Json(params): Json<TokenRequest>,
+    headers: HeaderMap,
+    body: axum::body::Bytes,
 ) -> Result<Response> {
+    // Parse request body: try form-urlencoded first (OIDC spec), then JSON (backwards compat)
+    let mut params: TokenRequest = serde_urlencoded::from_bytes(&body)
+        .or_else(|_| serde_json::from_slice(&body))
+        .map_err(|_| {
+            AppError::BadRequest("Invalid request body: expected application/x-www-form-urlencoded or JSON".to_string())
+        })?;
+
+    // Support client_secret_basic (RFC 6749 Section 2.3.1)
+    if let Some(auth_header) = headers.get(axum::http::header::AUTHORIZATION) {
+        if let Ok(auth_str) = auth_header.to_str() {
+            if let Some(encoded) = auth_str.strip_prefix("Basic ") {
+                if let Ok(decoded) = base64::engine::general_purpose::STANDARD.decode(encoded.trim()) {
+                    if let Ok(credentials) = String::from_utf8(decoded) {
+                        if let Some((client_id, client_secret)) = credentials.split_once(':') {
+                            let decoded_id = urlencoding::decode(client_id)
+                                .unwrap_or_else(|_| client_id.into())
+                                .into_owned();
+                            let decoded_secret = urlencoding::decode(client_secret)
+                                .unwrap_or_else(|_| client_secret.into())
+                                .into_owned();
+                            // Basic auth takes precedence per RFC 6749 Section 2.3
+                            params.client_id = Some(decoded_id);
+                            params.client_secret = Some(decoded_secret);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     let jwt_manager = HasServices::jwt_manager(&state);
 
     match params.grant_type.as_str() {
