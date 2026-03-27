@@ -261,6 +261,10 @@ export default {
       submit: "Verify and enable",
       submitting: "Verifying...",
       setupFailed: "Failed to set up authenticator. Please try again.",
+      currentPassword: "Current password",
+      passwordRequired: "Please enter your current password.",
+      continue: "Continue",
+      verifying: "Verifying...",
     },
     verifyEmail: {
       metaTitle: "Verify Email - Auth9",
@@ -1455,6 +1459,8 @@ export default {
       setupSuccess: "TOTP authenticator set up successfully",
       enrollFailed: "Failed to start TOTP enrollment",
       retry: "Retry",
+      currentPassword: "Current password",
+      continue: "Continue",
     },
     recovery: {
       title: "Recovery Codes",

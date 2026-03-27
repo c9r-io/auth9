@@ -261,6 +261,10 @@ export default {
       submit: "验证并启用",
       submitting: "验证中...",
       setupFailed: "设置身份验证器失败，请重试。",
+      currentPassword: "当前密码",
+      passwordRequired: "请输入当前密码。",
+      continue: "继续",
+      verifying: "验证中...",
     },
     verifyEmail: {
       metaTitle: "验证邮箱 - Auth9",
@@ -1452,6 +1456,8 @@ export default {
       setupSuccess: "TOTP 验证器设置成功",
       enrollFailed: "启动 TOTP 注册失败",
       retry: "重试",
+      currentPassword: "当前密码",
+      continue: "继续",
     },
     recovery: {
       title: "恢复码",

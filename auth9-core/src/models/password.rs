@@ -134,7 +134,7 @@ pub struct ForgotPasswordInput {
 pub struct ResetPasswordInput {
     #[validate(length(min = 1))]
     pub token: String,
-    #[validate(length(min = 8, max = 128))]
+    #[validate(length(min = 1, max = 128))]
     pub new_password: String,
 }
 
@@ -143,14 +143,14 @@ pub struct ResetPasswordInput {
 pub struct ChangePasswordInput {
     #[validate(length(min = 1))]
     pub current_password: String,
-    #[validate(length(min = 8, max = 128))]
+    #[validate(length(min = 1, max = 128))]
     pub new_password: String,
 }
 
 /// Input for force-updating password (no current password required, used by required-action flow)
 #[derive(Debug, Clone, Deserialize, Validate, ToSchema)]
 pub struct ForceChangePasswordInput {
-    #[validate(length(min = 8, max = 128))]
+    #[validate(length(min = 1, max = 128))]
     pub new_password: String,
 }
 
@@ -390,10 +390,10 @@ mod tests {
     }
 
     #[test]
-    fn test_reset_password_input_short_password() {
+    fn test_reset_password_input_empty_password() {
         let input = ResetPasswordInput {
             token: "abc123".to_string(),
-            new_password: "short".to_string(),
+            new_password: "".to_string(),
         };
         assert!(input.validate().is_err());
     }

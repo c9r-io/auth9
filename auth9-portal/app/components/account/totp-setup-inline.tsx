@@ -3,6 +3,8 @@ import { Form, useNavigation } from "react-router";
 import QRCode from "qrcode";
 import { OtpInput } from "~/components/ui/otp-input";
 import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import { useI18n } from "~/i18n";
 import { hostedLoginApi, type TotpEnrollmentResponse } from "~/services/api";
 
@@ -17,18 +19,19 @@ export function TotpSetupInline({ accessToken, onCancel, error }: TotpSetupInlin
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const formRef = useRef<HTMLFormElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
 
   const [enrollment, setEnrollment] = useState<TotpEnrollmentResponse | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [enrollError, setEnrollError] = useState<string | null>(null);
   const [showManual, setShowManual] = useState(false);
 
-  const startEnrollment = useCallback(async () => {
+  const startEnrollment = useCallback(async (currentPassword: string) => {
     setLoading(true);
     setEnrollError(null);
     try {
-      const result = await hostedLoginApi.totpEnrollStart(accessToken);
+      const result = await hostedLoginApi.totpEnrollStart(accessToken, currentPassword);
       setEnrollment(result);
       const dataUrl = await QRCode.toDataURL(result.otpauth_uri, {
         width: 200,
@@ -43,8 +46,12 @@ export function TotpSetupInline({ accessToken, onCancel, error }: TotpSetupInlin
     }
   }, [accessToken, t]);
 
-  useEffect(() => {
-    startEnrollment();
+  const handlePasswordSubmit = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    const password = passwordRef.current?.value?.trim();
+    if (password) {
+      startEnrollment(password);
+    }
   }, [startEnrollment]);
 
   const handleOtpComplete = useCallback(
@@ -67,24 +74,40 @@ export function TotpSetupInline({ accessToken, onCancel, error }: TotpSetupInlin
     );
   }
 
-  if (enrollError) {
+  // Step 1: Password confirmation (before enrollment starts)
+  if (!enrollment) {
     return (
-      <div className="space-y-3 py-4">
-        <div className="text-sm text-[var(--accent-red)] bg-red-50 p-3 rounded-md">
-          {enrollError}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={startEnrollment}>
-            {t("accountMfa.totp.retry")}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            {t("accountMfa.totp.cancel")}
-          </Button>
-        </div>
+      <div className="space-y-4 py-4">
+        <form onSubmit={handlePasswordSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="totp_current_password">{t("accountMfa.totp.currentPassword")}</Label>
+            <Input
+              id="totp_current_password"
+              ref={passwordRef}
+              type="password"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+          {enrollError && (
+            <div className="text-sm text-[var(--accent-red)] bg-red-50 p-3 rounded-md">
+              {enrollError}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm">
+              {t("accountMfa.totp.continue")}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={onCancel} type="button">
+              {t("accountMfa.totp.cancel")}
+            </Button>
+          </div>
+        </form>
       </div>
     );
   }
 
+  // Step 2: QR code + OTP verification
   return (
     <div className="space-y-5 py-4">
       {/* QR Code */}

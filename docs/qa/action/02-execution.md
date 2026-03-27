@@ -8,6 +8,8 @@
 
 ## 前置条件
 
+> **重要**: 执行测试前必须先运行 `./scripts/reset-docker.sh` 初始化环境。未执行时，测试用户 `test@example.com` 可能不存在或缺少密码凭证（`user_login_profiles` 表为空），导致登录失败。
+
 ### 步骤 0: 验证用户租户成员身份
 
 Post-login Actions 仅在用户有租户成员身份时执行。执行测试前必须验证：

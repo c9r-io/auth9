@@ -214,13 +214,15 @@ export const hostedLoginApi = {
   },
 
   totpEnrollStart: async (
-    accessToken: string
+    accessToken: string,
+    currentPassword: string
   ): Promise<TotpEnrollmentResponse> => {
     const response = await fetch(
       `${API_BASE_URL}/api/v1/mfa/totp/enroll`,
       {
         method: "POST",
         headers: getHeaders(accessToken),
+        body: JSON.stringify({ current_password: currentPassword }),
       }
     );
     const result = await handleResponse<{ data: TotpEnrollmentResponse }>(

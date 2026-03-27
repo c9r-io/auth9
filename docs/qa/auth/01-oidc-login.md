@@ -90,6 +90,8 @@ SELECT event_type FROM login_events WHERE user_id = '{user_id}' ORDER BY created
 
 ## 场景 2：首次登录（新用户同步）
 
+> **注意**: Auth9 内置 OIDC 引擎不提供公开的用户创建 API。此场景需通过 Portal 注册流程（`/register`）创建新用户来测试首次登录同步。不可使用外部 IdP（Keycloak 已退役）。
+
 ### 初始状态
 - 用户在底层认证主体中存在
 - 用户在 Auth9 数据库中不存在
@@ -98,8 +100,9 @@ SELECT event_type FROM login_events WHERE user_id = '{user_id}' ORDER BY created
 验证首次登录时用户自动同步
 
 ### 测试操作流程
-1. 用户通过 Auth9 Portal 登录入口点击「**Sign in with password**」完成首次登录
-2. Auth9 处理 callback
+1. 通过 Portal 注册页面（`/register`）创建新测试用户
+2. 新用户通过 Auth9 Portal 登录入口点击「**Sign in with password**」完成首次登录
+3. Auth9 处理 callback
 
 ### 预期结果
 - 用户自动创建在 Auth9 数据库中

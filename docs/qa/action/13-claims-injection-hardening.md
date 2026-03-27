@@ -11,14 +11,17 @@
 
 ### 步骤 0: Gate Check
 
-1. 确认 auth9-core 已部署最新代码（包含 FR-006 变更）
-2. 准备 Admin API Token:
+1. **确保环境已初始化**：执行 `./scripts/reset-docker.sh` 以重置环境并创建测试用户。未执行此脚本时，`test@example.com` 用户不存在。
+2. 确认 auth9-core 已部署最新代码（包含 FR-006 变更）
+3. 准备 Admin API Token:
 
 ```bash
 TOKEN=$(.claude/skills/tools/gen-admin-token.sh)
 ```
 
-3. 确认测试用户存在且属于至少一个租户:
+> **故障排查**: 若 token 返回 "Invalid or expired token"，检查容器内 `JWT_PRIVATE_KEY` 环境变量是否包含实际换行符（非 `\n` 转义字符）。可通过 `docker exec auth9-core env | grep JWT_PRIVATE_KEY` 确认。
+
+4. 确认测试用户存在且属于至少一个租户:
 
 ```sql
 SELECT u.id, u.email, tu.tenant_id

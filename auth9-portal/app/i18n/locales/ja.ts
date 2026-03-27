@@ -261,6 +261,10 @@ export default {
       submit: "確認して有効化",
       submitting: "確認中...",
       setupFailed: "認証アプリの設定に失敗しました。もう一度お試しください。",
+      currentPassword: "現在のパスワード",
+      passwordRequired: "現在のパスワードを入力してください。",
+      continue: "続行",
+      verifying: "確認中...",
     },
     verifyEmail: {
       metaTitle: "メール確認 - Auth9",
@@ -406,6 +410,8 @@ export default {
       setupSuccess: "TOTP 認証アプリの設定が完了しました",
       enrollFailed: "TOTP の登録開始に失敗しました",
       retry: "再試行",
+      currentPassword: "現在のパスワード",
+      continue: "続行",
     },
     recovery: {
       title: "リカバリーコード",

@@ -1,11 +1,13 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { redirect, Form, useActionData, useLoaderData, useNavigation } from "react-router";
 import { useState, useCallback, useRef } from "react";
-import QRCode from "qrcode";
 import { getBrandMark } from "~/components/auth/AuthBrandPanel";
 import { AuthPageShell } from "~/components/AuthPageShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { OtpInput } from "~/components/ui/otp-input";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
 import { useI18n } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { translate } from "~/i18n/translate";
@@ -20,9 +22,6 @@ export const meta: MetaFunction = ({ matches }) => {
 };
 
 export async function loader({ request }: LoaderFunctionArgs) {
-  // MFA TOTP enrollment is an identity-level operation.
-  // The backend /api/v1/mfa/totp/enroll expects an Identity Token (aud: "auth9"),
-  // not a Tenant Access Token (aud: service_client_id).
   const { session } = await requireIdentityAuthWithUpdate(request);
   const identityToken = session.identityAccessToken || session.accessToken;
   if (!identityToken) {
@@ -43,59 +42,74 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Fall back to default branding
   }
 
-  // Start TOTP enrollment — must use identity token, not tenant access token
-  const enrollment = await hostedLoginApi.totpEnrollStart(identityToken);
-  const qrDataUrl = await QRCode.toDataURL(enrollment.otpauth_uri, {
-    width: 200,
-    margin: 2,
-    color: { dark: "#1D1D1F", light: "#FFFFFF" },
-  });
-
   return {
     branding,
     actionId,
     loginChallenge,
-    setupToken: enrollment.setup_token,
-    secret: enrollment.secret,
-    qrDataUrl,
   };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
   const locale = await resolveLocale(request);
 
-  // MFA enrollment verification also requires Identity Token
   const { session } = await requireIdentityAuthWithUpdate(request);
   const identityToken = session.identityAccessToken || session.accessToken;
   if (!identityToken) {
     return redirect("/login");
   }
-  // For action completion and OIDC flow, use the best available token
   const accessToken = (await getAccessToken(request)) || identityToken;
 
   const formData = await request.formData();
+  const intent = String(formData.get("intent") || "");
+
+  if (intent === "start_enroll") {
+    const currentPassword = String(formData.get("current_password") || "").trim();
+    if (!currentPassword) {
+      return { step: "password" as const, error: translate(locale, "auth.mfaSetup.passwordRequired") };
+    }
+
+    try {
+      const QRCode = await import("qrcode");
+      const enrollment = await hostedLoginApi.totpEnrollStart(identityToken, currentPassword);
+      const qrDataUrl = await QRCode.toDataURL(enrollment.otpauth_uri, {
+        width: 200,
+        margin: 2,
+        color: { dark: "#1D1D1F", light: "#FFFFFF" },
+      });
+
+      return {
+        step: "verify" as const,
+        setupToken: enrollment.setup_token,
+        secret: enrollment.secret,
+        qrDataUrl,
+      };
+    } catch (error) {
+      const message = mapApiError(error, locale);
+      return { step: "password" as const, error: message };
+    }
+  }
+
+  // intent === "verify_totp"
   const code = String(formData.get("code") || "").trim();
   const setupToken = String(formData.get("setup_token") || "");
   const actionId = String(formData.get("action_id") || "");
   const loginChallenge = String(formData.get("login_challenge") || "");
 
   if (!code) {
-    return { error: translate(locale, "auth.mfaVerify.codeRequired") };
+    return { step: "verify_error" as const, error: translate(locale, "auth.mfaVerify.codeRequired") };
   }
 
   try {
     await hostedLoginApi.totpEnrollVerify(setupToken, code, identityToken);
 
-    // Complete the pending action if present
     if (actionId) {
       try {
         await hostedLoginApi.completeAction(actionId, accessToken);
       } catch {
-        // Non-critical — enrollment succeeded even if action completion fails
+        // Non-critical
       }
     }
 
-    // Complete OIDC authorization flow if login_challenge is present
     if (loginChallenge) {
       try {
         const authResult = await hostedLoginApi.authorizeComplete(loginChallenge, accessToken);
@@ -108,7 +122,7 @@ export async function action({ request }: ActionFunctionArgs) {
     return redirect("/tenant/select");
   } catch (error) {
     const message = mapApiError(error, locale);
-    return { error: message };
+    return { step: "verify_error" as const, error: message };
   }
 }
 
@@ -135,6 +149,10 @@ export default function MfaSetupTotpPage() {
     []
   );
 
+  // After successful enrollment start, show QR code + OTP verify
+  const enrollmentData = actionData?.step === "verify" ? actionData : null;
+  const verifyError = actionData?.step === "verify_error" ? actionData.error : null;
+
   return (
     <AuthPageShell
       branding={branding}
@@ -159,64 +177,94 @@ export default function MfaSetupTotpPage() {
           <CardDescription className="auth-form-description">{t("auth.mfaSetup.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
-          {/* QR Code */}
-          <div className="flex justify-center">
-            <div className="rounded-2xl border border-[var(--glass-border-subtle)] bg-white p-3">
-              <img
-                src={data?.qrDataUrl}
-                alt={t("auth.mfaSetup.qrAlt")}
-                width={200}
-                height={200}
-              />
-            </div>
-          </div>
-
-          {/* Manual Entry Toggle */}
-          <div className="text-center">
-            <button
-              type="button"
-              className="text-sm font-medium text-[var(--accent-blue)] hover:underline"
-              onClick={() => setShowManual(!showManual)}
-            >
-              {t("auth.mfaSetup.manualEntryToggle")}
-            </button>
-          </div>
-
-          {showManual && (
-            <div className="rounded-2xl border border-[var(--glass-border-subtle)] bg-[var(--glass-bg)] p-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
-                {t("auth.mfaSetup.manualEntryLabel")}
-              </p>
-              <code className="block break-all text-sm font-mono text-[var(--text-primary)] select-all">
-                {data?.secret}
-              </code>
-            </div>
-          )}
-
-          {/* Verify Code */}
-          <div className="space-y-2">
-            <p className="text-sm text-center text-[var(--text-secondary)]">
-              {t("auth.mfaSetup.verifyDescription")}
-            </p>
-            <Form method="post" ref={formRef} className="space-y-4">
-              <input type="hidden" name="setup_token" value={data?.setupToken ?? ""} />
-              <input type="hidden" name="action_id" value={data?.actionId ?? ""} />
-              <input type="hidden" name="login_challenge" value={data?.loginChallenge ?? ""} />
-              <input type="hidden" name="code" value="" />
-
-              <OtpInput
-                onComplete={handleOtpComplete}
-                disabled={isSubmitting}
-                error={!!actionData?.error}
-              />
-
-              {actionData?.error ? (
+          {!enrollmentData ? (
+            /* Step 1: Password confirmation */
+            <Form method="post" className="space-y-4">
+              <input type="hidden" name="intent" value="start_enroll" />
+              <div className="space-y-2">
+                <Label htmlFor="current_password">{t("auth.mfaSetup.currentPassword")}</Label>
+                <Input
+                  id="current_password"
+                  name="current_password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              {actionData?.step === "password" && actionData.error ? (
                 <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
                   {actionData.error}
                 </div>
               ) : null}
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? t("auth.mfaSetup.verifying") : t("auth.mfaSetup.continue")}
+              </Button>
             </Form>
-          </div>
+          ) : (
+            /* Step 2: QR code + OTP verification */
+            <>
+              {/* QR Code */}
+              <div className="flex justify-center">
+                <div className="rounded-2xl border border-[var(--glass-border-subtle)] bg-white p-3">
+                  <img
+                    src={enrollmentData.qrDataUrl}
+                    alt={t("auth.mfaSetup.qrAlt")}
+                    width={200}
+                    height={200}
+                  />
+                </div>
+              </div>
+
+              {/* Manual Entry Toggle */}
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="text-sm font-medium text-[var(--accent-blue)] hover:underline"
+                  onClick={() => setShowManual(!showManual)}
+                >
+                  {t("auth.mfaSetup.manualEntryToggle")}
+                </button>
+              </div>
+
+              {showManual && (
+                <div className="rounded-2xl border border-[var(--glass-border-subtle)] bg-[var(--glass-bg)] p-4">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
+                    {t("auth.mfaSetup.manualEntryLabel")}
+                  </p>
+                  <code className="block break-all text-sm font-mono text-[var(--text-primary)] select-all">
+                    {enrollmentData.secret}
+                  </code>
+                </div>
+              )}
+
+              {/* Verify Code */}
+              <div className="space-y-2">
+                <p className="text-sm text-center text-[var(--text-secondary)]">
+                  {t("auth.mfaSetup.verifyDescription")}
+                </p>
+                <Form method="post" ref={formRef} className="space-y-4">
+                  <input type="hidden" name="intent" value="verify_totp" />
+                  <input type="hidden" name="setup_token" value={enrollmentData.setupToken} />
+                  <input type="hidden" name="action_id" value={data?.actionId ?? ""} />
+                  <input type="hidden" name="login_challenge" value={data?.loginChallenge ?? ""} />
+                  <input type="hidden" name="code" value="" />
+
+                  <OtpInput
+                    onComplete={handleOtpComplete}
+                    disabled={isSubmitting}
+                    error={!!verifyError}
+                  />
+
+                  {verifyError ? (
+                    <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
+                      {verifyError}
+                    </div>
+                  ) : null}
+                </Form>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </AuthPageShell>

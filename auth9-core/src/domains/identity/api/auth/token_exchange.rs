@@ -88,7 +88,7 @@ pub async fn tenant_token<S: HasServices>(
         .get_user_roles_for_service(user_id, tenant_id, service.id)
         .await?;
 
-    // Execute post-login actions for the target tenant and inject sanitized claims
+    // Execute post-login actions for the target service and inject sanitized claims
     let custom_claims = {
         let user = state.user_service().get(user_id).await?;
         let ip_address = extract_client_ip(&headers);
@@ -118,7 +118,7 @@ pub async fn tenant_token<S: HasServices>(
         };
         let modified = state
             .action_service()
-            .execute_trigger_by_tenant(tenant_id, "post-login", context)
+            .execute_trigger(service.id, "post-login", context)
             .await?;
         modified.claims.and_then(sanitize_action_claims)
     };
