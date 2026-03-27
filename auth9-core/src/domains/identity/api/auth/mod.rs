@@ -33,7 +33,9 @@ pub use oidc_flow::{
     __path_authorize, __path_authorize_complete, __path_callback, __path_enterprise_sso_discovery,
     __path_token,
 };
-pub use oidc_flow::{authorize, authorize_complete, callback, enterprise_sso_discovery, token};
+pub use oidc_flow::{
+    authorize, authorize_complete, authorize_post, callback, enterprise_sso_discovery, token,
+};
 
 // Token exchange
 pub use token_exchange::{__path_tenant_token, __path_userinfo};

@@ -17,7 +17,7 @@ where
         .route("/.well-known/jwks.json", get(identity_api::auth::jwks::<S>))
         .route(
             "/api/v1/auth/authorize",
-            get(identity_api::auth::authorize::<S>),
+            get(identity_api::auth::authorize::<S>).post(identity_api::auth::authorize_post::<S>),
         )
         .route(
             "/api/v1/auth/callback",

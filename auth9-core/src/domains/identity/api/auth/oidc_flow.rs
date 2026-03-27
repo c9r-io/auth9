@@ -2,9 +2,8 @@
 
 use super::action_helpers::discover_connector_by_domain;
 use super::helpers::{
-    enforce_pkce_for_public_client, validate_redirect_uri, verify_pkce_s256,
-    AuthorizationCodeData, CallbackState, LoginChallengeData, AUTH_CODE_TTL_SECS,
-    LOGIN_CHALLENGE_TTL_SECS,
+    enforce_pkce_for_public_client, validate_redirect_uri, verify_pkce_s256, AuthorizationCodeData,
+    CallbackState, LoginChallengeData, AUTH_CODE_TTL_SECS, LOGIN_CHALLENGE_TTL_SECS,
 };
 use super::types::{
     AuthorizeCompleteRequest, AuthorizeCompleteResponse, AuthorizeRequest, CallbackRequest,
@@ -12,6 +11,7 @@ use super::types::{
 };
 use super::ALLOWED_SCOPES;
 use crate::cache::CacheOperations;
+use crate::error::oauth::OAuthTokenError;
 use crate::error::{AppError, Result};
 use crate::http_support::SuccessResponse;
 use crate::models::enterprise_sso::EnterpriseSsoDiscoveryInput;
@@ -52,10 +52,26 @@ pub(super) fn filter_scopes(requested_scope: &str) -> Result<String> {
         (status = 302, description = "Redirect to OIDC provider")
     )
 )]
-/// Login redirect (initiates OIDC flow)
+/// Login redirect (initiates OIDC flow) - GET handler
 pub async fn authorize<S: HasServices + HasCache + crate::state::HasDbPool>(
     State(state): State<S>,
     Query(params): Query<AuthorizeRequest>,
+) -> Result<Response> {
+    authorize_inner(state, params).await
+}
+
+/// Login redirect (initiates OIDC flow) - POST handler (OIDC Core Section 3.1.2.1)
+pub async fn authorize_post<S: HasServices + HasCache + crate::state::HasDbPool>(
+    State(state): State<S>,
+    axum::extract::Form(params): axum::extract::Form<AuthorizeRequest>,
+) -> Result<Response> {
+    authorize_inner(state, params).await
+}
+
+/// Shared authorize logic for both GET (Query) and POST (Form) handlers.
+async fn authorize_inner<S: HasServices + HasCache + crate::state::HasDbPool>(
+    state: S,
+    params: AuthorizeRequest,
 ) -> Result<Response> {
     let service = state
         .client_service()
@@ -370,68 +386,101 @@ pub async fn token<
 
     match params.grant_type.as_str() {
         "authorization_code" => {
-            let code = params
-                .code
-                .ok_or_else(|| AppError::BadRequest("Missing code".to_string()))?;
-            let client_id = params
-                .client_id
-                .ok_or_else(|| AppError::BadRequest("Missing client_id".to_string()))?;
-            let redirect_uri = params
-                .redirect_uri
-                .ok_or_else(|| AppError::BadRequest("Missing redirect_uri".to_string()))?;
+            let code = match params.code {
+                Some(c) => c,
+                None => {
+                    return Ok(OAuthTokenError::InvalidRequest(
+                        "Missing required parameter: code".into(),
+                    )
+                    .into_response())
+                }
+            };
+            let client_id = match params.client_id {
+                Some(c) => c,
+                None => {
+                    return Ok(OAuthTokenError::InvalidRequest(
+                        "Missing required parameter: client_id".into(),
+                    )
+                    .into_response())
+                }
+            };
+            let redirect_uri = match params.redirect_uri {
+                Some(r) => r,
+                None => {
+                    return Ok(OAuthTokenError::InvalidRequest(
+                        "Missing required parameter: redirect_uri".into(),
+                    )
+                    .into_response())
+                }
+            };
 
             let code_verifier = params.code_verifier;
 
             // Consume local authorization code
-            let code_data_json = state
-                .cache()
-                .consume_authorization_code(&code)
-                .await?
-                .ok_or_else(|| {
-                    AppError::BadRequest("Invalid or expired authorization code".to_string())
-                })?;
+            let code_data_json = match state.cache().consume_authorization_code(&code).await {
+                Ok(Some(json)) => json,
+                Ok(None) => {
+                    return Ok(OAuthTokenError::InvalidGrant(
+                        "Invalid or expired authorization code".into(),
+                    )
+                    .into_response())
+                }
+                Err(e) => {
+                    return Ok(
+                        OAuthTokenError::ServerError(format!("Cache error: {}", e)).into_response()
+                    )
+                }
+            };
             let code_data: AuthorizationCodeData =
                 serde_json::from_str(&code_data_json).map_err(|e| AppError::Internal(e.into()))?;
 
             // Validate client_id and redirect_uri match
             if code_data.client_id != client_id {
-                return Err(AppError::BadRequest(
-                    "client_id does not match authorization code".to_string(),
-                ));
+                return Ok(OAuthTokenError::InvalidGrant(
+                    "client_id does not match authorization code".into(),
+                )
+                .into_response());
             }
             if code_data.redirect_uri != redirect_uri {
-                return Err(AppError::BadRequest(
-                    "redirect_uri does not match authorization code".to_string(),
-                ));
+                return Ok(OAuthTokenError::InvalidGrant(
+                    "redirect_uri does not match authorization code".into(),
+                )
+                .into_response());
             }
 
             // Defensive: public clients must have PKCE (enforced at authorize, belt-and-suspenders)
-            let client_record = state
-                .client_service()
-                .get_client_record(&client_id)
-                .await?;
+            let client_record = state.client_service().get_client_record(&client_id).await?;
             if client_record.public_client && code_data.code_challenge.is_none() {
-                return Err(AppError::BadRequest(
-                    "Public clients must use PKCE".to_string(),
-                ));
+                return Ok(OAuthTokenError::InvalidRequest(
+                    "Public clients must use PKCE (code_challenge required)".into(),
+                )
+                .into_response());
             }
 
             // PKCE validation
             if let Some(ref challenge) = code_data.code_challenge {
-                let verifier = code_verifier.ok_or_else(|| {
-                    AppError::BadRequest(
-                        "code_verifier is required when code_challenge was set".to_string(),
-                    )
-                })?;
+                let verifier = match code_verifier {
+                    Some(v) => v,
+                    None => {
+                        return Ok(OAuthTokenError::InvalidRequest(
+                            "code_verifier is required when code_challenge was set".into(),
+                        )
+                        .into_response())
+                    }
+                };
                 let method = code_data.code_challenge_method.as_deref().unwrap_or("S256");
                 if method != "S256" {
-                    return Err(AppError::BadRequest(format!(
+                    return Ok(OAuthTokenError::InvalidRequest(format!(
                         "Unsupported code_challenge_method: {}",
                         method
-                    )));
+                    ))
+                    .into_response());
                 }
                 if !verify_pkce_s256(&verifier, challenge) {
-                    return Err(AppError::BadRequest("PKCE verification failed".to_string()));
+                    return Ok(
+                        OAuthTokenError::InvalidGrant("PKCE verification failed".into())
+                            .into_response(),
+                    );
                 }
             }
 
@@ -480,7 +529,11 @@ pub async fn token<
                 use crate::domains::security_observability::service::analytics::LoginEventMetadata;
                 let metadata = LoginEventMetadata::new(user_id.into(), &code_data.email)
                     .with_session_id(session_id.into());
-                if let Err(e) = state.analytics_service().record_successful_login(metadata).await {
+                if let Err(e) = state
+                    .analytics_service()
+                    .record_successful_login(metadata)
+                    .await
+                {
                     tracing::warn!(error = %e, "Failed to record OIDC login event");
                 }
             }
@@ -495,17 +548,38 @@ pub async fn token<
             .into_response())
         }
         "client_credentials" => {
-            let client_id = params
-                .client_id
-                .ok_or_else(|| AppError::BadRequest("Missing client_id".to_string()))?;
-            let client_secret = params
-                .client_secret
-                .ok_or_else(|| AppError::BadRequest("Missing client_secret".to_string()))?;
+            let client_id = match params.client_id {
+                Some(c) => c,
+                None => {
+                    return Ok(OAuthTokenError::InvalidRequest(
+                        "Missing required parameter: client_id".into(),
+                    )
+                    .into_response())
+                }
+            };
+            let client_secret = match params.client_secret {
+                Some(s) => s,
+                None => {
+                    return Ok(OAuthTokenError::InvalidRequest(
+                        "Missing required parameter: client_secret".into(),
+                    )
+                    .into_response())
+                }
+            };
 
-            let service = state
+            let service = match state
                 .client_service()
                 .verify_secret(&client_id, &client_secret)
-                .await?;
+                .await
+            {
+                Ok(s) => s,
+                Err(_) => {
+                    return Ok(OAuthTokenError::InvalidClient(
+                        "Client authentication failed".into(),
+                    )
+                    .into_response())
+                }
+            };
 
             let email = format!("service+{}@auth9.local", client_id);
             let tenant_id = service.tenant_id.map(|t| t.0);
@@ -522,17 +596,36 @@ pub async fn token<
             .into_response())
         }
         "refresh_token" => {
-            let refresh_token = params
-                .refresh_token
-                .ok_or_else(|| AppError::BadRequest("Missing refresh_token".to_string()))?;
-            let client_id = params
-                .client_id
-                .ok_or_else(|| AppError::BadRequest("Missing client_id".to_string()))?;
+            let refresh_token = match params.refresh_token {
+                Some(t) => t,
+                None => {
+                    return Ok(OAuthTokenError::InvalidRequest(
+                        "Missing required parameter: refresh_token".into(),
+                    )
+                    .into_response())
+                }
+            };
+            let client_id = match params.client_id {
+                Some(c) => c,
+                None => {
+                    return Ok(OAuthTokenError::InvalidRequest(
+                        "Missing required parameter: client_id".into(),
+                    )
+                    .into_response())
+                }
+            };
 
             // Validate Auth9 OIDC refresh token
-            let refresh_claims = jwt_manager
-                .verify_oidc_refresh_token(&refresh_token, &client_id)
-                .map_err(|e| AppError::Unauthorized(format!("Invalid refresh token: {}", e)))?;
+            let refresh_claims =
+                match jwt_manager.verify_oidc_refresh_token(&refresh_token, &client_id) {
+                    Ok(claims) => claims,
+                    Err(_) => {
+                        return Ok(
+                            OAuthTokenError::InvalidGrant("Invalid refresh token".into())
+                                .into_response(),
+                        )
+                    }
+                };
 
             // Check if this refresh token has been used before (replay protection)
             if !refresh_claims.jti.is_empty()
@@ -541,21 +634,31 @@ pub async fn token<
                     .is_token_blacklisted(&refresh_claims.jti)
                     .await?
             {
-                return Err(AppError::Unauthorized(
-                    "Refresh token has already been used".to_string(),
-                ));
+                return Ok(OAuthTokenError::InvalidGrant(
+                    "Refresh token has already been used".into(),
+                )
+                .into_response());
             }
 
             // Verify session binding
-            let session_id_str = state
+            let session_id_str = match state
                 .cache()
                 .get_refresh_token_session(&refresh_token)
-                .await?
-                .ok_or_else(|| {
-                    AppError::Unauthorized(
-                        "Refresh token is not bound to an active session".to_string(),
+                .await
+            {
+                Ok(Some(s)) => s,
+                Ok(None) => {
+                    return Ok(OAuthTokenError::InvalidGrant(
+                        "Refresh token is not bound to an active session".into(),
                     )
-                })?;
+                    .into_response())
+                }
+                Err(e) => {
+                    return Ok(
+                        OAuthTokenError::ServerError(format!("Cache error: {}", e)).into_response()
+                    )
+                }
+            };
             let session_id = uuid::Uuid::parse_str(&session_id_str).map_err(|_| {
                 AppError::Internal(anyhow::anyhow!("Invalid session_id in refresh binding"))
             })?;
@@ -615,10 +718,11 @@ pub async fn token<
             })
             .into_response())
         }
-        _ => Err(AppError::BadRequest(format!(
-            "Unsupported grant type: {}",
+        _ => Ok(OAuthTokenError::UnsupportedGrantType(format!(
+            "Unsupported grant_type: {}",
             params.grant_type
-        ))),
+        ))
+        .into_response()),
     }
 }
 

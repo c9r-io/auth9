@@ -1,5 +1,7 @@
 //! Unified error handling for Auth9 Core
 
+pub mod oauth;
+
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -75,9 +77,11 @@ impl IntoResponse for AppError {
             AppError::Validation(msg) => {
                 (StatusCode::UNPROCESSABLE_ENTITY, "validation", msg.clone())
             }
-            AppError::TooManyRequests(msg) => {
-                (StatusCode::TOO_MANY_REQUESTS, "too_many_requests", msg.clone())
-            }
+            AppError::TooManyRequests(msg) => (
+                StatusCode::TOO_MANY_REQUESTS,
+                "too_many_requests",
+                msg.clone(),
+            ),
             AppError::Database(ref e) => {
                 // Map duplicate entry errors (MySQL 1062 / SQLSTATE 23000) to 409 Conflict
                 if let sqlx::Error::Database(ref db_err) = e {

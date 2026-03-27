@@ -6,11 +6,12 @@
 # Architecture: Java server (HTTP) + nginx TLS proxy + MongoDB.
 
 services:
-  # NOTE: auth9-core keeps its default JWT_ISSUER (http://localhost:8080).
-  # The conformance suite accesses auth9-core via Docker hostname (http://auth9-core:8080)
-  # but the issuer in discovery/tokens remains http://localhost:8080.
-  # When configuring test plans in the conformance suite, use the Docker-internal
-  # discovery URL: http://auth9-core:8080/.well-known/openid-configuration
+  # Override JWT_ISSUER so discovery/tokens use the Docker-internal hostname.
+  # The conformance suite accesses auth9-core via http://auth9-core:8080, and the
+  # issuer in discovery MUST match the issuer in tokens for OIDC conformance.
+  auth9-core:
+    environment:
+      JWT_ISSUER: "http://auth9-core:8080"
 
   # ==================== OIDC Conformance Suite (Java server) ====================
   conformance-suite:

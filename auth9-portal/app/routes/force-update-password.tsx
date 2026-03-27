@@ -28,6 +28,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
   const url = new URL(request.url);
   const actionId = url.searchParams.get("action_id") || "";
+  const loginChallenge = url.searchParams.get("login_challenge") || "";
   const clientId = process.env.AUTH9_PORTAL_CLIENT_ID || "auth9-portal";
   let branding: BrandingConfig = DEFAULT_PUBLIC_BRANDING;
 
@@ -38,7 +39,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Fall back to default branding
   }
 
-  return { actionId, branding };
+  return { actionId, loginChallenge, branding };
 }
 
 export async function action({ request }: ActionFunctionArgs) {
@@ -52,6 +53,7 @@ export async function action({ request }: ActionFunctionArgs) {
   const newPassword = formData.get("password") as string;
   const confirmPassword = formData.get("confirmPassword") as string;
   const actionId = formData.get("actionId") as string;
+  const loginChallenge = formData.get("loginChallenge") as string;
 
   if (!newPassword) {
     return { error: translate(locale, "auth.forceUpdatePassword.passwordRequired") };
@@ -74,6 +76,16 @@ export async function action({ request }: ActionFunctionArgs) {
       }
     }
 
+    // If login_challenge is present, complete the OIDC authorization flow
+    if (loginChallenge) {
+      try {
+        const authResult = await hostedLoginApi.authorizeComplete(loginChallenge, accessToken);
+        return redirect(authResult.redirect_url);
+      } catch {
+        // Fall through to tenant select if OIDC completion fails
+      }
+    }
+
     return redirect("/tenant/select");
   } catch (error) {
     const message = mapApiError(error, locale);
@@ -85,6 +97,7 @@ export default function ForceUpdatePasswordPage() {
   const { t } = useI18n();
   const loaderData = (useLoaderData<typeof loader>() ?? {}) as {
     actionId?: string;
+    loginChallenge?: string;
     branding?: BrandingConfig;
   };
   const branding = { ...DEFAULT_PUBLIC_BRANDING, ...(loaderData.branding ?? {}) };
@@ -123,6 +136,7 @@ export default function ForceUpdatePasswordPage() {
         <CardContent>
           <Form method="post" className="space-y-4">
             <input type="hidden" name="actionId" value={loaderData.actionId || ""} />
+            <input type="hidden" name="loginChallenge" value={loaderData.loginChallenge || ""} />
 
             <div className="space-y-2">
               <Label htmlFor="password">{t("common.labels.newPassword")}</Label>

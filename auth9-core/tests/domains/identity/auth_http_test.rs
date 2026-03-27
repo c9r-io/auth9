@@ -1913,8 +1913,8 @@ async fn test_token_refresh_no_bound_session() {
     let (status, _): (StatusCode, Option<serde_json::Value>) =
         post_json(&app, "/api/v1/auth/token", &input).await;
 
-    // Should fail with 401 because refresh token is not bound to a session
-    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    // Should fail with 400 (invalid_grant per RFC 6749) because refresh token is invalid
+    assert_eq!(status, StatusCode::BAD_REQUEST);
 }
 
 // ============================================================================
