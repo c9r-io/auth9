@@ -55,7 +55,7 @@ export async function action({ request }: ActionFunctionArgs) {
   }
 
   try {
-    const response = await invitationApi.accept({
+    await invitationApi.accept({
       token,
       email,
       display_name: displayName,

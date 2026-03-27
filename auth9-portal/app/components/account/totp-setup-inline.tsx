@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Form, useNavigation } from "react-router";
 import QRCode from "qrcode";
 import { OtpInput } from "~/components/ui/otp-input";
