@@ -23,10 +23,8 @@ pub struct TenantRiskPolicyRow {
 #[cfg_attr(test, mockall::automock)]
 #[async_trait]
 pub trait TenantRiskPolicyRepository: Send + Sync {
-    async fn find_by_tenant_id(
-        &self,
-        tenant_id: StringUuid,
-    ) -> Result<Option<TenantRiskPolicyRow>>;
+    async fn find_by_tenant_id(&self, tenant_id: StringUuid)
+        -> Result<Option<TenantRiskPolicyRow>>;
     async fn upsert(&self, row: &TenantRiskPolicyRow) -> Result<()>;
     async fn delete_by_tenant_id(&self, tenant_id: StringUuid) -> Result<u64>;
 }

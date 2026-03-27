@@ -20,10 +20,7 @@ pub async fn has_step_up<C: CacheOperations>(cache: &C, user_id: &str) -> bool {
 }
 
 /// Record a successful step-up authentication.
-pub async fn record_step_up<C: CacheOperations>(
-    cache: &C,
-    user_id: &str,
-) -> Result<(), AppError> {
+pub async fn record_step_up<C: CacheOperations>(cache: &C, user_id: &str) -> Result<(), AppError> {
     let key = format!("{}{}", STEP_UP_KEY_PREFIX, user_id);
     cache
         .store_otp(&key, "1", STEP_UP_TTL_SECS)

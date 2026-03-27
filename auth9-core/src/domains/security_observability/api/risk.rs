@@ -36,9 +36,7 @@ pub async fn get_risk_policy<S: HasRiskPolicy>(
         },
     )?;
 
-    let tenant_uuid = auth
-        .tenant_id
-        .unwrap_or(PLATFORM_DEFAULT_TENANT);
+    let tenant_uuid = auth.tenant_id.unwrap_or(PLATFORM_DEFAULT_TENANT);
     let tenant_id = StringUuid::from(tenant_uuid);
 
     let policy = match state
@@ -83,9 +81,7 @@ pub async fn update_risk_policy<S: HasRiskPolicy>(
         },
     )?;
 
-    let tenant_id = StringUuid::from(
-        auth.tenant_id.unwrap_or(PLATFORM_DEFAULT_TENANT),
-    );
+    let tenant_id = StringUuid::from(auth.tenant_id.unwrap_or(PLATFORM_DEFAULT_TENANT));
 
     // Get existing or defaults
     let existing = state

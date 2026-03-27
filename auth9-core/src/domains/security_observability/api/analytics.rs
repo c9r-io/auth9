@@ -281,7 +281,10 @@ mod tests {
         let dt = parse_date_param("2024-01-15T10:30:00Z", false);
         assert!(dt.is_some());
         let dt = dt.unwrap();
-        assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2024-01-15 10:30:00");
+        assert_eq!(
+            dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+            "2024-01-15 10:30:00"
+        );
     }
 
     #[test]
@@ -289,7 +292,10 @@ mod tests {
         let dt = parse_date_param("2027-01-01", false);
         assert!(dt.is_some());
         let dt = dt.unwrap();
-        assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2027-01-01 00:00:00");
+        assert_eq!(
+            dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+            "2027-01-01 00:00:00"
+        );
     }
 
     #[test]
@@ -297,7 +303,10 @@ mod tests {
         let dt = parse_date_param("2027-01-31", true);
         assert!(dt.is_some());
         let dt = dt.unwrap();
-        assert_eq!(dt.format("%Y-%m-%d %H:%M:%S").to_string(), "2027-01-31 23:59:59");
+        assert_eq!(
+            dt.format("%Y-%m-%d %H:%M:%S").to_string(),
+            "2027-01-31 23:59:59"
+        );
     }
 
     #[test]

@@ -17,7 +17,9 @@ pub struct PublicCaptchaConfig {
 ///
 /// Returns the CAPTCHA configuration for frontend integration.
 /// Only returns public fields (site_key) — never the secret_key.
-pub async fn get_captcha_config<S: HasServices>(State(state): State<S>) -> Json<PublicCaptchaConfig> {
+pub async fn get_captcha_config<S: HasServices>(
+    State(state): State<S>,
+) -> Json<PublicCaptchaConfig> {
     let config = &state.config().captcha;
     Json(PublicCaptchaConfig {
         enabled: config.enabled,

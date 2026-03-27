@@ -311,8 +311,7 @@ impl WebAuthnService {
 
         // Identity engine credentials (migration period)
         let mut all_creds = native_creds;
-        if let (Some(identity_engine), Some(subject)) = (&self.identity_engine, identity_subject)
-        {
+        if let (Some(identity_engine), Some(subject)) = (&self.identity_engine, identity_subject) {
             if let Ok(engine_credentials) = identity_engine
                 .credential_store()
                 .list_webauthn_credentials(subject)
@@ -355,7 +354,8 @@ impl WebAuthnService {
                     .await;
             }
             return Err(AppError::BadRequest(
-                "Cannot delete identity engine credential: identity engine not configured".to_string(),
+                "Cannot delete identity engine credential: identity engine not configured"
+                    .to_string(),
             ));
         }
 

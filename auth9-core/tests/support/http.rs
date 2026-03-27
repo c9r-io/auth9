@@ -470,11 +470,13 @@ impl TestAppState {
             ),
             risk_policy_repo: Arc::new(crate::support::TestTenantRiskPolicyRepository::new()),
             trusted_device_service: Arc::new(
-                auth9_core::domains::identity::service::TrustedDeviceService::new(
-                    Arc::new(crate::support::TestTrustedDeviceRepository::new()),
-                ),
+                auth9_core::domains::identity::service::TrustedDeviceService::new(Arc::new(
+                    crate::support::TestTrustedDeviceRepository::new(),
+                )),
             ),
-            adaptive_mfa_policy_repo: Arc::new(crate::support::TestAdaptiveMfaPolicyRepository::new()),
+            adaptive_mfa_policy_repo: Arc::new(
+                crate::support::TestAdaptiveMfaPolicyRepository::new(),
+            ),
         }
     }
 

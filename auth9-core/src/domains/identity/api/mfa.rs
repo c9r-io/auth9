@@ -5,18 +5,14 @@
 //! management, and adaptive MFA policy configuration.
 
 use crate::cache::CacheOperations;
-use crate::domains::identity::service::adaptive_mfa::{
-    AdaptiveMfaMode, AdaptiveMfaPolicy,
-};
+use crate::domains::identity::service::adaptive_mfa::{AdaptiveMfaMode, AdaptiveMfaPolicy};
 use crate::domains::identity::service::totp::TotpEnrollmentResponse;
 use crate::domains::identity::service::trusted_device::TrustedDevice;
 use crate::error::{AppError, Result};
 use crate::http_support::{MessageResponse, SuccessResponse};
 use crate::middleware::auth::AuthUser;
 use crate::models::common::StringUuid;
-use crate::repository::adaptive_mfa_policy::{
-    AdaptiveMfaPolicyRepository, AdaptiveMfaPolicyRow,
-};
+use crate::repository::adaptive_mfa_policy::{AdaptiveMfaPolicyRepository, AdaptiveMfaPolicyRow};
 use crate::state::{
     HasAdaptiveMfa, HasCache, HasMfa, HasServices, HasSessionManagement, HasTrustedDevices,
     HasWebAuthn,
@@ -167,10 +163,7 @@ pub async fn totp_enroll_start<S: HasMfa + HasServices>(
     let email = &claims.email;
 
     // Verify current password before allowing MFA enrollment (ASVS V7.3)
-    let user = state
-        .user_service()
-        .get_by_email(email)
-        .await?;
+    let user = state.user_service().get_by_email(email).await?;
     let password_valid = state
         .identity_engine()
         .user_store()
@@ -445,10 +438,7 @@ pub async fn revoke_all_trusted_devices<S: HasServices + HasTrustedDevices>(
     let claims = HasServices::jwt_manager(&state).verify_identity_token(bearer.token())?;
     let user_id = parse_user_id(&claims.sub)?;
 
-    let count = state
-        .trusted_device_service()
-        .revoke_all(user_id)
-        .await?;
+    let count = state.trusted_device_service().revoke_all(user_id).await?;
 
     Ok(Json(MessageResponse::new(&format!(
         "Revoked {} trusted device(s).",
@@ -536,14 +526,12 @@ pub async fn update_adaptive_mfa_policy<S: HasServices + HasAdaptiveMfa>(
 
     let default = AdaptiveMfaPolicy::default_for_tenant(&tenant_id.to_string());
 
-    let mode = body
-        .mode
-        .unwrap_or_else(|| {
-            existing
-                .as_ref()
-                .and_then(|r| r.mode.parse::<AdaptiveMfaMode>().ok())
-                .unwrap_or(default.mode)
-        });
+    let mode = body.mode.unwrap_or_else(|| {
+        existing
+            .as_ref()
+            .and_then(|r| r.mode.parse::<AdaptiveMfaMode>().ok())
+            .unwrap_or(default.mode)
+    });
 
     let row = AdaptiveMfaPolicyRow {
         id: existing
@@ -552,9 +540,12 @@ pub async fn update_adaptive_mfa_policy<S: HasServices + HasAdaptiveMfa>(
             .unwrap_or_else(StringUuid::new_v4),
         tenant_id,
         mode: mode.to_string(),
-        risk_threshold: body
-            .risk_threshold
-            .unwrap_or(existing.as_ref().map(|r| r.risk_threshold).unwrap_or(default.risk_threshold)),
+        risk_threshold: body.risk_threshold.unwrap_or(
+            existing
+                .as_ref()
+                .map(|r| r.risk_threshold)
+                .unwrap_or(default.risk_threshold),
+        ),
         always_require_for_admins: body.always_require_for_admins.unwrap_or(
             existing
                 .as_ref()

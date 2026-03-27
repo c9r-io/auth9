@@ -506,7 +506,13 @@ pub async fn create_client<S: HasServices>(
 
     let client_with_secret = state
         .client_service()
-        .create_client_with_secret(id, new_client_id, client_secret, input.name.clone(), input.public_client)
+        .create_client_with_secret(
+            id,
+            new_client_id,
+            client_secret,
+            input.name.clone(),
+            input.public_client,
+        )
         .await?;
 
     let _ = write_audit_log_generic(

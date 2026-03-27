@@ -642,10 +642,7 @@ mod tests {
 
         let mappers = build_protocol_mappers(&mappings);
         assert_eq!(mappers.len(), 1);
-        assert_eq!(
-            mappers[0].protocol_mapper,
-            "saml-user-attribute-idp-mapper"
-        );
+        assert_eq!(mappers[0].protocol_mapper, "saml-user-attribute-idp-mapper");
         assert_eq!(
             mappers[0].config.get("user.attribute"),
             Some(&"auth9.tenant.permissions".to_string())

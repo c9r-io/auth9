@@ -391,9 +391,8 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
                     let mut rt_ref = std::panic::AssertUnwindSafe(&mut js_runtime);
                     let tokio_ref = std::panic::AssertUnwindSafe(&tokio_rt);
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(move || {
-                        tokio_ref.block_on(async {
-                            rt_ref.run_event_loop(Default::default()).await
-                        })
+                        tokio_ref
+                            .block_on(async { rt_ref.run_event_loop(Default::default()).await })
                     }))
                 };
 
@@ -411,7 +410,8 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
                             ));
                         }
                         return Err(AppError::ActionExecutionFailed(format!(
-                            "Async execution error: {}", e
+                            "Async execution error: {}",
+                            e
                         )));
                     }
                     Err(_panic) => {
@@ -422,7 +422,8 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
                         );
                         // js_runtime will be dropped when this scope exits
                         return Err(AppError::ActionExecutionFailed(
-                            "Action async execution failed due to internal runtime error".to_string(),
+                            "Action async execution failed due to internal runtime error"
+                                .to_string(),
                         ));
                     }
                 }
@@ -1601,7 +1602,11 @@ mod tests {
         )
         .await;
 
-        assert!(result.is_ok(), "Fetch to allowed domain should work: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Fetch to allowed domain should work: {:?}",
+            result.err()
+        );
         let resp = result.unwrap();
         assert_eq!(resp.status, 200);
         let body: serde_json::Value = serde_json::from_str(&resp.body).unwrap();
@@ -1655,7 +1660,11 @@ mod tests {
 
         assert!(result.is_err());
         let err = result.err().unwrap().to_string();
-        assert!(err.contains("allowlist"), "Error should mention allowlist: {}", err);
+        assert!(
+            err.contains("allowlist"),
+            "Error should mention allowlist: {}",
+            err
+        );
     }
 
     #[tokio::test]

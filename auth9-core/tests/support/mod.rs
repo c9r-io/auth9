@@ -3778,7 +3778,13 @@ mod tests {
 
         // Create client
         let client = repo
-            .create_client(*service.id, "client-1", "hash", Some("Client".to_string()), false)
+            .create_client(
+                *service.id,
+                "client-1",
+                "hash",
+                Some("Client".to_string()),
+                false,
+            )
             .await
             .unwrap();
         assert_eq!(client.client_id, "client-1");
@@ -3939,9 +3945,7 @@ impl SamlApplicationRepository for TestSamlApplicationRepository {
 // Test TenantRiskPolicyRepository
 // ============================================================================
 
-use auth9_core::repository::tenant_risk_policy::{
-    TenantRiskPolicyRepository, TenantRiskPolicyRow,
-};
+use auth9_core::repository::tenant_risk_policy::{TenantRiskPolicyRepository, TenantRiskPolicyRow};
 
 pub struct TestTenantRiskPolicyRepository {
     rows: RwLock<Vec<TenantRiskPolicyRow>>,
@@ -4055,7 +4059,10 @@ impl TrustedDeviceRepository for TestTrustedDeviceRepository {
     async fn revoke_all_by_user(&self, user_id: StringUuid) -> Result<u64> {
         let mut devices = self.devices.write().await;
         let mut count = 0u64;
-        for d in devices.iter_mut().filter(|d| d.user_id == user_id && !d.revoked) {
+        for d in devices
+            .iter_mut()
+            .filter(|d| d.user_id == user_id && !d.revoked)
+        {
             d.revoked = true;
             count += 1;
         }

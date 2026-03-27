@@ -469,7 +469,11 @@ pub async fn create<S: HasServices + HasBranding>(
         })
         .await?;
 
-    let user = match state.user_service().create(&identity_subject, input.user).await {
+    let user = match state
+        .user_service()
+        .create(&identity_subject, input.user)
+        .await
+    {
         Ok(user) => user,
         Err(e) => {
             tracing::warn!(

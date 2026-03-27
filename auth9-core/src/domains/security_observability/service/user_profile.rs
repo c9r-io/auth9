@@ -184,10 +184,8 @@ mod tests {
         let user_id = StringUuid::new_v4();
         let mut mock = MockUserLoginProfileRepository::new();
 
-        mock.expect_find_by_user_id()
-            .returning(|_| Ok(None));
-        mock.expect_upsert()
-            .returning(|_| Ok(()));
+        mock.expect_find_by_user_id().returning(|_| Ok(None));
+        mock.expect_upsert().returning(|_| Ok(()));
 
         let service = UserLoginProfileService::new(Arc::new(mock));
         let event = make_event(user_id);

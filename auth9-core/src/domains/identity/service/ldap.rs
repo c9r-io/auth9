@@ -2,9 +2,9 @@
 
 use crate::domains::tenant_access::api::tenant_sso::ConnectorTestResult;
 use crate::error::{AppError, Result};
-use crate::models::ldap::{escape_ldap_search_filter, LdapConfig, LdapUserProfile};
 #[cfg(test)]
 use crate::models::ldap::SearchScope;
+use crate::models::ldap::{escape_ldap_search_filter, LdapConfig, LdapUserProfile};
 use async_trait::async_trait;
 use ldap3::{drive, LdapConnAsync, LdapConnSettings, Scope};
 use std::time::Duration;
@@ -75,9 +75,7 @@ impl DefaultLdapAuthenticator {
 
     fn build_search_filter(config: &LdapConfig, username: &str) -> String {
         let escaped = escape_ldap_search_filter(username);
-        config
-            .user_search_filter
-            .replace("{username}", &escaped)
+        config.user_search_filter.replace("{username}", &escaped)
     }
 
     fn build_search_attrs(config: &LdapConfig) -> Vec<&str> {
@@ -100,16 +98,9 @@ impl DefaultLdapAuthenticator {
         attrs
     }
 
-    fn extract_profile(
-        config: &LdapConfig,
-        entry: &ldap3::SearchEntry,
-    ) -> LdapUserProfile {
+    fn extract_profile(config: &LdapConfig, entry: &ldap3::SearchEntry) -> LdapUserProfile {
         let get_first = |attr: &str| -> Option<String> {
-            entry
-                .attrs
-                .get(attr)
-                .and_then(|vals| vals.first())
-                .cloned()
+            entry.attrs.get(attr).and_then(|vals| vals.first()).cloned()
         };
 
         let groups = config
@@ -224,12 +215,7 @@ impl LdapAuthenticator for DefaultLdapAuthenticator {
 
         // Verify base DN is searchable
         let result = ldap
-            .search(
-                &config.base_dn,
-                Scope::Base,
-                "(objectClass=*)",
-                vec!["dn"],
-            )
+            .search(&config.base_dn, Scope::Base, "(objectClass=*)", vec!["dn"])
             .await;
 
         let _ = ldap.unbind().await;
@@ -238,8 +224,9 @@ impl LdapAuthenticator for DefaultLdapAuthenticator {
             Ok(r) => match r.success() {
                 Ok(_) => Ok(ConnectorTestResult {
                     ok: true,
-                    message: "LDAP connection successful. Service account bind and base DN verified."
-                        .to_string(),
+                    message:
+                        "LDAP connection successful. Service account bind and base DN verified."
+                            .to_string(),
                 }),
                 Err(e) => Ok(ConnectorTestResult {
                     ok: false,

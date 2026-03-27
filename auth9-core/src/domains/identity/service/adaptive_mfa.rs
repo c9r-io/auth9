@@ -169,7 +169,10 @@ mod tests {
         let mut policy = default_policy();
         policy.mode = AdaptiveMfaMode::Disabled;
         let input = base_input();
-        assert_eq!(AdaptiveMfaEngine::evaluate(&policy, &input), MfaDecision::Skip);
+        assert_eq!(
+            AdaptiveMfaEngine::evaluate(&policy, &input),
+            MfaDecision::Skip
+        );
     }
 
     #[test]
@@ -187,7 +190,10 @@ mod tests {
         let policy = default_policy();
         let mut input = base_input();
         input.has_mfa_enrolled = false;
-        assert_eq!(AdaptiveMfaEngine::evaluate(&policy, &input), MfaDecision::Skip);
+        assert_eq!(
+            AdaptiveMfaEngine::evaluate(&policy, &input),
+            MfaDecision::Skip
+        );
     }
 
     #[test]
@@ -198,7 +204,10 @@ mod tests {
         let mut input = base_input();
         input.risk_score = 10;
         input.device_trusted = true;
-        assert_eq!(AdaptiveMfaEngine::evaluate(&policy, &input), MfaDecision::Skip);
+        assert_eq!(
+            AdaptiveMfaEngine::evaluate(&policy, &input),
+            MfaDecision::Skip
+        );
     }
 
     #[test]
@@ -240,7 +249,10 @@ mod tests {
         let mut input = base_input();
         input.is_admin = true;
         input.risk_score = 5;
-        assert_eq!(AdaptiveMfaEngine::evaluate(&policy, &input), MfaDecision::Skip);
+        assert_eq!(
+            AdaptiveMfaEngine::evaluate(&policy, &input),
+            MfaDecision::Skip
+        );
     }
 
     #[test]
@@ -259,7 +271,10 @@ mod tests {
 
         // Just below threshold: skip
         input.risk_score = 39;
-        assert_eq!(AdaptiveMfaEngine::evaluate(&policy, &input), MfaDecision::Skip);
+        assert_eq!(
+            AdaptiveMfaEngine::evaluate(&policy, &input),
+            MfaDecision::Skip
+        );
     }
 
     #[test]
@@ -267,13 +282,22 @@ mod tests {
         let mut policy = default_policy();
         policy.mode = AdaptiveMfaMode::OptionalEnroll;
         let input = base_input();
-        assert_eq!(AdaptiveMfaEngine::evaluate(&policy, &input), MfaDecision::Skip);
+        assert_eq!(
+            AdaptiveMfaEngine::evaluate(&policy, &input),
+            MfaDecision::Skip
+        );
     }
 
     #[test]
     fn test_mode_serialization() {
         assert_eq!(AdaptiveMfaMode::Adaptive.to_string(), "adaptive");
-        assert_eq!("adaptive".parse::<AdaptiveMfaMode>().unwrap(), AdaptiveMfaMode::Adaptive);
-        assert_eq!("always".parse::<AdaptiveMfaMode>().unwrap(), AdaptiveMfaMode::Always);
+        assert_eq!(
+            "adaptive".parse::<AdaptiveMfaMode>().unwrap(),
+            AdaptiveMfaMode::Adaptive
+        );
+        assert_eq!(
+            "always".parse::<AdaptiveMfaMode>().unwrap(),
+            AdaptiveMfaMode::Always
+        );
     }
 }

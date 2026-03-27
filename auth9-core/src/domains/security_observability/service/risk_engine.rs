@@ -86,10 +86,7 @@ impl RiskEngine {
     pub fn assess(input: &RiskInput<'_>) -> RiskAssessment {
         let mut factors = Vec::with_capacity(6);
 
-        let is_learning = input
-            .profile
-            .map(|p| p.total_logins < 10)
-            .unwrap_or(true);
+        let is_learning = input.profile.map(|p| p.total_logins < 10).unwrap_or(true);
 
         // Factor 1: IP reputation (weight 0.20)
         let ip_score = Self::score_ip_reputation(input, is_learning);
@@ -116,10 +113,7 @@ impl RiskEngine {
         factors.push(account_score);
 
         // Final score = sum(factor_score * weight), clamped 0-100
-        let raw_score: f64 = factors
-            .iter()
-            .map(|f| f.score as f64 * f.weight)
-            .sum();
+        let raw_score: f64 = factors.iter().map(|f| f.score as f64 * f.weight).sum();
         let score = (raw_score.round() as u8).min(100);
 
         let level = RiskLevel::from_score(score);
@@ -258,7 +252,8 @@ impl RiskEngine {
 
         if let Some(profile) = input.profile {
             let hour = input.login_hour as u8;
-            if !profile.typical_login_hours.contains(&hour) && !profile.typical_login_hours.is_empty()
+            if !profile.typical_login_hours.contains(&hour)
+                && !profile.typical_login_hours.is_empty()
             {
                 return RiskFactor {
                     name: "time_anomaly".to_string(),

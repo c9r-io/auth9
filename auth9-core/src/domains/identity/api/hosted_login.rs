@@ -12,13 +12,13 @@ use crate::domains::identity::api::mfa::{
 use crate::domains::identity::service::adaptive_mfa::{
     AdaptiveMfaEngine, AdaptiveMfaPolicy, MfaDecision, MfaEvaluationInput,
 };
-use crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepository;
 use crate::domains::identity::service::required_actions::PendingActionResponse;
 use crate::domains::identity::service::trusted_device::compute_device_fingerprint;
 use crate::domains::security_observability::service::risk_engine::{RiskEngine, RiskInput};
 use crate::error::{AppError, Result};
 use crate::http_support::{write_audit_log_generic, write_audit_log_with_actor, MessageResponse};
 use crate::models::password::{ForgotPasswordInput, ResetPasswordInput};
+use crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepository;
 use crate::state::{
     HasAdaptiveMfa, HasAnalytics, HasCache, HasMfa, HasPasswordManagement, HasRequiredActions,
     HasServices, HasSessionManagement, HasTrustedDevices, HasWebAuthn,
@@ -86,7 +86,15 @@ fn extract_client_ip(headers: &HeaderMap) -> Option<String> {
 ///
 /// POST /api/v1/hosted-login/password
 pub async fn password_login<
-    S: HasServices + HasSessionManagement + HasCache + HasRequiredActions + HasMfa + HasWebAuthn + HasAnalytics + HasTrustedDevices + HasAdaptiveMfa,
+    S: HasServices
+        + HasSessionManagement
+        + HasCache
+        + HasRequiredActions
+        + HasMfa
+        + HasWebAuthn
+        + HasAnalytics
+        + HasTrustedDevices
+        + HasAdaptiveMfa,
 >(
     State(state): State<S>,
     headers: HeaderMap,
@@ -147,11 +155,19 @@ pub async fn password_login<
         // Track failed login attempt for brute force protection
         let fail_key = format!("auth9:login_fail:{}", user.id);
         let lockout_window_secs = 600u64; // 10 minute window
-        if let Ok(fail_count) = state.cache().increment_counter(&fail_key, lockout_window_secs).await {
+        if let Ok(fail_count) = state
+            .cache()
+            .increment_counter(&fail_key, lockout_window_secs)
+            .await
+        {
             let policy = crate::models::password::PasswordPolicy::default();
             if policy.lockout_threshold > 0 && fail_count >= policy.lockout_threshold as u64 {
-                let locked_until = Utc::now() + chrono::Duration::minutes(policy.lockout_duration_mins as i64);
-                let _ = state.user_service().update_locked_until(user.id, Some(locked_until)).await;
+                let locked_until =
+                    Utc::now() + chrono::Duration::minutes(policy.lockout_duration_mins as i64);
+                let _ = state
+                    .user_service()
+                    .update_locked_until(user.id, Some(locked_until))
+                    .await;
                 tracing::warn!(
                     user_id = %user.id,
                     fail_count = fail_count,
@@ -167,7 +183,10 @@ pub async fn password_login<
 
     // Unlock account on successful authentication if it was previously locked
     if user.locked_until.is_some() {
-        let _ = state.user_service().update_locked_until(user.id, None).await;
+        let _ = state
+            .user_service()
+            .update_locked_until(user.id, None)
+            .await;
     }
 
     // Async breach check: after successful password auth, check HIBP in background.
@@ -176,9 +195,16 @@ pub async fn password_login<
     if let Some(breach_svc) = state.breached_password_service() {
         // Resolve tenant password policy for breach check settings
         let breach_policy = {
-            let memberships = state.user_service().get_user_tenants(user.id).await.unwrap_or_default();
+            let memberships = state
+                .user_service()
+                .get_user_tenants(user.id)
+                .await
+                .unwrap_or_default();
             if let Some(first) = memberships.first() {
-                state.tenant_service().get(first.tenant_id).await
+                state
+                    .tenant_service()
+                    .get(first.tenant_id)
+                    .await
                     .ok()
                     .and_then(|t| t.password_policy)
                     .unwrap_or_default()
@@ -268,7 +294,10 @@ pub async fn password_login<
                     use crate::domains::identity::service::adaptive_mfa::AdaptiveMfaMode;
                     AdaptiveMfaPolicy {
                         tenant_id: row.tenant_id.to_string(),
-                        mode: row.mode.parse::<AdaptiveMfaMode>().unwrap_or(AdaptiveMfaMode::Always),
+                        mode: row
+                            .mode
+                            .parse::<AdaptiveMfaMode>()
+                            .unwrap_or(AdaptiveMfaMode::Always),
                         risk_threshold: row.risk_threshold,
                         always_require_for_admins: row.always_require_for_admins,
                         trust_device_days: row.trust_device_days,
@@ -299,11 +328,7 @@ pub async fn password_login<
 
         // Compute risk score using the RiskEngine
         let fail_key = format!("auth9:login_fail:{}", user.id);
-        let recent_failure_count = state
-            .cache()
-            .get_counter(&fail_key)
-            .await
-            .unwrap_or(0) as i64;
+        let recent_failure_count = state.cache().get_counter(&fail_key).await.unwrap_or(0) as i64;
 
         let login_hour = Utc::now().hour();
         let risk_input = RiskInput {
@@ -495,7 +520,11 @@ pub async fn password_login<
             }
         }
         metadata = metadata.with_session_id(session.id);
-        if let Err(e) = state.analytics_service().record_successful_login(metadata).await {
+        if let Err(e) = state
+            .analytics_service()
+            .record_successful_login(metadata)
+            .await
+        {
             tracing::warn!(error = %e, "Failed to record login event");
         }
     }

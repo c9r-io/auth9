@@ -72,17 +72,16 @@ pub async fn ldap_login<
     };
 
     // 3. Map to EnterpriseProfile
-    let display_name = profile
-        .display_name
-        .clone()
-        .or_else(|| {
-            match (&profile.first_name, &profile.last_name) {
+    let display_name =
+        profile
+            .display_name
+            .clone()
+            .or_else(|| match (&profile.first_name, &profile.last_name) {
                 (Some(f), Some(l)) => Some(format!("{} {}", f, l)),
                 (Some(f), None) => Some(f.clone()),
                 (None, Some(l)) => Some(l.clone()),
                 _ => None,
-            }
-        });
+            });
 
     let enterprise_profile = EnterpriseProfile {
         external_user_id: profile.dn.clone(),

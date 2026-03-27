@@ -161,10 +161,7 @@ pub fn parse_ldap_config(config: &HashMap<String, String>) -> Result<LdapConfig>
             .get("attrDisplayName")
             .filter(|s| !s.is_empty())
             .cloned(),
-        attr_phone: config
-            .get("attrPhone")
-            .filter(|s| !s.is_empty())
-            .cloned(),
+        attr_phone: config.get("attrPhone").filter(|s| !s.is_empty()).cloned(),
         attr_groups: config
             .get("attrGroups")
             .filter(|s| !s.is_empty())
@@ -177,10 +174,7 @@ pub fn parse_ldap_config(config: &HashMap<String, String>) -> Result<LdapConfig>
                 }
             }),
         is_active_directory,
-        ad_domain: config
-            .get("adDomain")
-            .filter(|s| !s.is_empty())
-            .cloned(),
+        ad_domain: config.get("adDomain").filter(|s| !s.is_empty()).cloned(),
     })
 }
 
@@ -282,10 +276,7 @@ mod tests {
     #[test]
     fn escape_filter_injection_attempt() {
         // Attempt: )(cn=*) -- should be fully escaped
-        assert_eq!(
-            escape_ldap_search_filter(")(cn=*)"),
-            "\\29\\28cn=\\2a\\29"
-        );
+        assert_eq!(escape_ldap_search_filter(")(cn=*)"), "\\29\\28cn=\\2a\\29");
     }
 
     #[test]

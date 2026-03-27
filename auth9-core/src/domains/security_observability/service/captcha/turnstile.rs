@@ -65,15 +65,18 @@ impl CaptchaProvider for TurnstileProvider {
         token: &str,
         remote_ip: Option<&str>,
     ) -> crate::error::Result<CaptchaVerification> {
-        let mut params = vec![
-            ("secret", self.secret_key.as_str()),
-            ("response", token),
-        ];
+        let mut params = vec![("secret", self.secret_key.as_str()), ("response", token)];
         if let Some(ip) = remote_ip {
             params.push(("remoteip", ip));
         }
 
-        let response = match self.http_client.post(&self.verify_url).form(&params).send().await {
+        let response = match self
+            .http_client
+            .post(&self.verify_url)
+            .form(&params)
+            .send()
+            .await
+        {
             Ok(resp) => resp,
             Err(e) => {
                 // Fail-open: if we can't reach Turnstile, allow the request through

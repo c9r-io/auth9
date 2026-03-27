@@ -121,13 +121,11 @@ pub async fn delete_mapping<S: HasServices + HasDbPool>(
 ) -> Result<Json<crate::http_support::MessageResponse>> {
     ensure_tenant_access(&state, &headers, &auth, tenant_id).await?;
 
-    let result = sqlx::query(
-        "DELETE FROM ldap_group_role_mappings WHERE id = ? AND tenant_id = ?",
-    )
-    .bind(mapping_id.to_string())
-    .bind(tenant_id.to_string())
-    .execute(state.db_pool())
-    .await?;
+    let result = sqlx::query("DELETE FROM ldap_group_role_mappings WHERE id = ? AND tenant_id = ?")
+        .bind(mapping_id.to_string())
+        .bind(tenant_id.to_string())
+        .execute(state.db_pool())
+        .await?;
 
     if result.rows_affected() == 0 {
         return Err(AppError::NotFound(

@@ -7,8 +7,10 @@ pub mod security_detection;
 pub mod user_profile;
 
 pub use analytics::AnalyticsService;
-pub use captcha::{CaptchaMode, CaptchaProvider, CaptchaProviderType, CaptchaVerification, NoOpCaptchaProvider};
-pub use geo::{GeoIpService, GeoLocation, haversine_distance_km};
+pub use captcha::{
+    CaptchaMode, CaptchaProvider, CaptchaProviderType, CaptchaVerification, NoOpCaptchaProvider,
+};
+pub use geo::{haversine_distance_km, GeoIpService, GeoLocation};
 pub use risk_engine::{RiskAction, RiskAssessment, RiskEngine, RiskFactor, RiskLevel};
 pub use risk_response::RiskResponseService;
 pub use security_detection::{SecurityDetectionConfig, SecurityDetectionService};

@@ -157,7 +157,10 @@ mod tests {
 
     #[test]
     fn test_captcha_mode_from_str() {
-        assert_eq!("always".parse::<CaptchaMode>().unwrap(), CaptchaMode::Always);
+        assert_eq!(
+            "always".parse::<CaptchaMode>().unwrap(),
+            CaptchaMode::Always
+        );
         assert_eq!(
             "adaptive".parse::<CaptchaMode>().unwrap(),
             CaptchaMode::Adaptive

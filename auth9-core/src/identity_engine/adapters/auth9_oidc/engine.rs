@@ -576,7 +576,10 @@ impl IdentityCredentialStore for Auth9OidcCredentialStore {
             let data: serde_json::Value = row
                 .try_get("credential_data")
                 .map_err(|e| AppError::Internal(anyhow!("{}", e)))?;
-            return Ok(data.get("temporary").and_then(|v| v.as_bool()).unwrap_or(false));
+            return Ok(data
+                .get("temporary")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false));
         }
         Ok(false)
     }

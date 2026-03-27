@@ -7,8 +7,8 @@ use crate::support::http::{
     put_json_with_auth, TestAppState,
 };
 use crate::support::{
-    create_test_permission, create_test_role, create_test_service,
-    create_test_tenant_access_token, create_test_tenant_access_token_for_tenant,
+    create_test_permission, create_test_role, create_test_service, create_test_tenant_access_token,
+    create_test_tenant_access_token_for_tenant,
 };
 use auth9_core::http_support::{MessageResponse, SuccessResponse};
 use auth9_core::models::rbac::{Permission, Role, UserRolesInTenant};

@@ -116,10 +116,10 @@ pub async fn require_auth_middleware(
             }
         } else {
             // No cache available — fail-closed: reject with 503
-            tracing::error!("No cache configured for audience validation, rejecting request (fail-closed)");
-            return service_unavailable_response(
-                "Authentication service temporarily unavailable",
+            tracing::error!(
+                "No cache configured for audience validation, rejecting request (fail-closed)"
             );
+            return service_unavailable_response("Authentication service temporarily unavailable");
         }
     } else {
         None

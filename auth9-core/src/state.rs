@@ -369,7 +369,8 @@ pub trait HasMfa: Clone + Send + Sync + 'static {
 
 /// Trait for states that provide LDAP authentication services
 pub trait HasLdapAuth: Clone + Send + Sync + 'static {
-    fn ldap_authenticator(&self) -> &dyn crate::domains::identity::service::ldap::LdapAuthenticator;
+    fn ldap_authenticator(&self)
+        -> &dyn crate::domains::identity::service::ldap::LdapAuthenticator;
 }
 
 /// Trait for states that provide trusted device services

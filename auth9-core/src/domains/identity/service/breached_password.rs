@@ -138,8 +138,7 @@ mod tests {
         let mock_server = MockServer::start().await;
 
         // SHA-1("password") prefix = "5BAA6", suffix below // pragma: allowlist secret
-        let response_body =
-            "0018A45C4D1DEF81644B54AB7F969B88D65:1\r\n\
+        let response_body = "0018A45C4D1DEF81644B54AB7F969B88D65:1\r\n\
              1E4C9B93F3F0682250B6CF8331B7EE68FD8:3861493\r\n\
              1E4E7FCAA4D6F8D5209B3A8C5D0A3B12345:42\r\n";
 
@@ -159,8 +158,7 @@ mod tests {
     async fn test_password_not_breached() {
         let mock_server = MockServer::start().await;
 
-        let response_body =
-            "0018A45C4D1DEF81644B54AB7F969B88D65:1\r\n\
+        let response_body = "0018A45C4D1DEF81644B54AB7F969B88D65:1\r\n\
              AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1:10\r\n";
 
         Mock::given(method("GET"))
@@ -213,7 +211,7 @@ mod tests {
 
         let service = service_with_url(&mock_server.uri());
         let result = service.check_password("password").await; // pragma: allowlist secret
-        // 500 response still has a text body (empty), so it returns not-breached
+                                                               // 500 response still has a text body (empty), so it returns not-breached
         assert!(!result.is_breached, "Should fail-open on server error");
     }
 

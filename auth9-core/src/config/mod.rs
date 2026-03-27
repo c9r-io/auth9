@@ -263,7 +263,13 @@ impl fmt::Debug for Config {
             .field("telemetry", &self.telemetry)
             .field("password_reset", &self.password_reset)
             .field("hibp", &self.hibp)
-            .field("captcha", &CaptchaConfig { secret_key: "<REDACTED>".to_string(), ..self.captcha.clone() })
+            .field(
+                "captcha",
+                &CaptchaConfig {
+                    secret_key: "<REDACTED>".to_string(),
+                    ..self.captcha.clone()
+                },
+            )
             .field("geoip", &self.geoip)
             .field(
                 "jwt_tenant_access_allowed_audiences",
@@ -838,7 +844,10 @@ impl Config {
                 site_key: env::var("CAPTCHA_SITE_KEY").unwrap_or_default(),
                 secret_key: env::var("CAPTCHA_SECRET_KEY").unwrap_or_default(),
                 mode: env::var("CAPTCHA_MODE").unwrap_or_else(|_| "disabled".to_string()),
-                score_threshold: env::var("CAPTCHA_SCORE_THRESHOLD").ok().and_then(|s| s.parse().ok()).unwrap_or(0.5),
+                score_threshold: env::var("CAPTCHA_SCORE_THRESHOLD")
+                    .ok()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(0.5),
                 verify_timeout_ms: parse_u64_env("CAPTCHA_VERIFY_TIMEOUT_MS", 5000),
             },
             geoip: GeoIpConfig {

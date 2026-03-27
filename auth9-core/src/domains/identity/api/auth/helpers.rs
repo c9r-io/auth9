@@ -509,7 +509,9 @@ mod tests {
     #[test]
     fn test_enforce_pkce_public_client_no_challenge() {
         let result = enforce_pkce_for_public_client(true, &None, &None);
-        assert!(matches!(result, Err(AppError::BadRequest(ref msg)) if msg.contains("code_challenge required")));
+        assert!(
+            matches!(result, Err(AppError::BadRequest(ref msg)) if msg.contains("code_challenge required"))
+        );
     }
 
     #[test]
@@ -534,11 +536,8 @@ mod tests {
 
     #[test]
     fn test_enforce_pkce_public_client_no_method() {
-        let result = enforce_pkce_for_public_client(
-            true,
-            &Some("challenge-value".to_string()),
-            &None,
-        );
+        let result =
+            enforce_pkce_for_public_client(true, &Some("challenge-value".to_string()), &None);
         assert!(matches!(result, Err(AppError::BadRequest(ref msg)) if msg.contains("S256")));
     }
 

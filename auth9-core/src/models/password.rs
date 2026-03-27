@@ -192,7 +192,9 @@ pub struct UpdatePasswordPolicyInput {
     pub breach_check_on_login: Option<bool>,
 }
 
-fn validate_breach_check_mode(input: &UpdatePasswordPolicyInput) -> Result<(), validator::ValidationError> {
+fn validate_breach_check_mode(
+    input: &UpdatePasswordPolicyInput,
+) -> Result<(), validator::ValidationError> {
     if let Some(ref mode) = input.breach_check_mode {
         if !VALID_BREACH_CHECK_MODES.contains(&mode.as_str()) {
             let mut err = validator::ValidationError::new("invalid_breach_check_mode");

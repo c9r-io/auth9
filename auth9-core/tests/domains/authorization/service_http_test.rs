@@ -3,11 +3,11 @@
 //! Tests for the service and client HTTP endpoints using mock repositories.
 
 use crate::support::create_test_service;
-use crate::support::{create_test_tenant_access_token, create_test_tenant_access_token_for_tenant};
 use crate::support::http::{
     build_test_router, delete_json_with_auth, get_json_with_auth, post_json_with_auth,
     put_json_with_auth, TestAppState,
 };
+use crate::support::{create_test_tenant_access_token, create_test_tenant_access_token_for_tenant};
 use auth9_core::http_support::{MessageResponse, PaginatedResponse, SuccessResponse};
 use auth9_core::models::service::{Client, Service, ServiceStatus};
 use axum::http::StatusCode;

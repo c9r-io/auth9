@@ -184,8 +184,7 @@ mod tests {
 
         mock.expect_find_by_user_and_fingerprint()
             .returning(move |_, _| Ok(Some(device_clone.clone())));
-        mock.expect_update_last_used()
-            .returning(|_| Ok(()));
+        mock.expect_update_last_used().returning(|_| Ok(()));
 
         let service = TrustedDeviceService::new(Arc::new(mock));
         assert!(service.is_trusted(user_id, "abc123").await.unwrap());

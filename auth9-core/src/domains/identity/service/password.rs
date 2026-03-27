@@ -198,7 +198,9 @@ impl<
 
         // Validate new password against tenant password policy BEFORE claiming the token.
         // Falls back to default policy when tenant lookup fails to ensure enforcement.
-        let policy = self.resolve_user_password_policy(preview_token.user_id).await;
+        let policy = self
+            .resolve_user_password_policy(preview_token.user_id)
+            .await;
         if let Err(errors) = policy.validate_password(&input.new_password) {
             return Err(AppError::Validation(errors.join("; ")));
         }
@@ -305,8 +307,13 @@ impl<
         }
 
         // Check password history before changing
-        self.check_password_history(user_id, &user.identity_subject, &input.new_password, &policy)
-            .await?;
+        self.check_password_history(
+            user_id,
+            &user.identity_subject,
+            &input.new_password,
+            &policy,
+        )
+        .await?;
 
         // Get the current password hash before overwriting it (for history storage)
         let current_hash = self
@@ -386,8 +393,13 @@ impl<
             .await?;
 
         // Check password history before changing
-        self.check_password_history(user_id, &user.identity_subject, &input.new_password, &policy)
-            .await?;
+        self.check_password_history(
+            user_id,
+            &user.identity_subject,
+            &input.new_password,
+            &policy,
+        )
+        .await?;
 
         // Get the current password hash before overwriting it (for history storage)
         let current_hash = self
@@ -497,12 +509,8 @@ impl<
             lockout_duration_mins: input
                 .lockout_duration_mins
                 .unwrap_or(current.lockout_duration_mins),
-            breach_check_mode: input
-                .breach_check_mode
-                .unwrap_or(current.breach_check_mode),
-            min_breach_count: input
-                .min_breach_count
-                .unwrap_or(current.min_breach_count),
+            breach_check_mode: input.breach_check_mode.unwrap_or(current.breach_check_mode),
+            min_breach_count: input.min_breach_count.unwrap_or(current.min_breach_count),
             breach_check_on_login: input
                 .breach_check_on_login
                 .unwrap_or(current.breach_check_on_login),
@@ -1800,8 +1808,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_check_password_history_disabled_when_count_zero() {
-        use argon2::password_hash::{PasswordHasher, SaltString};
         use argon2::password_hash::rand_core::OsRng;
+        use argon2::password_hash::{PasswordHasher, SaltString};
 
         let mut password_reset_mock = MockPasswordResetRepository::new();
         let user_mock = MockUserRepository::new();
@@ -1825,8 +1833,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_check_password_history_rejects_reused_password() {
-        use argon2::password_hash::{PasswordHasher, SaltString};
         use argon2::password_hash::rand_core::OsRng;
+        use argon2::password_hash::{PasswordHasher, SaltString};
 
         let mut password_reset_mock = MockPasswordResetRepository::new();
         let user_mock = MockUserRepository::new();
@@ -1893,8 +1901,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_check_password_history_with_multiple_old_passwords() {
-        use argon2::password_hash::{PasswordHasher, SaltString};
         use argon2::password_hash::rand_core::OsRng;
+        use argon2::password_hash::{PasswordHasher, SaltString};
 
         let mut password_reset_mock = MockPasswordResetRepository::new();
         let user_mock = MockUserRepository::new();
@@ -1940,7 +1948,8 @@ mod tests {
             .expect_get_password_history()
             .returning(move |_, _| Ok(hashes_clone2.clone()));
 
-        let (service2, _) = create_test_password_service(password_reset_mock2, MockUserRepository::new());
+        let (service2, _) =
+            create_test_password_service(password_reset_mock2, MockUserRepository::new());
 
         let result = service2
             .check_password_history(user_id, "identity-1", "CompletelyNew1!", &policy)

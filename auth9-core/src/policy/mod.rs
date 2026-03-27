@@ -342,9 +342,7 @@ pub async fn enforce_with_state<S: HasServices>(
                     .tenant_id
                     .ok_or_else(|| AppError::Forbidden("No tenant context in token".to_string()))?;
                 if token_tenant_id != **tenant_id {
-                    return Err(AppError::NotFound(
-                        "Not found".to_string(),
-                    ));
+                    return Err(AppError::NotFound("Not found".to_string()));
                 }
             }
         }
@@ -676,7 +674,6 @@ fn action_supports_db_platform_admin(action: PolicyAction) -> bool {
             | PolicyAction::AbacSimulate
     )
 }
-
 
 fn require_system_config_read(
     config: &Config,

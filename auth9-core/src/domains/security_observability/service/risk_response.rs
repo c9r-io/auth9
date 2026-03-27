@@ -35,10 +35,7 @@ pub struct RiskResponseService;
 
 impl RiskResponseService {
     /// Evaluate the appropriate response action given a risk assessment and tenant policy.
-    pub fn evaluate_response(
-        assessment: &RiskAssessment,
-        policy: &TenantRiskPolicy,
-    ) -> RiskAction {
+    pub fn evaluate_response(assessment: &RiskAssessment, policy: &TenantRiskPolicy) -> RiskAction {
         if assessment.score >= policy.block_threshold {
             RiskAction::Block
         } else if assessment.score >= policy.mfa_threshold {

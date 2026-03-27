@@ -80,11 +80,12 @@ impl TrustedDeviceRepository for TrustedDeviceRepositoryImpl {
     }
 
     async fn revoke_all_by_user(&self, user_id: StringUuid) -> Result<u64> {
-        let result =
-            sqlx::query("UPDATE trusted_devices SET revoked = TRUE WHERE user_id = ? AND revoked = FALSE")
-                .bind(user_id)
-                .execute(&self.pool)
-                .await?;
+        let result = sqlx::query(
+            "UPDATE trusted_devices SET revoked = TRUE WHERE user_id = ? AND revoked = FALSE",
+        )
+        .bind(user_id)
+        .execute(&self.pool)
+        .await?;
         Ok(result.rows_affected())
     }
 

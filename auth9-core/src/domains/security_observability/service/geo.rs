@@ -61,7 +61,10 @@ impl GeoIpService {
                 })
             }
             Err(e) => {
-                warn!("Failed to load GeoIP database from {}: {}", database_path, e);
+                warn!(
+                    "Failed to load GeoIP database from {}: {}",
+                    database_path, e
+                );
                 None
             }
         }
@@ -122,7 +125,7 @@ fn is_global_ip(ip: &IpAddr) -> bool {
                 && !v4.is_broadcast()
                 && !v4.is_unspecified()
                 && !v4.octets().starts_with(&[100, 64]) // CGNAT 100.64.0.0/10
-                && !v4.octets().starts_with(&[0])       // 0.0.0.0/8
+                && !v4.octets().starts_with(&[0]) // 0.0.0.0/8
         }
         IpAddr::V6(v6) => !v6.is_loopback() && !v6.is_unspecified(),
     }
@@ -138,8 +141,8 @@ pub fn haversine_distance_km(lat1: f64, lon1: f64, lat2: f64, lon2: f64) -> f64 
     let dlat = (lat2 - lat1).to_radians();
     let dlon = (lon2 - lon1).to_radians();
 
-    let a = (dlat / 2.0).sin().powi(2)
-        + lat1_rad.cos() * lat2_rad.cos() * (dlon / 2.0).sin().powi(2);
+    let a =
+        (dlat / 2.0).sin().powi(2) + lat1_rad.cos() * lat2_rad.cos() * (dlon / 2.0).sin().powi(2);
     let c = 2.0 * a.sqrt().asin();
 
     EARTH_RADIUS_KM * c

@@ -736,10 +736,8 @@ mod tests {
                 }))
             });
 
-        mock_repo
-            .expect_create_client()
-            .times(1)
-            .returning(move |sid, cid, _hash, name, public_client| {
+        mock_repo.expect_create_client().times(1).returning(
+            move |sid, cid, _hash, name, public_client| {
                 Ok(crate::models::service::Client {
                     id: StringUuid(Uuid::new_v4()),
                     service_id: StringUuid(sid),
@@ -749,7 +747,8 @@ mod tests {
                     public_client,
                     created_at: chrono::Utc::now(),
                 })
-            });
+            },
+        );
 
         let service = create_test_service(mock_repo);
 
@@ -797,17 +796,18 @@ mod tests {
             .with(eq("custom-client-id"))
             .returning(|_| Ok(None));
 
-        mock.expect_create_client().returning(|sid, cid, _, name, public_client| {
-            Ok(crate::models::service::Client {
-                id: StringUuid::new_v4(),
-                service_id: StringUuid(sid),
-                client_id: cid.to_string(),
-                client_secret_hash: "hash".to_string(),
-                name,
-                public_client,
-                created_at: chrono::Utc::now(),
-            })
-        });
+        mock.expect_create_client()
+            .returning(|sid, cid, _, name, public_client| {
+                Ok(crate::models::service::Client {
+                    id: StringUuid::new_v4(),
+                    service_id: StringUuid(sid),
+                    client_id: cid.to_string(),
+                    client_secret_hash: "hash".to_string(),
+                    name,
+                    public_client,
+                    created_at: chrono::Utc::now(),
+                })
+            });
 
         let service = create_test_service(mock);
 

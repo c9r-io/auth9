@@ -93,10 +93,7 @@ mod tests {
 
         let result = sanitize_action_claims(raw).unwrap();
         assert_eq!(result.len(), 2);
-        assert_eq!(
-            result.get("https://auth9.dev/role"),
-            Some(&json!("admin"))
-        );
+        assert_eq!(result.get("https://auth9.dev/role"), Some(&json!("admin")));
         assert_eq!(
             result.get("https://auth9.dev/org_id"),
             Some(&json!("org-123"))
@@ -106,17 +103,11 @@ mod tests {
     #[test]
     fn test_already_prefixed_not_double_prefixed() {
         let mut raw = HashMap::new();
-        raw.insert(
-            "https://auth9.dev/foo".to_string(),
-            json!("bar"),
-        );
+        raw.insert("https://auth9.dev/foo".to_string(), json!("bar"));
 
         let result = sanitize_action_claims(raw).unwrap();
         assert_eq!(result.len(), 1);
-        assert_eq!(
-            result.get("https://auth9.dev/foo"),
-            Some(&json!("bar"))
-        );
+        assert_eq!(result.get("https://auth9.dev/foo"), Some(&json!("bar")));
         // Ensure no double-prefix key exists
         assert!(!result.contains_key("https://auth9.dev/https://auth9.dev/foo"));
     }

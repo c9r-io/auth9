@@ -149,10 +149,7 @@ fn extract_captcha_token(request: &axum::extract::Request) -> Option<String> {
 /// CAPTCHA verification middleware
 ///
 /// Reads CaptchaState from request extensions (injected via `axum::Extension` layer).
-pub async fn captcha_middleware(
-    request: axum::extract::Request,
-    next: Next,
-) -> Response {
+pub async fn captcha_middleware(request: axum::extract::Request, next: Next) -> Response {
     let state = match request.extensions().get::<CaptchaState>().cloned() {
         Some(s) => s,
         None => return next.run(request).await, // No CAPTCHA state — pass through
@@ -183,10 +180,9 @@ pub async fn captcha_middleware(
     if !captcha_needed {
         // Adaptive mode: not suspicious, allow through with header
         let mut response = next.run(request).await;
-        response.headers_mut().insert(
-            "X-Captcha-Required",
-            "false".parse().unwrap(),
-        );
+        response
+            .headers_mut()
+            .insert("X-Captcha-Required", "false".parse().unwrap());
         return response;
     }
 
@@ -197,11 +193,7 @@ pub async fn captcha_middleware(
     match token {
         Some(token) => {
             // Verify the token with the provider
-            match state
-                .provider
-                .verify(&token, remote_ip.as_deref())
-                .await
-            {
+            match state.provider.verify(&token, remote_ip.as_deref()).await {
                 Ok(verification) if verification.success => {
                     // Check score threshold if provider returns a score
                     if let Some(score) = verification.score {
@@ -221,10 +213,9 @@ pub async fn captcha_middleware(
                     metrics::counter!("auth9_captcha_verified_total", "endpoint" => path.clone())
                         .increment(1);
                     let mut response = next.run(request).await;
-                    response.headers_mut().insert(
-                        "X-Captcha-Required",
-                        "false".parse().unwrap(),
-                    );
+                    response
+                        .headers_mut()
+                        .insert("X-Captcha-Required", "false".parse().unwrap());
                     response
                 }
                 Ok(_verification) => {
@@ -260,16 +251,11 @@ fn captcha_required_response(site_key: &str) -> Response {
         error: "CAPTCHA verification required".to_string(),
         code: "CAPTCHA_REQUIRED".to_string(),
     };
-    let mut response = (
-        StatusCode::FORBIDDEN,
-        axum::Json(body),
-    )
-        .into_response();
+    let mut response = (StatusCode::FORBIDDEN, axum::Json(body)).into_response();
 
-    response.headers_mut().insert(
-        "X-Captcha-Required",
-        "true".parse().unwrap(),
-    );
+    response
+        .headers_mut()
+        .insert("X-Captcha-Required", "true".parse().unwrap());
     if !site_key.is_empty() {
         if let Ok(val) = site_key.parse() {
             response.headers_mut().insert("X-Captcha-Site-Key", val);
@@ -399,13 +385,7 @@ mod tests {
         CaptchaVerification, NoOpCaptchaProvider,
     };
     use async_trait::async_trait;
-    use axum::{
-        body::Body,
-        http::StatusCode,
-        middleware,
-        routing::post,
-        Router,
-    };
+    use axum::{body::Body, http::StatusCode, middleware, routing::post, Router};
     use tower::ServiceExt;
 
     /// Helper to build a test request (axum::http::Request<Body>)
@@ -449,10 +429,7 @@ mod tests {
     }
 
     /// Standalone test middleware that reads CaptchaState from extensions
-    async fn test_captcha_middleware(
-        mut request: axum::extract::Request,
-        next: Next,
-    ) -> Response {
+    async fn test_captcha_middleware(mut request: axum::extract::Request, next: Next) -> Response {
         let state = request.extensions().get::<CaptchaState>().cloned().unwrap();
         // Re-insert so inner layers can also read
         request.extensions_mut().insert(state.clone());
@@ -471,8 +448,11 @@ mod tests {
         let captcha_needed = match state.mode {
             CaptchaMode::Always => true,
             CaptchaMode::Adaptive => {
-                let ua = request.headers().get("user-agent")
-                    .and_then(|v| v.to_str().ok()).unwrap_or("");
+                let ua = request
+                    .headers()
+                    .get("user-agent")
+                    .and_then(|v| v.to_str().ok())
+                    .unwrap_or("");
                 ua.is_empty()
             }
             CaptchaMode::Disabled => false,
@@ -480,47 +460,50 @@ mod tests {
 
         if !captcha_needed {
             let mut response = next.run(request).await;
-            response.headers_mut().insert("X-Captcha-Required", "false".parse().unwrap());
+            response
+                .headers_mut()
+                .insert("X-Captcha-Required", "false".parse().unwrap());
             return response;
         }
 
-        let token = request.headers().get("x-captcha-token")
+        let token = request
+            .headers()
+            .get("x-captcha-token")
             .and_then(|v| v.to_str().ok())
             .map(|s| s.to_string())
             .filter(|s| !s.is_empty());
 
-        let remote_ip = request.headers().get("x-forwarded-for")
+        let remote_ip = request
+            .headers()
+            .get("x-forwarded-for")
             .and_then(|v| v.to_str().ok())
             .and_then(|s| s.split(',').next())
             .map(|s| s.trim().to_string());
 
         match token {
-            Some(token) => {
-                match state.provider.verify(&token, remote_ip.as_deref()).await {
-                    Ok(v) if v.success => {
-                        if let Some(score) = v.score {
-                            if score < state.config.score_threshold {
-                                return captcha_required_response(&state.config.site_key);
-                            }
+            Some(token) => match state.provider.verify(&token, remote_ip.as_deref()).await {
+                Ok(v) if v.success => {
+                    if let Some(score) = v.score {
+                        if score < state.config.score_threshold {
+                            return captcha_required_response(&state.config.site_key);
                         }
-                        let mut response = next.run(request).await;
-                        response.headers_mut().insert("X-Captcha-Required", "false".parse().unwrap());
-                        response
                     }
-                    Ok(_) => captcha_required_response(&state.config.site_key),
-                    Err(_) => next.run(request).await,
+                    let mut response = next.run(request).await;
+                    response
+                        .headers_mut()
+                        .insert("X-Captcha-Required", "false".parse().unwrap());
+                    response
                 }
-            }
+                Ok(_) => captcha_required_response(&state.config.site_key),
+                Err(_) => next.run(request).await,
+            },
             None => captcha_required_response(&state.config.site_key),
         }
     }
 
     fn build_test_app(state: CaptchaState) -> Router {
         Router::new()
-            .route(
-                "/api/v1/hosted-login/password",
-                post(|| async { "ok" }),
-            )
+            .route("/api/v1/hosted-login/password", post(|| async { "ok" }))
             .route("/api/v1/public/health", post(|| async { "ok" }))
             .layer(middleware::from_fn(test_captcha_middleware))
             .layer(axum::Extension(state))

@@ -42,9 +42,9 @@ use crate::repository::{
     scim_log::ScimProvisioningLogRepositoryImpl, scim_token::ScimTokenRepositoryImpl,
     security_alert::SecurityAlertRepositoryImpl, service::ServiceRepositoryImpl,
     service_branding::ServiceBrandingRepositoryImpl, session::SessionRepositoryImpl,
-    tenant_risk_policy::TenantRiskPolicyRepositoryImpl,
     system_settings::SystemSettingsRepositoryImpl, tenant::TenantRepositoryImpl,
-    user::UserRepositoryImpl, webhook::WebhookRepositoryImpl,
+    tenant_risk_policy::TenantRiskPolicyRepositoryImpl, user::UserRepositoryImpl,
+    webhook::WebhookRepositoryImpl,
 };
 use crate::state::{
     HasAnalytics, HasBranding, HasCache, HasDbPool, HasEmailTemplates, HasIdentityProviders,
@@ -168,15 +168,15 @@ pub struct AppState {
     pub totp_service: Arc<TotpService>,
     pub recovery_code_service: Arc<RecoveryCodeService>,
     pub breached_password_service: Arc<BreachedPasswordService>,
-    pub ldap_authenticator:
-        Arc<dyn crate::domains::identity::service::ldap::LdapAuthenticator>,
+    pub ldap_authenticator: Arc<dyn crate::domains::identity::service::ldap::LdapAuthenticator>,
     pub risk_policy_repo: Arc<TenantRiskPolicyRepositoryImpl>,
     pub trusted_device_service: Arc<
         crate::domains::identity::service::TrustedDeviceService<
             crate::repository::trusted_device::TrustedDeviceRepositoryImpl,
         >,
     >,
-    pub adaptive_mfa_policy_repo: Arc<crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepositoryImpl>,
+    pub adaptive_mfa_policy_repo:
+        Arc<crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepositoryImpl>,
 }
 
 /// Implement HasServices trait for production AppState
@@ -487,7 +487,8 @@ impl crate::state::HasTrustedDevices for AppState {
 
 /// Implement HasAdaptiveMfa trait for production AppState
 impl crate::state::HasAdaptiveMfa for AppState {
-    type AdaptiveMfaPolicyRepo = crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepositoryImpl;
+    type AdaptiveMfaPolicyRepo =
+        crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepositoryImpl;
     fn adaptive_mfa_policy_repo(&self) -> &Self::AdaptiveMfaPolicyRepo {
         &self.adaptive_mfa_policy_repo
     }
@@ -890,11 +891,11 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         ),
         risk_policy_repo: Arc::new(TenantRiskPolicyRepositoryImpl::new(db_pool.clone())),
         trusted_device_service: Arc::new(
-            crate::domains::identity::service::TrustedDeviceService::new(
-                Arc::new(crate::repository::trusted_device::TrustedDeviceRepositoryImpl::new(
+            crate::domains::identity::service::TrustedDeviceService::new(Arc::new(
+                crate::repository::trusted_device::TrustedDeviceRepositoryImpl::new(
                     db_pool.clone(),
-                )),
-            ),
+                ),
+            )),
         ),
         adaptive_mfa_policy_repo: Arc::new(
             crate::repository::adaptive_mfa_policy::AdaptiveMfaPolicyRepositoryImpl::new(
@@ -961,7 +962,9 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         config.is_production(),
     )
     .with_audit_repo(audit_repo.clone())
-    .with_action_executor(action_service.clone() as std::sync::Arc<dyn crate::grpc::token_exchange::ActionExecutor>)
+    .with_action_executor(
+        action_service.clone() as std::sync::Arc<dyn crate::grpc::token_exchange::ActionExecutor>
+    )
     .with_rate_limiter(crate::grpc::token_exchange::GrpcRateLimiter::new(
         config.grpc_security.exchange_rate_limit_requests,
         config.grpc_security.exchange_rate_limit_window_secs,
@@ -973,11 +976,12 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
     // Build CAPTCHA state
     let captcha_state = if config.captcha.enabled {
         use crate::domains::security_observability::service::captcha::turnstile::TurnstileProvider;
-        let provider: std::sync::Arc<dyn crate::domains::security_observability::service::CaptchaProvider> =
-            std::sync::Arc::new(TurnstileProvider::new(
-                config.captcha.secret_key.clone(),
-                config.captcha.verify_timeout_ms,
-            ));
+        let provider: std::sync::Arc<
+            dyn crate::domains::security_observability::service::CaptchaProvider,
+        > = std::sync::Arc::new(TurnstileProvider::new(
+            config.captcha.secret_key.clone(),
+            config.captcha.verify_timeout_ms,
+        ));
         let mut cs = crate::middleware::CaptchaState::new(config.captcha.clone(), provider);
         if let Some(redis) = rate_limit_state.redis_connection() {
             cs = cs.with_redis(redis.clone());

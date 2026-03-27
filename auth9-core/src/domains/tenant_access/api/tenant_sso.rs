@@ -289,7 +289,12 @@ pub async fn test_connector<S: HasServices + HasDbPool + crate::state::HasLdapAu
     let result = if connector.provider_type == "ldap" {
         // LDAP: test connection and service account bind
         match crate::models::ldap::parse_ldap_config(&connector.config) {
-            Ok(ldap_config) => state.ldap_authenticator().test_connection(&ldap_config).await?,
+            Ok(ldap_config) => {
+                state
+                    .ldap_authenticator()
+                    .test_connection(&ldap_config)
+                    .await?
+            }
             Err(e) => ConnectorTestResult {
                 ok: false,
                 message: format!("Invalid LDAP config: {}", e),
@@ -947,19 +952,29 @@ mod tests {
     #[test]
     fn validate_required_config_ldap_all_present() {
         let config = HashMap::from([
-            ("serverUrl".to_string(), "ldaps://ldap.example.com:636".to_string()),
-            ("bindDn".to_string(), "cn=admin,dc=example,dc=com".to_string()),
+            (
+                "serverUrl".to_string(),
+                "ldaps://ldap.example.com:636".to_string(),
+            ),
+            (
+                "bindDn".to_string(),
+                "cn=admin,dc=example,dc=com".to_string(),
+            ),
             ("bindPassword".to_string(), "secret".to_string()), // pragma: allowlist secret
-            ("baseDn".to_string(), "ou=users,dc=example,dc=com".to_string()),
+            (
+                "baseDn".to_string(),
+                "ou=users,dc=example,dc=com".to_string(),
+            ),
         ]);
         assert!(validate_required_config("ldap", &config).is_ok());
     }
 
     #[test]
     fn validate_required_config_ldap_missing_fields() {
-        let config = HashMap::from([
-            ("serverUrl".to_string(), "ldaps://ldap.example.com".to_string()),
-        ]);
+        let config = HashMap::from([(
+            "serverUrl".to_string(),
+            "ldaps://ldap.example.com".to_string(),
+        )]);
         let err = validate_required_config("ldap", &config).unwrap_err();
         match err {
             AppError::Validation(msg) => {

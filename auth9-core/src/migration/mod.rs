@@ -430,11 +430,13 @@ async fn seed_demo_service(config: &Config) -> Result<()> {
     .context("Failed to create demo client")?;
 
     // Ensure demo client is marked as public (idempotent for existing deployments)
-    sqlx::query("UPDATE clients SET public_client = TRUE WHERE client_id = ? AND public_client = FALSE")
-        .bind(DEFAULT_DEMO_CLIENT_ID)
-        .execute(&pool)
-        .await
-        .context("Failed to update demo client public_client flag")?;
+    sqlx::query(
+        "UPDATE clients SET public_client = TRUE WHERE client_id = ? AND public_client = FALSE",
+    )
+    .bind(DEFAULT_DEMO_CLIENT_ID)
+    .execute(&pool)
+    .await
+    .context("Failed to update demo client public_client flag")?;
 
     pool.close().await;
 
@@ -735,13 +737,11 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
     .context("Failed to seed demo tenant")?;
 
     // Also update existing tenants that have NULL password_policy
-    sqlx::query(
-        r#"UPDATE tenants SET password_policy = ? WHERE password_policy IS NULL"#,
-    )
-    .bind(&default_password_policy)
-    .execute(&pool)
-    .await
-    .context("Failed to update existing tenant password policies")?;
+    sqlx::query(r#"UPDATE tenants SET password_policy = ? WHERE password_policy IS NULL"#)
+        .bind(&default_password_policy)
+        .execute(&pool)
+        .await
+        .context("Failed to update existing tenant password policies")?;
 
     // 3. Upsert admin user (handles reset where identity_subject changes)
     // First try to find existing admin by display_name (stable across resets)
@@ -804,11 +804,12 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
         .await
         .context("Failed to get demo tenant ID")?;
 
-    let (actual_user_id,): (String,) = sqlx::query_as("SELECT id FROM users WHERE identity_subject = ?")
-        .bind(&identity_subject)
-        .fetch_one(&pool)
-        .await
-        .context("Failed to get admin user ID")?;
+    let (actual_user_id,): (String,) =
+        sqlx::query_as("SELECT id FROM users WHERE identity_subject = ?")
+            .bind(&identity_subject)
+            .fetch_one(&pool)
+            .await
+            .context("Failed to get admin user ID")?;
 
     // 4b. Set admin password credential if AUTH9_ADMIN_PASSWORD is provided
     if let Some(ref pw) = config.admin_password {

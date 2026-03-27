@@ -2,6 +2,7 @@
 
 pub mod abac;
 pub mod action;
+pub mod adaptive_mfa_policy;
 pub mod audit;
 pub mod invitation;
 pub mod ldap_group_mapping;
@@ -21,17 +22,17 @@ pub mod session;
 pub mod social_provider;
 pub mod system_settings;
 pub mod tenant;
-pub mod tenant_service;
-pub mod user;
-pub mod webauthn;
-pub mod adaptive_mfa_policy;
 pub mod tenant_risk_policy;
+pub mod tenant_service;
 pub mod trusted_device;
+pub mod user;
 pub mod user_login_profile;
+pub mod webauthn;
 pub mod webhook;
 
 pub use abac::AbacRepository;
 pub use action::ActionRepository;
+pub use adaptive_mfa_policy::AdaptiveMfaPolicyRepository;
 pub use audit::AuditRepository;
 pub use invitation::InvitationRepository;
 pub use ldap_group_mapping::LdapGroupRoleMappingRepository;
@@ -51,13 +52,12 @@ pub use session::SessionRepository;
 pub use social_provider::SocialProviderRepository;
 pub use system_settings::SystemSettingsRepository;
 pub use tenant::TenantRepository;
-pub use tenant_service::TenantServiceRepository;
-pub use user::UserRepository;
-pub use webauthn::WebAuthnRepository;
-pub use adaptive_mfa_policy::AdaptiveMfaPolicyRepository;
 pub use tenant_risk_policy::TenantRiskPolicyRepository;
+pub use tenant_service::TenantServiceRepository;
 pub use trusted_device::TrustedDeviceRepository;
+pub use user::UserRepository;
 pub use user_login_profile::UserLoginProfileRepository;
+pub use webauthn::WebAuthnRepository;
 pub use webhook::WebhookRepository;
 
 use sqlx::MySqlPool;

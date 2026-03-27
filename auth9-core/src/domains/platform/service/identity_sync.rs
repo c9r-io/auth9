@@ -101,7 +101,10 @@ impl IdentitySyncService {
     /// Errors are logged but not propagated to avoid blocking the main policy update flow.
     pub async fn sync_password_policy(&self, policy: &PasswordPolicy) {
         let policy_string = Self::to_backend_policy_string(policy);
-        info!("Syncing password policy to identity backend: {}", policy_string);
+        info!(
+            "Syncing password policy to identity backend: {}",
+            policy_string
+        );
 
         let mut realm_update = RealmSettingsUpdate {
             password_policy: Some(policy_string),

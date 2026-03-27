@@ -172,10 +172,7 @@ mod tests {
         mock.expect_find_roles_for_groups()
             .returning(|_, _| Ok(vec![]));
 
-        let result = mock
-            .find_roles_for_groups(cid, &[])
-            .await
-            .unwrap();
+        let result = mock.find_roles_for_groups(cid, &[]).await.unwrap();
         assert!(result.is_empty());
     }
 
