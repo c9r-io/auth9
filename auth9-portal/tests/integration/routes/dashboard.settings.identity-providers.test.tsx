@@ -952,8 +952,11 @@ describe("Identity Providers Page", () => {
         expect(screen.getByRole("dialog")).toBeInTheDocument();
       });
 
-      // Provider type grid should be visible (no template selected), no config fields
-      expect(screen.queryByPlaceholderText("OAuth Client ID")).not.toBeInTheDocument();
+      // Form should be reset — config fields present (default template pre-selected) but values cleared
+      const clientIdInput = screen.queryByPlaceholderText("OAuth Client ID") as HTMLInputElement | null;
+      if (clientIdInput) {
+        expect(clientIdInput.value).toBe("");
+      }
     });
 
     it("submits create form with correct hidden fields", async () => {

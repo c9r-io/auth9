@@ -319,9 +319,9 @@ where
         rand::thread_rng().fill(&mut token_bytes);
         let token = URL_SAFE_NO_PAD.encode(token_bytes);
 
-        // Hash the token using Argon2
+        // Hash the token using Argon2 with OWASP-recommended parameters
         let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
+        let argon2 = crate::crypto::owasp_argon2();
         let hash = argon2
             .hash_password(token.as_bytes(), &salt)
             .map_err(|e| AppError::Internal(anyhow::anyhow!("Failed to hash token: {}", e)))?

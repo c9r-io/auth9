@@ -381,10 +381,10 @@ async fn seed_demo_service(config: &Config) -> Result<()> {
     let service_id = uuid::Uuid::new_v4().to_string();
     let client_record_id = uuid::Uuid::new_v4().to_string();
     // Public client: hash the placeholder so PasswordHash::new() can parse it
-    use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+    use argon2::{password_hash::SaltString, PasswordHasher};
     use rand::rngs::OsRng;
     let salt = SaltString::generate(&mut OsRng);
-    let placeholder_hash = Argon2::default()
+    let placeholder_hash = crate::crypto::owasp_argon2()
         .hash_password(b"public-client-no-secret", &salt)
         .map_err(|e| anyhow::anyhow!("Failed to hash placeholder secret: {}", e))?
         .to_string();
@@ -498,10 +498,10 @@ async fn seed_portal_service(config: &Config) -> Result<()> {
     let service_id = uuid::Uuid::new_v4().to_string();
     let client_id_record = uuid::Uuid::new_v4().to_string();
     // Public client: hash the placeholder so PasswordHash::new() can parse it
-    use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+    use argon2::{password_hash::SaltString, PasswordHasher};
     use rand::rngs::OsRng;
     let salt = SaltString::generate(&mut OsRng);
-    let placeholder_hash = Argon2::default()
+    let placeholder_hash = crate::crypto::owasp_argon2()
         .hash_password(b"public-client-no-secret", &salt)
         .map_err(|e| anyhow::anyhow!("Failed to hash placeholder secret: {}", e))?
         .to_string();
@@ -596,13 +596,12 @@ async fn seed_m2m_test_service(config: &Config) -> Result<()> {
         return Ok(());
     }
 
-    // Hash the known test secret with Argon2
-    use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+    // Hash the known test secret with Argon2 (OWASP-recommended parameters)
+    use argon2::{password_hash::SaltString, PasswordHasher};
     use rand::rngs::OsRng;
 
     let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
-    let secret_hash = argon2
+    let secret_hash = crate::crypto::owasp_argon2()
         .hash_password(DEFAULT_M2M_CLIENT_SECRET.as_bytes(), &salt)
         .map_err(|e| anyhow::anyhow!("Failed to hash M2M secret: {}", e))?
         .to_string();
@@ -813,10 +812,10 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
 
     // 4b. Set admin password credential if AUTH9_ADMIN_PASSWORD is provided
     if let Some(ref pw) = config.admin_password {
-        use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+        use argon2::{password_hash::SaltString, PasswordHasher};
         use rand::rngs::OsRng;
         let salt = SaltString::generate(&mut OsRng);
-        let hash = Argon2::default()
+        let hash = crate::crypto::owasp_argon2()
             .hash_password(pw.as_bytes(), &salt)
             .map_err(|e| anyhow::anyhow!("Failed to hash admin password: {}", e))?
             .to_string();

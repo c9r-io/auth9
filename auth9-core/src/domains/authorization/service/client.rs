@@ -462,10 +462,10 @@ fn generate_client_secret() -> String {
     base64::Engine::encode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, bytes)
 }
 
-/// Hash a client secret using Argon2
+/// Hash a client secret using Argon2 with OWASP-recommended parameters
 fn hash_secret(secret: &str) -> Result<String> {
     let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
+    let argon2 = crate::crypto::owasp_argon2();
     let hash = argon2
         .hash_password(secret.as_bytes(), &salt)
         .map_err(|e| AppError::Internal(anyhow::anyhow!("Failed to hash secret: {}", e)))?;

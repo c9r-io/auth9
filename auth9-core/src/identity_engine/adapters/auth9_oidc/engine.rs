@@ -14,7 +14,7 @@ use argon2::{
         rand_core::{OsRng, RngCore},
         PasswordHash, PasswordHasher, PasswordVerifier, SaltString,
     },
-    Algorithm, Argon2, Params, Version,
+    Argon2,
 };
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
@@ -55,11 +55,7 @@ impl Auth9OidcUserStore {
         let effective_user_id = self.resolve_user_id(user_id).await;
 
         let salt = SaltString::generate(&mut OsRng);
-        // OWASP recommended Argon2id parameters: m=65536KB, t=3, p=4
-        let params = Params::new(65536, 3, 4, None)
-            .map_err(|e| AppError::Internal(anyhow!("invalid argon2 params: {}", e)))?;
-        let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
-        let hash = argon2
+        let hash = crate::crypto::owasp_argon2()
             .hash_password(password.as_bytes(), &salt)
             .map_err(|e| AppError::Internal(anyhow!("password hashing failed: {}", e)))?
             .to_string();

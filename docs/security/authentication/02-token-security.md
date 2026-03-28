@@ -160,6 +160,16 @@ curl -H "Authorization: Bearer $TAMPERED_TOKEN" \
 - 服务端验证 claims 合理性
 - 敏感操作从数据库重新获取权限
 
+### 已知误报：Token 尾部空格
+
+**不属于安全漏洞**：在 Authorization header 的 Bearer token 后添加空格（如 `Bearer <token> `）不会绕过签名验证。
+
+**原因**：根据 [RFC 7230 Section 3.2.3](https://datatracker.ietf.org/doc/html/rfc7230#section-3.2.3)，HTTP header field-value 的尾部空白字符（OWS）必须被排除。Hyper（Axum 使用的 HTTP 实现）在解析 HTTP 请求时自动去除 header value 的尾部空格，因此应用代码收到的 token 值不包含空格，JWT 签名验证的仍然是原始有效 token。
+
+| 症状 | 原因 | 结论 |
+|------|------|------|
+| `Bearer <token> ` 返回 200 | HTTP 层自动去除尾部 OWS（RFC 7230） | 非漏洞，签名验证正常工作 |
+
 ---
 
 ## 检查清单

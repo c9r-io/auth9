@@ -14,10 +14,19 @@ type Pages = {
   "/": {
     params: {};
   };
+  "/force-update-password": {
+    params: {};
+  };
+  "/complete-profile": {
+    params: {};
+  };
   "/forgot-password": {
     params: {};
   };
   "/auth/email-otp": {
+    params: {};
+  };
+  "/mfa/setup-totp": {
     params: {};
   };
   "/reset-password": {
@@ -30,6 +39,9 @@ type Pages = {
     params: {};
   };
   "/tenant/select": {
+    params: {};
+  };
+  "/verify-email": {
     params: {};
   };
   "/mfa/verify": {
@@ -64,6 +76,9 @@ type Pages = {
     params: {};
   };
   "/dashboard/services": {
+    params: {};
+  };
+  "/dashboard/security/risk": {
     params: {};
   };
   "/dashboard/services/:id": {
@@ -124,6 +139,9 @@ type Pages = {
   "/dashboard/account/sessions": {
     params: {};
   };
+  "/dashboard/account/mfa": {
+    params: {};
+  };
   "/dashboard/tenants": {
     params: {};
   };
@@ -157,6 +175,12 @@ type Pages = {
       "tenantId": string;
     };
   };
+  "/dashboard/tenants/:tenantId/sso/:connectorId/ldap-mappings": {
+    params: {
+      "tenantId": string;
+      "connectorId": string;
+    };
+  };
   "/dashboard/roles": {
     params: {};
   };
@@ -184,6 +208,9 @@ type Pages = {
   "/login": {
     params: {};
   };
+  "/login/confirm-link": {
+    params: {};
+  };
   "/terms": {
     params: {};
   };
@@ -195,7 +222,15 @@ type Pages = {
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/forgot-password" | "/auth/email-otp" | "/reset-password" | "/auth/callback" | "/invite/accept" | "/tenant/select" | "/mfa/verify" | "/dashboard" | "/dashboard/services/:serviceId/actions/:actionId" | "/dashboard/services/:serviceId/actions/:actionId/edit" | "/dashboard/services/:serviceId/actions" | "/dashboard/services/:serviceId/actions/new" | "/dashboard/security/alerts" | "/dashboard/services" | "/dashboard/services/:id" | "/dashboard/audit-logs" | "/dashboard/analytics" | "/dashboard/analytics/events" | "/dashboard/settings" | "/dashboard/settings/email-templates" | "/dashboard/settings/email-templates/:type" | "/dashboard/settings/identity-providers" | "/dashboard/settings/branding" | "/dashboard/settings/passkeys" | "/dashboard/settings/security" | "/dashboard/settings/sessions" | "/dashboard/settings/email" | "/dashboard/account" | "/dashboard/account/identities" | "/dashboard/account/passkeys" | "/dashboard/account/security" | "/dashboard/account/sessions" | "/dashboard/tenants" | "/dashboard/tenants/:tenantId/invitations" | "/dashboard/tenants/:tenantId/saml-apps" | "/dashboard/tenants/:tenantId/services" | "/dashboard/tenants/:tenantId/webhooks" | "/dashboard/tenants/:tenantId" | "/dashboard/tenants/:tenantId/sso" | "/dashboard/roles" | "/dashboard/users" | "/dashboard/abac" | "/register" | "/onboard" | "/onboard/pending" | "/privacy" | "/logout" | "/login" | "/terms" | "/docs";
+    page: "/" | "/force-update-password" | "/complete-profile" | "/forgot-password" | "/auth/email-otp" | "/mfa/setup-totp" | "/reset-password" | "/auth/callback" | "/invite/accept" | "/tenant/select" | "/verify-email" | "/mfa/verify" | "/dashboard" | "/dashboard/services/:serviceId/actions/:actionId" | "/dashboard/services/:serviceId/actions/:actionId/edit" | "/dashboard/services/:serviceId/actions" | "/dashboard/services/:serviceId/actions/new" | "/dashboard/security/alerts" | "/dashboard/services" | "/dashboard/security/risk" | "/dashboard/services/:id" | "/dashboard/audit-logs" | "/dashboard/analytics" | "/dashboard/analytics/events" | "/dashboard/settings" | "/dashboard/settings/email-templates" | "/dashboard/settings/email-templates/:type" | "/dashboard/settings/identity-providers" | "/dashboard/settings/branding" | "/dashboard/settings/passkeys" | "/dashboard/settings/security" | "/dashboard/settings/sessions" | "/dashboard/settings/email" | "/dashboard/account" | "/dashboard/account/identities" | "/dashboard/account/passkeys" | "/dashboard/account/security" | "/dashboard/account/sessions" | "/dashboard/account/mfa" | "/dashboard/tenants" | "/dashboard/tenants/:tenantId/invitations" | "/dashboard/tenants/:tenantId/saml-apps" | "/dashboard/tenants/:tenantId/services" | "/dashboard/tenants/:tenantId/webhooks" | "/dashboard/tenants/:tenantId" | "/dashboard/tenants/:tenantId/sso" | "/dashboard/tenants/:tenantId/sso/:connectorId/ldap-mappings" | "/dashboard/roles" | "/dashboard/users" | "/dashboard/abac" | "/register" | "/onboard" | "/onboard/pending" | "/privacy" | "/logout" | "/login" | "/login/confirm-link" | "/terms" | "/docs";
+  };
+  "routes/force-update-password.tsx": {
+    id: "routes/force-update-password";
+    page: "/force-update-password";
+  };
+  "routes/complete-profile.tsx": {
+    id: "routes/complete-profile";
+    page: "/complete-profile";
   };
   "routes/forgot-password.tsx": {
     id: "routes/forgot-password";
@@ -204,6 +239,10 @@ type RouteFiles = {
   "routes/auth.email-otp.tsx": {
     id: "routes/auth.email-otp";
     page: "/auth/email-otp";
+  };
+  "routes/mfa.setup-totp.tsx": {
+    id: "routes/mfa.setup-totp";
+    page: "/mfa/setup-totp";
   };
   "routes/reset-password.tsx": {
     id: "routes/reset-password";
@@ -221,13 +260,17 @@ type RouteFiles = {
     id: "routes/tenant.select";
     page: "/tenant/select";
   };
+  "routes/verify-email.tsx": {
+    id: "routes/verify-email";
+    page: "/verify-email";
+  };
   "routes/mfa.verify.tsx": {
     id: "routes/mfa.verify";
     page: "/mfa/verify";
   };
   "routes/dashboard.tsx": {
     id: "routes/dashboard";
-    page: "/dashboard" | "/dashboard/services/:serviceId/actions/:actionId" | "/dashboard/services/:serviceId/actions/:actionId/edit" | "/dashboard/services/:serviceId/actions" | "/dashboard/services/:serviceId/actions/new" | "/dashboard/security/alerts" | "/dashboard/services" | "/dashboard/services/:id" | "/dashboard/audit-logs" | "/dashboard/analytics" | "/dashboard/analytics/events" | "/dashboard/settings" | "/dashboard/settings/email-templates" | "/dashboard/settings/email-templates/:type" | "/dashboard/settings/identity-providers" | "/dashboard/settings/branding" | "/dashboard/settings/passkeys" | "/dashboard/settings/security" | "/dashboard/settings/sessions" | "/dashboard/settings/email" | "/dashboard/account" | "/dashboard/account/identities" | "/dashboard/account/passkeys" | "/dashboard/account/security" | "/dashboard/account/sessions" | "/dashboard/tenants" | "/dashboard/tenants/:tenantId/invitations" | "/dashboard/tenants/:tenantId/saml-apps" | "/dashboard/tenants/:tenantId/services" | "/dashboard/tenants/:tenantId/webhooks" | "/dashboard/tenants/:tenantId" | "/dashboard/tenants/:tenantId/sso" | "/dashboard/roles" | "/dashboard/users" | "/dashboard/abac";
+    page: "/dashboard" | "/dashboard/services/:serviceId/actions/:actionId" | "/dashboard/services/:serviceId/actions/:actionId/edit" | "/dashboard/services/:serviceId/actions" | "/dashboard/services/:serviceId/actions/new" | "/dashboard/security/alerts" | "/dashboard/services" | "/dashboard/security/risk" | "/dashboard/services/:id" | "/dashboard/audit-logs" | "/dashboard/analytics" | "/dashboard/analytics/events" | "/dashboard/settings" | "/dashboard/settings/email-templates" | "/dashboard/settings/email-templates/:type" | "/dashboard/settings/identity-providers" | "/dashboard/settings/branding" | "/dashboard/settings/passkeys" | "/dashboard/settings/security" | "/dashboard/settings/sessions" | "/dashboard/settings/email" | "/dashboard/account" | "/dashboard/account/identities" | "/dashboard/account/passkeys" | "/dashboard/account/security" | "/dashboard/account/sessions" | "/dashboard/account/mfa" | "/dashboard/tenants" | "/dashboard/tenants/:tenantId/invitations" | "/dashboard/tenants/:tenantId/saml-apps" | "/dashboard/tenants/:tenantId/services" | "/dashboard/tenants/:tenantId/webhooks" | "/dashboard/tenants/:tenantId" | "/dashboard/tenants/:tenantId/sso" | "/dashboard/tenants/:tenantId/sso/:connectorId/ldap-mappings" | "/dashboard/roles" | "/dashboard/users" | "/dashboard/abac";
   };
   "routes/dashboard.services.$serviceId.actions.$actionId._index.tsx": {
     id: "routes/dashboard.services.$serviceId.actions.$actionId._index";
@@ -252,6 +295,10 @@ type RouteFiles = {
   "routes/dashboard.services._index.tsx": {
     id: "routes/dashboard.services._index";
     page: "/dashboard/services";
+  };
+  "routes/dashboard.security.risk.tsx": {
+    id: "routes/dashboard.security.risk";
+    page: "/dashboard/security/risk";
   };
   "routes/dashboard.services.$id.tsx": {
     id: "routes/dashboard.services.$id";
@@ -311,7 +358,7 @@ type RouteFiles = {
   };
   "routes/dashboard.account.tsx": {
     id: "routes/dashboard.account";
-    page: "/dashboard/account" | "/dashboard/account/identities" | "/dashboard/account/passkeys" | "/dashboard/account/security" | "/dashboard/account/sessions";
+    page: "/dashboard/account" | "/dashboard/account/identities" | "/dashboard/account/passkeys" | "/dashboard/account/security" | "/dashboard/account/sessions" | "/dashboard/account/mfa";
   };
   "routes/dashboard.account.identities.tsx": {
     id: "routes/dashboard.account.identities";
@@ -333,9 +380,13 @@ type RouteFiles = {
     id: "routes/dashboard.account._index";
     page: "/dashboard/account";
   };
+  "routes/dashboard.account.mfa.tsx": {
+    id: "routes/dashboard.account.mfa";
+    page: "/dashboard/account/mfa";
+  };
   "routes/dashboard.tenants.tsx": {
     id: "routes/dashboard.tenants";
-    page: "/dashboard/tenants" | "/dashboard/tenants/:tenantId/invitations" | "/dashboard/tenants/:tenantId/saml-apps" | "/dashboard/tenants/:tenantId/services" | "/dashboard/tenants/:tenantId/webhooks" | "/dashboard/tenants/:tenantId" | "/dashboard/tenants/:tenantId/sso";
+    page: "/dashboard/tenants" | "/dashboard/tenants/:tenantId/invitations" | "/dashboard/tenants/:tenantId/saml-apps" | "/dashboard/tenants/:tenantId/services" | "/dashboard/tenants/:tenantId/webhooks" | "/dashboard/tenants/:tenantId" | "/dashboard/tenants/:tenantId/sso" | "/dashboard/tenants/:tenantId/sso/:connectorId/ldap-mappings";
   };
   "routes/dashboard.tenants.$tenantId.invitations.tsx": {
     id: "routes/dashboard.tenants.$tenantId.invitations";
@@ -359,7 +410,11 @@ type RouteFiles = {
   };
   "routes/dashboard.tenants.$tenantId.sso.tsx": {
     id: "routes/dashboard.tenants.$tenantId.sso";
-    page: "/dashboard/tenants/:tenantId/sso";
+    page: "/dashboard/tenants/:tenantId/sso" | "/dashboard/tenants/:tenantId/sso/:connectorId/ldap-mappings";
+  };
+  "routes/dashboard.tenants.$tenantId.sso.$connectorId.ldap-mappings.tsx": {
+    id: "routes/dashboard.tenants.$tenantId.sso.$connectorId.ldap-mappings";
+    page: "/dashboard/tenants/:tenantId/sso/:connectorId/ldap-mappings";
   };
   "routes/dashboard.tenants._index.tsx": {
     id: "routes/dashboard.tenants._index";
@@ -411,7 +466,11 @@ type RouteFiles = {
   };
   "routes/login.tsx": {
     id: "routes/login";
-    page: "/login";
+    page: "/login" | "/login/confirm-link";
+  };
+  "routes/login.confirm-link.tsx": {
+    id: "routes/login.confirm-link";
+    page: "/login/confirm-link";
   };
   "routes/terms.tsx": {
     id: "routes/terms";
@@ -425,12 +484,16 @@ type RouteFiles = {
 
 type RouteModules = {
   "root": typeof import("./app/root.tsx");
+  "routes/force-update-password": typeof import("./app/routes/force-update-password.tsx");
+  "routes/complete-profile": typeof import("./app/routes/complete-profile.tsx");
   "routes/forgot-password": typeof import("./app/routes/forgot-password.tsx");
   "routes/auth.email-otp": typeof import("./app/routes/auth.email-otp.tsx");
+  "routes/mfa.setup-totp": typeof import("./app/routes/mfa.setup-totp.tsx");
   "routes/reset-password": typeof import("./app/routes/reset-password.tsx");
   "routes/auth.callback": typeof import("./app/routes/auth.callback.tsx");
   "routes/invite.accept": typeof import("./app/routes/invite.accept.tsx");
   "routes/tenant.select": typeof import("./app/routes/tenant.select.tsx");
+  "routes/verify-email": typeof import("./app/routes/verify-email.tsx");
   "routes/mfa.verify": typeof import("./app/routes/mfa.verify.tsx");
   "routes/dashboard": typeof import("./app/routes/dashboard.tsx");
   "routes/dashboard.services.$serviceId.actions.$actionId._index": typeof import("./app/routes/dashboard.services.$serviceId.actions.$actionId._index.tsx");
@@ -439,6 +502,7 @@ type RouteModules = {
   "routes/dashboard.services.$serviceId.actions.new": typeof import("./app/routes/dashboard.services.$serviceId.actions.new.tsx");
   "routes/dashboard.security.alerts": typeof import("./app/routes/dashboard.security.alerts.tsx");
   "routes/dashboard.services._index": typeof import("./app/routes/dashboard.services._index.tsx");
+  "routes/dashboard.security.risk": typeof import("./app/routes/dashboard.security.risk.tsx");
   "routes/dashboard.services.$id": typeof import("./app/routes/dashboard.services.$id.tsx");
   "routes/dashboard.audit-logs": typeof import("./app/routes/dashboard.audit-logs.tsx");
   "routes/dashboard.analytics": typeof import("./app/routes/dashboard.analytics.tsx");
@@ -459,6 +523,7 @@ type RouteModules = {
   "routes/dashboard.account.security": typeof import("./app/routes/dashboard.account.security.tsx");
   "routes/dashboard.account.sessions": typeof import("./app/routes/dashboard.account.sessions.tsx");
   "routes/dashboard.account._index": typeof import("./app/routes/dashboard.account._index.tsx");
+  "routes/dashboard.account.mfa": typeof import("./app/routes/dashboard.account.mfa.tsx");
   "routes/dashboard.tenants": typeof import("./app/routes/dashboard.tenants.tsx");
   "routes/dashboard.tenants.$tenantId.invitations": typeof import("./app/routes/dashboard.tenants.$tenantId.invitations.tsx");
   "routes/dashboard.tenants.$tenantId.saml-apps": typeof import("./app/routes/dashboard.tenants.$tenantId.saml-apps.tsx");
@@ -466,6 +531,7 @@ type RouteModules = {
   "routes/dashboard.tenants.$tenantId.webhooks": typeof import("./app/routes/dashboard.tenants.$tenantId.webhooks.tsx");
   "routes/dashboard.tenants.$tenantId._index": typeof import("./app/routes/dashboard.tenants.$tenantId._index.tsx");
   "routes/dashboard.tenants.$tenantId.sso": typeof import("./app/routes/dashboard.tenants.$tenantId.sso.tsx");
+  "routes/dashboard.tenants.$tenantId.sso.$connectorId.ldap-mappings": typeof import("./app/routes/dashboard.tenants.$tenantId.sso.$connectorId.ldap-mappings.tsx");
   "routes/dashboard.tenants._index": typeof import("./app/routes/dashboard.tenants._index.tsx");
   "routes/dashboard._index": typeof import("./app/routes/dashboard._index.tsx");
   "routes/dashboard.roles": typeof import("./app/routes/dashboard.roles.tsx");
@@ -479,6 +545,7 @@ type RouteModules = {
   "routes/_index": typeof import("./app/routes/_index.tsx");
   "routes/logout": typeof import("./app/routes/logout.tsx");
   "routes/login": typeof import("./app/routes/login.tsx");
+  "routes/login.confirm-link": typeof import("./app/routes/login.confirm-link.tsx");
   "routes/terms": typeof import("./app/routes/terms.tsx");
   "routes/docs": typeof import("./app/routes/docs.tsx");
 };
