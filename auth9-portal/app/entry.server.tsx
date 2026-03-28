@@ -36,7 +36,6 @@ function buildConnectSrc(): string {
   for (const origin of [
     getOrigin(process.env.AUTH9_CORE_PUBLIC_URL),
     getOrigin(process.env.AUTH9_CORE_URL),
-    getOrigin(process.env.KEYCLOAK_PUBLIC_URL),
   ]) {
     if (origin) {
       connectSrc.add(origin);

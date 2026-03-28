@@ -306,6 +306,98 @@ detect_existing_configmap() {
     return 1
 }
 
+get_secret_value() {
+    local secret_name=$1
+    local namespace=$2
+    local key=$3
+
+    kubectl get secret "$secret_name" -n "$namespace" -o "jsonpath={.data.$key}" 2>/dev/null \
+        | base64 -d 2>/dev/null || true
+}
+
+patch_secret_key() {
+    local secret_name=$1
+    local namespace=$2
+    local key=$3
+    local value=$4
+    local value_b64=$(echo -n "$value" | base64 | tr -d '\n')
+    local patch_add="[{\"op\":\"add\",\"path\":\"/data/$key\",\"value\":\"$value_b64\"}]"
+    local patch_replace="[{\"op\":\"replace\",\"path\":\"/data/$key\",\"value\":\"$value_b64\"}]"
+
+    if ! kubectl patch secret "$secret_name" -n "$namespace" --type=json -p="$patch_add" >/dev/null 2>&1; then
+        kubectl patch secret "$secret_name" -n "$namespace" --type=json -p="$patch_replace" >/dev/null 2>&1
+    fi
+}
+
+remove_resource_key() {
+    local kind=$1
+    local name=$2
+    local namespace=$3
+    local key=$4
+
+    kubectl patch "$kind" "$name" -n "$namespace" --type=json \
+        -p="[{\"op\":\"remove\",\"path\":\"/data/$key\"}]" >/dev/null 2>&1 || true
+}
+
+migrate_identity_webhook_secret_if_needed() {
+    if [ -n "$DRY_RUN" ]; then
+        return 0
+    fi
+
+    if ! kubectl get secret auth9-secrets -n "$NAMESPACE" &>/dev/null; then
+        return 0
+    fi
+
+    local identity_secret=$(get_secret_value "auth9-secrets" "$NAMESPACE" "IDENTITY_WEBHOOK_SECRET")
+    if [ -n "$identity_secret" ]; then
+        return 0
+    fi
+
+    local legacy_secret=$(get_secret_value "auth9-secrets" "$NAMESPACE" "KEYCLOAK_WEBHOOK_SECRET")
+    if [ -z "$legacy_secret" ]; then
+        return 0
+    fi
+
+    if patch_secret_key "auth9-secrets" "$NAMESPACE" "IDENTITY_WEBHOOK_SECRET" "$legacy_secret"; then
+        print_info "已将 KEYCLOAK_WEBHOOK_SECRET 迁移为 IDENTITY_WEBHOOK_SECRET"
+        AUTH9_SECRETS[IDENTITY_WEBHOOK_SECRET]="$legacy_secret"
+    else
+        print_error "迁移 IDENTITY_WEBHOOK_SECRET 失败"
+        return 1
+    fi
+}
+
+cleanup_legacy_auth9_configuration() {
+    if [ -n "$DRY_RUN" ]; then
+        return 0
+    fi
+
+    local legacy_config_keys=(
+        KEYCLOAK_ADMIN_CLIENT_ID
+        KEYCLOAK_PUBLIC_URL
+        KEYCLOAK_REALM
+        KEYCLOAK_SSL_REQUIRED
+    )
+    local legacy_secret_keys=(
+        KEYCLOAK_ADMIN
+        KEYCLOAK_ADMIN_CLIENT_SECRET
+        KEYCLOAK_ADMIN_PASSWORD
+        KEYCLOAK_URL
+    )
+
+    if kubectl get configmap auth9-config -n "$NAMESPACE" &>/dev/null; then
+        for key in "${legacy_config_keys[@]}"; do
+            remove_resource_key "configmap" "auth9-config" "$NAMESPACE" "$key"
+        done
+    fi
+
+    if kubectl get secret auth9-secrets -n "$NAMESPACE" &>/dev/null; then
+        for key in "${legacy_secret_keys[@]}"; do
+            remove_resource_key "secret" "auth9-secrets" "$NAMESPACE" "$key"
+        done
+    fi
+}
+
 ################################################################################
 # Phase 3: Interactive Input Collection
 ################################################################################
@@ -498,6 +590,18 @@ generate_secrets() {
         print_info "SESSION_SECRET 已存在（不会重新生成）"
     fi
 
+    # IDENTITY_WEBHOOK_SECRET
+    if [ -z "${AUTH9_SECRETS[IDENTITY_WEBHOOK_SECRET]}" ]; then
+        AUTH9_SECRETS[IDENTITY_WEBHOOK_SECRET]=$(openssl rand -hex 32)
+        echo ""
+        print_warning "已生成 IDENTITY_WEBHOOK_SECRET - 请安全保存："
+        echo -e "${GREEN}${AUTH9_SECRETS[IDENTITY_WEBHOOK_SECRET]}${NC}"
+        echo ""
+        read "?保存后按 Enter 继续..."
+    else
+        print_info "IDENTITY_WEBHOOK_SECRET 已存在（不会重新生成）"
+    fi
+
     # GRPC_API_KEYS
     if [ -z "${AUTH9_SECRETS[GRPC_API_KEYS]}" ]; then
         AUTH9_SECRETS[GRPC_API_KEYS]=$(openssl rand -base64 32)
@@ -685,7 +789,8 @@ run_interactive_setup() {
     detect_existing_secrets "auth9-secrets" "$NAMESPACE" AUTH9_SECRETS \
         "DATABASE_URL" "REDIS_URL" "JWT_SECRET" "JWT_PRIVATE_KEY" "JWT_PUBLIC_KEY" \
         "SESSION_SECRET" "SETTINGS_ENCRYPTION_KEY" "PASSWORD_RESET_HMAC_KEY" "AUTH9_ADMIN_PASSWORD" \
-        "GRPC_API_KEYS" "AUTH9_ADMIN_EMAIL" || true
+        "GRPC_API_KEYS" "AUTH9_ADMIN_EMAIL" "IDENTITY_WEBHOOK_SECRET" || true
+    migrate_identity_webhook_secret_if_needed || true
 
     # Detect ConfigMap
     detect_existing_configmap || true
@@ -712,9 +817,11 @@ run_interactive_setup() {
 
     # Apply secrets
     create_or_patch_secret "auth9-secrets" "$NAMESPACE" AUTH9_SECRETS
+    cleanup_legacy_auth9_configuration
 
     # Apply ConfigMap
     apply_configmap
+    cleanup_legacy_auth9_configuration
 
     # Step 6/6: Confirm deployment
     print_progress "6/6" "准备部署"
@@ -757,6 +864,7 @@ deploy_auth9() {
         print_progress "2/7" "应用 ConfigMap"
         validate_static_configmap
         kubectl apply -f "$K8S_DIR/configmap.yaml" $DRY_RUN
+        cleanup_legacy_auth9_configuration
     else
         print_progress "2/7" "ConfigMap 已应用"
     fi
@@ -794,6 +902,8 @@ deploy_auth9() {
 
 check_secrets_non_interactive() {
     if kubectl get secret auth9-secrets -n "$NAMESPACE" &> /dev/null; then
+        migrate_identity_webhook_secret_if_needed || return 1
+        cleanup_legacy_auth9_configuration
         print_success "auth9-secrets 存在"
     else
         print_warning "auth9-secrets 未找到，请创建："
@@ -804,6 +914,7 @@ check_secrets_non_interactive() {
         echo "      --from-literal=JWT_PRIVATE_KEY='...' \\"
         echo "      --from-literal=JWT_PUBLIC_KEY='...' \\"
         echo "      --from-literal=SESSION_SECRET='...' \\"
+        echo "      --from-literal=IDENTITY_WEBHOOK_SECRET='...' \\"
         echo "      --from-literal=SETTINGS_ENCRYPTION_KEY='...' \\"
         echo "      --from-literal=PASSWORD_RESET_HMAC_KEY='...' \\"
         echo "      --from-literal=GRPC_API_KEYS='...' \\"
