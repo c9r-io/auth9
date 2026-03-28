@@ -152,9 +152,7 @@ impl IntoResponse for AuthError {
                 "unauthorized",
                 "Invalid authorization header".to_string(),
             ),
-            AuthError::InvalidToken(msg) => {
-                (StatusCode::UNAUTHORIZED, "unauthorized", msg.clone())
-            }
+            AuthError::InvalidToken(msg) => (StatusCode::UNAUTHORIZED, "unauthorized", msg.clone()),
             AuthError::TokenExpired => (
                 StatusCode::UNAUTHORIZED,
                 "unauthorized",

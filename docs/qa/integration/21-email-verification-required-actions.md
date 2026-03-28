@@ -97,8 +97,15 @@ docker logs auth9-oidc 2>&1 | tail -5
 
 ### 预期结果
 - 服务正常启动，health 返回 `{"status": "healthy"}`
-- 日志中出现 `auth9-oidc database tables ensured`（无错误）
+- 日志中出现 `auth9-oidc database connected`（无错误）
 - 表结构不变（无新表创建）
+
+### 故障排除
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| 日志中无 `auth9-oidc database tables ensured` | 实际日志消息为 `auth9-oidc database connected` | 检查 `database connected` 消息即可 |
+| 重启时短暂出现 `Unknown database` | 数据库连接短暂中断后自动恢复 | 等待服务恢复 healthy 状态 |
 
 ---
 

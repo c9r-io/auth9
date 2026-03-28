@@ -159,7 +159,18 @@ cd auth9-core && cargo build 2>&1 | tail -5
 cd auth9-core && cargo test --lib 2>&1 | tail -10
 ```
 
+> **注意**: 部分测试（`breached_password`、`action_engine::ops`、`captcha::turnstile`、`email::ses`）使用 `wiremock` 或 AWS SDK，需要网络端口绑定权限。在沙箱环境中这些测试会因 `PermissionDenied` 失败，属于环境限制而非代码缺陷。评估时应排除这些环境相关的失败。
+
 ### 预期结果
 
 - 步骤 1: 无文件被修改
-- 步骤 2: auth9-core 编译成功，现有测试全部通过
+- 步骤 2: auth9-core 编译成功，现有测试通过（排除需要网络端口绑定的 wiremock/AWS SDK 测试）
+
+### 故障排除
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| `breached_password` 测试 `PermissionDenied` | wiremock 需要绑定本地端口，沙箱环境不允许 | 在允许端口绑定的环境中运行，或排除该测试组 |
+| `action_engine::ops` 测试失败 | 同上，wiremock 端口绑定 | 同上 |
+| `captcha::turnstile` 测试失败 | 同上，wiremock 端口绑定 | 同上 |
+| `email::ses` 测试失败 | AWS SDK 初始化需要网络访问 | 在有网络权限的环境中运行 |

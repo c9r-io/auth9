@@ -152,7 +152,7 @@ docker exec auth9-tidb mysql -u root -P 4000 -e "DESCRIBE saml_applications;" 2>
 TOKEN=$(.claude/skills/tools/gen-admin-token.sh)
 TENANT_ID=$(curl -s http://localhost:8080/api/v1/tenants -H "Authorization: Bearer $TOKEN" | jq -r '.data[0].id')
 
-curl -s "http://localhost:8080/api/v1/tenants/$TENANT_ID/saml-applications" \
+curl -s "http://localhost:8080/api/v1/tenants/$TENANT_ID/saml-apps" \
   -H "Authorization: Bearer $TOKEN" | jq '.data'
 ```
 

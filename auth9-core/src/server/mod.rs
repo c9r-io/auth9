@@ -1469,7 +1469,9 @@ where
         .merge(domains::integration::routes::public_routes::<S>())
         .merge(domains::tenant_access::routes::public_routes::<S>())
         // CAPTCHA verification on protected public endpoints (login, register, etc.)
-        .layer(crate::middleware::CaptchaLayer { state: captcha_state });
+        .layer(crate::middleware::CaptchaLayer {
+            state: captcha_state,
+        });
 
     // ============================================================
     // PROTECTED ROUTES (authentication required)

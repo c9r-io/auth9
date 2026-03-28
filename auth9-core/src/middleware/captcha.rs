@@ -238,8 +238,11 @@ where
     let captcha_needed = match state.mode {
         CaptchaMode::Always => true,
         CaptchaMode::Adaptive => {
-            let ua = request.headers().get("user-agent")
-                .and_then(|v| v.to_str().ok()).unwrap_or("");
+            let ua = request
+                .headers()
+                .get("user-agent")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("");
             let ip = extract_client_ip(&request);
             check_adaptive_triggers(ua, ip.as_deref(), &state).await
         }
@@ -262,51 +265,49 @@ where
     let remote_ip = extract_client_ip(&request);
 
     match token {
-        Some(token) => {
-            match state.provider.verify(&token, remote_ip.as_deref()).await {
-                Ok(verification) if verification.success => {
-                    if let Some(score) = verification.score {
-                        if score < state.config.score_threshold {
-                            tracing::info!(
-                                score = score,
-                                threshold = state.config.score_threshold,
-                                path = %path,
-                                "CAPTCHA score below threshold"
-                            );
-                            metrics::counter!("auth9_captcha_low_score_total").increment(1);
-                            return captcha_required_response(&state.config.site_key);
-                        }
+        Some(token) => match state.provider.verify(&token, remote_ip.as_deref()).await {
+            Ok(verification) if verification.success => {
+                if let Some(score) = verification.score {
+                    if score < state.config.score_threshold {
+                        tracing::info!(
+                            score = score,
+                            threshold = state.config.score_threshold,
+                            path = %path,
+                            "CAPTCHA score below threshold"
+                        );
+                        metrics::counter!("auth9_captcha_low_score_total").increment(1);
+                        return captcha_required_response(&state.config.site_key);
                     }
-                    metrics::counter!("auth9_captcha_verified_total", "endpoint" => path.clone())
-                        .increment(1);
-                    let mut response = inner
-                        .oneshot(request)
-                        .await
-                        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
-                    response
-                        .headers_mut()
-                        .insert("X-Captcha-Required", "false".parse().unwrap());
-                    response
                 }
-                Ok(_verification) => {
-                    tracing::info!(path = %path, "CAPTCHA verification failed");
-                    metrics::counter!("auth9_captcha_failed_total", "endpoint" => path.clone())
-                        .increment(1);
-                    captcha_required_response(&state.config.site_key)
-                }
-                Err(e) => {
-                    tracing::warn!(
-                        error = %e,
-                        path = %path,
-                        "CAPTCHA provider error, failing open"
-                    );
-                    inner
-                        .oneshot(request)
-                        .await
-                        .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
-                }
+                metrics::counter!("auth9_captcha_verified_total", "endpoint" => path.clone())
+                    .increment(1);
+                let mut response = inner
+                    .oneshot(request)
+                    .await
+                    .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response());
+                response
+                    .headers_mut()
+                    .insert("X-Captcha-Required", "false".parse().unwrap());
+                response
             }
-        }
+            Ok(_verification) => {
+                tracing::info!(path = %path, "CAPTCHA verification failed");
+                metrics::counter!("auth9_captcha_failed_total", "endpoint" => path.clone())
+                    .increment(1);
+                captcha_required_response(&state.config.site_key)
+            }
+            Err(e) => {
+                tracing::warn!(
+                    error = %e,
+                    path = %path,
+                    "CAPTCHA provider error, failing open"
+                );
+                inner
+                    .oneshot(request)
+                    .await
+                    .unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR.into_response())
+            }
+        },
         None => {
             metrics::counter!("auth9_captcha_missing_total", "endpoint" => path.clone())
                 .increment(1);
@@ -340,8 +341,11 @@ pub async fn captcha_middleware(request: axum::extract::Request, next: Next) -> 
     let captcha_needed = match state.mode {
         CaptchaMode::Always => true,
         CaptchaMode::Adaptive => {
-            let ua = request.headers().get("user-agent")
-                .and_then(|v| v.to_str().ok()).unwrap_or("");
+            let ua = request
+                .headers()
+                .get("user-agent")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("");
             let ip = extract_client_ip(&request);
             check_adaptive_triggers(ua, ip.as_deref(), &state).await
         }
@@ -448,7 +452,6 @@ async fn check_adaptive_triggers(
     client_ip: Option<&str>,
     state: &CaptchaState,
 ) -> bool {
-
     if user_agent.is_empty() {
         tracing::debug!("Adaptive CAPTCHA trigger: missing User-Agent");
         return true;

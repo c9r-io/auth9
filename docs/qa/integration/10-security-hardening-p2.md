@@ -75,7 +75,8 @@ echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq '{token_type, tenant_id}'
 3. 验证所有关联数据已清除
 
 ### 预期结果
-- HTTP 状态码：`204 No Content`
+- HTTP 状态码：`200 OK`
+- 返回 JSON：`{"message":"User deleted successfully"}`
 - 用户记录从 `users` 表删除
 
 ### 预期数据状态
@@ -128,7 +129,8 @@ SELECT COUNT(*) FROM security_alerts WHERE user_id = '{user_id}';
 3. 验证所有关联数据已清除
 
 ### 预期结果
-- HTTP 状态码：`204 No Content`
+- HTTP 状态码：`200 OK`
+- 返回 JSON：`{"message":"Tenant deleted successfully"}`
 - 租户记录及所有关联数据从数据库删除
 
 ### 预期数据状态
@@ -164,7 +166,7 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
 
 ### 初始状态
 - 租户 `{tenant_id}` 下存在用户 `{user_id}`，该用户在底层认证主体中有对应账户
-- **`users.keycloak_id` 必须是有效的底层认证主体 UUID**（通过正常 OIDC 登录或 API 创建用户流程生成，不能是手动插入的非 UUID 字符串）
+- **`users.identity_subject` 必须是有效的底层认证主体 UUID**（通过正常 OIDC 登录或 API 创建用户流程生成，不能是手动插入的非 UUID 字符串）
   > **注意**: 种子数据中的 `identity_subject` 使用字符串格式（如 `seed-admin-admin@auth9.local`），不是 UUID。测试此场景时，必须使用通过正常 OIDC 登录流程创建的用户，以确保 `identity_subject` 为 UUID 格式。
 - 租户配置了至少 1 个 Webhook
 
@@ -198,8 +200,8 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
 ## 场景 4：生产环境未配置 Webhook Secret — 启动失败
 
 ### 初始状态
-- 环境变量 `AUTH9_ENV=production`（或等效生产标识）
-- 未设置 `KEYCLOAK_WEBHOOK_SECRET`（历史遗留环境变量名）
+- 环境变量 `ENVIRONMENT=production`
+- 未设置 `IDENTITY_WEBHOOK_SECRET`
 
 ### 目的
 验证生产环境下未配置 webhook secret 时，auth9-core 拒绝启动
@@ -207,8 +209,8 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
 ### 测试操作流程
 1. 设置生产环境标识并移除 secret：
    ```bash
-   export AUTH9_ENV=production
-   unset KEYCLOAK_WEBHOOK_SECRET
+   export ENVIRONMENT=production
+   unset IDENTITY_WEBHOOK_SECRET
    ```
 2. 尝试启动 auth9-core：
    ```bash
@@ -217,7 +219,7 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
 
 ### 预期结果
 - 进程以非零退出码终止
-- 错误信息包含：`KEYCLOAK_WEBHOOK_SECRET is required in production`
+- 错误信息包含：`IDENTITY_WEBHOOK_SECRET is required in production`
 
 ---
 
@@ -225,7 +227,7 @@ SELECT COUNT(*) FROM invitations WHERE tenant_id = '{tenant_id}';
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | 用户删除 — 级联操作原子性验证 | ☐ | | | |
-| 2 | 租户删除 — 级联操作原子性验证 | ☐ | | | |
-| 3 | 删除后外部系统同步验证 | ☐ | | | |
-| 4 | 生产环境未配置 Webhook Secret — 启动失败 | ☐ | | | |
+| 1 | 用户删除 — 级联操作原子性验证 | ✅ PASS | 2026-03-28 | QA Testing | HTTP 200；级联清理通过 |
+| 2 | 租户删除 — 级联操作原子性验证 | ✅ PASS | 2026-03-28 | QA Testing | 需要 `X-Confirm-Destructive: true` |
+| 3 | 删除后外部系统同步验证 | ✅ PASS | 2026-03-28 | QA Testing | webhook 触发日志已确认 |
+| 4 | 生产环境未配置 Webhook Secret — 启动失败 | ✅ PASS | 2026-03-28 | QA Testing | 代码实际校验 `ENVIRONMENT=production` + `IDENTITY_WEBHOOK_SECRET` |

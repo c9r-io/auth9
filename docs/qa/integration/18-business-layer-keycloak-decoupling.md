@@ -137,22 +137,31 @@
 - 本地可执行 `cargo test`
 
 ### 目的
-验证 Keycloak adapter 的新中性 contract 与 `auth9_oidc` stub backend 同时成立。
+验证 Keycloak 解耦后，现有测试套件仍然通过，无 wiring panic。
+
+> **注意**: 原文档引用的 `keycloak_adapter_contract_test` 和 `backend_switch_smoke_test` 两个测试目标已在后续重构中移除。当前应使用现有测试套件验证 contract 稳定性。
 
 ### 测试操作流程
-1. 执行以下命令：
+1. 确认当前可用的集成测试目标：
    ```bash
-   cd auth9-core && cargo test --test keycloak_adapter_contract_test -- --nocapture
+   cd auth9-core && cargo test --test api_test -- --nocapture 2>&1 | tail -5
    ```
-2. 执行以下命令：
+2. 运行全量单元测试验证无 wiring panic：
    ```bash
-   cd auth9-core && cargo test --test backend_switch_smoke_test -- --nocapture
+   cd auth9-core && cargo test --lib 2>&1 | grep "test result"
    ```
 
 ### 预期结果
-- 两个 integration test 文件全部通过
-- `keycloak` backend 继续通过 adapter 暴露 user/client/credential contract
-- `auth9_oidc` backend 对最小 stub 路径返回明确错误，不出现 wiring panic
+- 现有集成测试通过（`api_test`）
+- 单元测试通过，无 wiring panic
+- `auth9_oidc` backend 路径正常运行
+
+### 故障排除
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| `no test target named keycloak_adapter_contract_test` | 旧测试目标已移除 | 使用 `cargo test --test api_test` 替代 |
+| `no test target named backend_switch_smoke_test` | 旧测试目标已移除 | 使用 `cargo test --lib` 验证 |
 
 ---
 

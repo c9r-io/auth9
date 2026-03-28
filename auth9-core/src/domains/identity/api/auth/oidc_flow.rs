@@ -392,14 +392,19 @@ pub async fn token<
     let mut params: TokenRequest = serde_urlencoded::from_bytes(&body)
         .or_else(|_| serde_json::from_slice(&body))
         .map_err(|_| {
-            AppError::BadRequest("Invalid request body: expected application/x-www-form-urlencoded or JSON".to_string())
+            AppError::BadRequest(
+                "Invalid request body: expected application/x-www-form-urlencoded or JSON"
+                    .to_string(),
+            )
         })?;
 
     // Support client_secret_basic (RFC 6749 Section 2.3.1)
     if let Some(auth_header) = headers.get(axum::http::header::AUTHORIZATION) {
         if let Ok(auth_str) = auth_header.to_str() {
             if let Some(encoded) = auth_str.strip_prefix("Basic ") {
-                if let Ok(decoded) = base64::engine::general_purpose::STANDARD.decode(encoded.trim()) {
+                if let Ok(decoded) =
+                    base64::engine::general_purpose::STANDARD.decode(encoded.trim())
+                {
                     if let Ok(credentials) = String::from_utf8(decoded) {
                         if let Some((client_id, client_secret)) = credentials.split_once(':') {
                             let decoded_id = urlencoding::decode(client_id)

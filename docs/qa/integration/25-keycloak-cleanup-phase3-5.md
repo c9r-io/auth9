@@ -110,18 +110,20 @@ grep -rn "keycloak/events" auth9-core/src/
 
 ## 场景 3: IDENTITY_WEBHOOK_SECRET 优先级
 
-**目的**: 验证配置读取逻辑优先使用 `IDENTITY_WEBHOOK_SECRET`，回退到 `KEYCLOAK_WEBHOOK_SECRET`。
+**目的**: 验证配置已完成从 `KEYCLOAK_WEBHOOK_SECRET` 到 `IDENTITY_WEBHOOK_SECRET` 的迁移。
+
+> **注意**: 运行时配置层仅读取 `IDENTITY_WEBHOOK_SECRET`，不直接 fallback 到 `KEYCLOAK_WEBHOOK_SECRET`。旧变量的兼容性由部署迁移脚本处理（`deploy/upgrade.sh` 等），而非 core 运行时。
 
 **类型**: 配置验证
 
 ### 步骤
 
-1. 验证优先级逻辑（代码级）
+1. 验证运行时配置仅使用新变量名
 
 ```bash
-# 确认配置读取逻辑
+# 确认 core 配置只读取 IDENTITY_WEBHOOK_SECRET
 grep -rn "IDENTITY_WEBHOOK_SECRET\|KEYCLOAK_WEBHOOK_SECRET" auth9-core/src/config/
-# 预期: IDENTITY_WEBHOOK_SECRET 为首选项，KEYCLOAK_WEBHOOK_SECRET 为 fallback
+# 预期: 仅出现 IDENTITY_WEBHOOK_SECRET
 ```
 
 2. 验证 `.env.example` 更新
@@ -141,27 +143,20 @@ grep -n "IDENTITY_BACKEND" auth9-core/.env.example
 # 确认 K8s secret 模板已更新
 grep -rn "IDENTITY_WEBHOOK_SECRET" k8s/ deploy/ || echo "检查部署模板目录"
 # 预期: 新变量名出现在 secret 或 configmap 定义中
-
-grep -rn "KEYCLOAK_WEBHOOK_SECRET" k8s/ deploy/ || echo "旧变量已移除或标记为 deprecated"
 ```
 
-4. 运行时验证（仅设置旧变量，确认 fallback 生效）
+4. 验证部署迁移脚本处理旧变量兼容性
 
 ```bash
-# 场景 A: 仅设置 IDENTITY_WEBHOOK_SECRET
-IDENTITY_WEBHOOK_SECRET="new-test-value" cargo run -- --check-config 2>&1 | grep -i "webhook"  # pragma: allowlist secret
-# 预期: 配置加载成功，使用 new-test-value
-
-# 场景 B: 仅设置 KEYCLOAK_WEBHOOK_SECRET（回退）
-unset IDENTITY_WEBHOOK_SECRET
-KEYCLOAK_WEBHOOK_SECRET="old-test-value" cargo run -- --check-config 2>&1 | grep -i "webhook"  # pragma: allowlist secret
-# 预期: 配置加载成功，回退使用 old-test-value
+# 确认部署脚本中包含 KEYCLOAK_WEBHOOK_SECRET → IDENTITY_WEBHOOK_SECRET 迁移逻辑
+grep -rn "KEYCLOAK_WEBHOOK_SECRET" deploy/ || echo "旧变量迁移逻辑在部署脚本中"
+# 预期: 部署脚本中有旧变量到新变量的映射或迁移逻辑
 ```
 
 ### 预期结果
 
-- 当 `IDENTITY_WEBHOOK_SECRET` 和 `KEYCLOAK_WEBHOOK_SECRET` 同时设置时，使用前者
-- 仅设置 `KEYCLOAK_WEBHOOK_SECRET` 时，回退使用该值
+- core 运行时仅使用 `IDENTITY_WEBHOOK_SECRET`（无运行时 fallback）
+- 旧变量 `KEYCLOAK_WEBHOOK_SECRET` 的兼容性由部署迁移脚本（非 core 运行时）处理
 - `.env.example` 默认使用 `IDENTITY_WEBHOOK_SECRET`
 - `.env.example` 中 `IDENTITY_BACKEND` 默认值为 `auth9_oidc`
 

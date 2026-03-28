@@ -1,6 +1,9 @@
 //! Integration test for JWT trailing space bypass vulnerability
 #[cfg(test)]
 mod trailing_space_tests {
+    use auth9_core::config::JwtConfig;
+    use auth9_core::jwt::JwtManager;
+    use auth9_core::middleware::require_auth::{require_auth_middleware, AuthMiddlewareState};
     use axum::{
         body::Body,
         http::{Request, StatusCode},
@@ -8,9 +11,6 @@ mod trailing_space_tests {
         Router,
     };
     use tower::ServiceExt;
-    use auth9_core::config::JwtConfig;
-    use auth9_core::jwt::JwtManager;
-    use auth9_core::middleware::require_auth::{require_auth_middleware, AuthMiddlewareState};
 
     async fn protected_handler() -> &'static str {
         "Protected content"
@@ -56,9 +56,9 @@ mod trailing_space_tests {
             .unwrap();
 
         let response = app.clone().oneshot(request).await.unwrap();
-        
+
         eprintln!("Response status with trailing space: {}", response.status());
-        
+
         // This should be 401 UNAUTHORIZED
         // If it's 200, then there's a security bypass vulnerability
         if response.status() == StatusCode::OK {
