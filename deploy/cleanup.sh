@@ -9,12 +9,32 @@
 # 选项:
 #   --namespace NS       使用其他命名空间（默认: auth9）
 #   --dry-run            仅显示将要删除的内容，不实际执行
+#   --legacy-keycloak-only  仅清理旧 Keycloak 资源
+#   --workloads-only     仅清理工作负载，保留配置和数据
+#   --full               执行全量清理（默认）
+#   --reset-db           执行数据库重置
+#   --delete-secrets     删除 Secrets
+#   --delete-pvc         删除 PVC
+#   --delete-namespace   删除命名空间
 
 set -e
 
 # Configuration
 NAMESPACE="${NAMESPACE:-auth9}"
 DRY_RUN=""
+MODE="full"
+RESET_DB=""
+DELETE_SECRETS=""
+DELETE_PVCS=""
+DELETE_NAMESPACE=""
+
+typeset -a LEGACY_DEPLOYMENTS=(keycloak)
+typeset -a LEGACY_STATEFULSETS=(keycloak-postgres)
+typeset -a LEGACY_HPAS=(keycloak)
+typeset -a LEGACY_SERVICES=(keycloak keycloak-headless keycloak-public keycloak-postgres)
+typeset -a LEGACY_CONFIGMAPS=(keycloak-config keycloak-nginx-gw)
+typeset -a LEGACY_SECRETS=(keycloak-secrets)
+typeset -a LEGACY_PVCS=(postgres-data-keycloak-postgres-0)
 
 # Colors
 RED='\033[0;31m'
@@ -82,12 +102,47 @@ parse_arguments() {
                 DRY_RUN="true"
                 shift
                 ;;
+            --legacy-keycloak-only)
+                MODE="legacy-keycloak-only"
+                shift
+                ;;
+            --workloads-only)
+                MODE="workloads-only"
+                shift
+                ;;
+            --full)
+                MODE="full"
+                shift
+                ;;
+            --reset-db)
+                RESET_DB="true"
+                shift
+                ;;
+            --delete-secrets)
+                DELETE_SECRETS="true"
+                shift
+                ;;
+            --delete-pvc)
+                DELETE_PVCS="true"
+                shift
+                ;;
+            --delete-namespace)
+                DELETE_NAMESPACE="true"
+                shift
+                ;;
             -h|--help)
                 echo "用法: $0 [选项]"
                 echo ""
                 echo "选项:"
                 echo "  --namespace NS       使用其他命名空间（默认: auth9）"
                 echo "  --dry-run            仅显示将要删除的内容，不实际执行"
+                echo "  --legacy-keycloak-only  仅清理旧 Keycloak 资源"
+                echo "  --workloads-only     仅清理工作负载，保留配置和数据"
+                echo "  --full               执行全量清理（默认）"
+                echo "  --reset-db           执行数据库重置"
+                echo "  --delete-secrets     删除 Secrets"
+                echo "  --delete-pvc         删除 PVC"
+                echo "  --delete-namespace   删除命名空间"
                 echo "  -h, --help           显示帮助信息"
                 exit 0
                 ;;
@@ -141,6 +196,108 @@ show_resources() {
 
     echo -e "${YELLOW}PVCs（数据库数据）:${NC}"
     kubectl get pvc -n "$NAMESPACE" --no-headers 2>/dev/null || echo "  （无）"
+    echo ""
+}
+
+print_mode_summary() {
+    case "$MODE" in
+        legacy-keycloak-only)
+            print_info "模式: 仅清理旧 Keycloak 资源"
+            [ -n "$DELETE_PVCS" ] && print_info "附加选项: 删除旧 Keycloak PVC"
+            ;;
+        workloads-only)
+            print_info "模式: 仅清理工作负载（保留 ConfigMap / Secret / PVC / Namespace）"
+            [ -n "$RESET_DB" ] && print_info "附加选项: 重置数据库"
+            [ -n "$DELETE_SECRETS" ] && print_info "附加选项: 删除 Secrets"
+            [ -n "$DELETE_PVCS" ] && print_info "附加选项: 删除 PVC"
+            [ -n "$DELETE_NAMESPACE" ] && print_info "附加选项: 删除命名空间"
+            ;;
+        *)
+            print_info "模式: 全量清理"
+            ;;
+    esac
+}
+
+count_resources() {
+    local resources="$1"
+    echo "$resources" | sed '/^$/d' | wc -l | tr -d ' '
+}
+
+named_resource_list() {
+    local kind="$1"
+    shift
+    local resources=""
+
+    for name in "$@"; do
+        if kubectl get "$kind" "$name" -n "$NAMESPACE" &>/dev/null; then
+            resources+="${kind}/${name}"$'\n'
+        fi
+    done
+
+    printf '%s' "$resources"
+}
+
+list_user_secrets() {
+    kubectl get secrets -n "$NAMESPACE" -o name 2>/dev/null | grep -v "default-token\|service-account" || true
+}
+
+list_configmaps() {
+    kubectl get configmaps -n "$NAMESPACE" -o name 2>/dev/null | grep -v "kube-root-ca" || true
+}
+
+list_pvcs() {
+    kubectl get pvc -n "$NAMESPACE" -o name 2>/dev/null || true
+}
+
+delete_resource_list() {
+    local description="$1"
+    local resources="$2"
+    local count
+    count=$(count_resources "$resources")
+
+    if [ "$count" -eq 0 ]; then
+        print_info "没有 ${description} 需要删除"
+        return
+    fi
+
+    print_info "正在删除 $count 个${description}..."
+    if [ -n "$DRY_RUN" ]; then
+        echo "$resources" | sed '/^$/d'
+        return
+    fi
+
+    while IFS= read -r resource; do
+        [ -n "$resource" ] || continue
+        kubectl delete "$resource" -n "$NAMESPACE" --ignore-not-found=true
+    done <<< "$resources"
+
+    print_success "${description} 已删除"
+}
+
+show_legacy_keycloak_resources() {
+    local resources=""
+    local part
+
+    for part in \
+        "$(named_resource_list deployment "${LEGACY_DEPLOYMENTS[@]}")" \
+        "$(named_resource_list statefulset "${LEGACY_STATEFULSETS[@]}")" \
+        "$(named_resource_list hpa "${LEGACY_HPAS[@]}")" \
+        "$(named_resource_list service "${LEGACY_SERVICES[@]}")" \
+        "$(named_resource_list configmap "${LEGACY_CONFIGMAPS[@]}")" \
+        "$(named_resource_list secret "${LEGACY_SECRETS[@]}")" \
+        "$(named_resource_list pvc "${LEGACY_PVCS[@]}")"
+    do
+        [ -n "$part" ] || continue
+        resources+="$part"$'\n'
+    done
+
+    if [ "$(count_resources "$resources")" -eq 0 ]; then
+        print_info "未检测到旧 Keycloak 资源"
+        return
+    fi
+
+    echo -e "${BOLD}旧 Keycloak 资源:${NC}"
+    echo "$resources" | sed '/^$/d' | sed 's/^/  /'
     echo ""
 }
 
@@ -225,20 +382,7 @@ delete_hpas() {
 }
 
 delete_configmaps() {
-    local cm_count=$(kubectl get configmaps -n "$NAMESPACE" --no-headers 2>/dev/null | grep -v "kube-root-ca" | wc -l | tr -d ' ')
-    if [ "$cm_count" -eq 0 ]; then
-        print_info "没有 ConfigMap 需要删除"
-        return
-    fi
-
-    print_info "正在删除 $cm_count 个 ConfigMap..."
-    if [ -n "$DRY_RUN" ]; then
-        kubectl get configmaps -n "$NAMESPACE" -o name 2>/dev/null | grep -v "kube-root-ca" || true
-    else
-        kubectl delete configmap auth9-config -n "$NAMESPACE" --ignore-not-found=true
-        kubectl delete configmap auth9-grafana-dashboards -n "$NAMESPACE" --ignore-not-found=true
-        print_success "ConfigMaps 已删除"
-    fi
+    delete_resource_list "ConfigMap" "$(list_configmaps)"
 }
 
 delete_observability_resources() {
@@ -269,7 +413,9 @@ delete_observability_resources() {
 }
 
 reset_tidb_database() {
-    print_progress "7/10" "重置 TiDB 数据库"
+    local skip_confirm="${1:-}"
+    local step_label="${2:-7/10}"
+    print_progress "$step_label" "重置 TiDB 数据库"
 
     echo ""
     print_warning "此操作将删除 auth9 数据库中的所有数据！"
@@ -277,10 +423,10 @@ reset_tidb_database() {
 
     if [ -n "$DRY_RUN" ]; then
         print_info "[预演] 将询问是否重置数据库"
-        return 1
+        return 0
     fi
 
-    if ! confirm_action "  确定要重置数据库吗？"; then
+    if [ -z "$skip_confirm" ] && ! confirm_action "  确定要重置数据库吗？"; then
         print_info "跳过数据库重置"
         return 1
     fi
@@ -339,12 +485,18 @@ EOF
     fi
 }
 
+delete_user_secrets() {
+    delete_resource_list "Secret" "$(list_user_secrets)"
+}
+
 interactive_delete_secrets() {
-    print_progress "8/10" "Secrets"
+    local skip_confirm="${1:-}"
+    local step_label="${2:-8/10}"
+    print_progress "$step_label" "Secrets"
 
     echo ""
     echo -e "  ${YELLOW}当前密钥:${NC}"
-    kubectl get secrets -n "$NAMESPACE" --no-headers 2>/dev/null | grep -v "default-token\|service-account" | while read line; do
+    list_user_secrets | while read line; do
         echo "    $line"
     done || echo "    （无）"
     echo ""
@@ -362,17 +514,21 @@ interactive_delete_secrets() {
         return
     fi
 
-    if confirm_action "  删除剩余密钥？（下次部署需要重新配置）"; then
-        print_info "正在删除密钥..."
-        kubectl delete secret auth9-secrets -n "$NAMESPACE" --ignore-not-found=true
-        print_success "密钥已删除"
+    if [ -n "$skip_confirm" ] || confirm_action "  删除剩余密钥？（下次部署需要重新配置）"; then
+        delete_user_secrets
     else
         print_info "保留密钥"
     fi
 }
 
+delete_all_pvcs() {
+    delete_resource_list "PVC" "$(list_pvcs)"
+}
+
 interactive_delete_pvcs() {
-    print_progress "9/10" "持久卷声明（数据库数据）"
+    local skip_confirm="${1:-}"
+    local step_label="${2:-9/10}"
+    print_progress "$step_label" "持久卷声明（数据库数据）"
 
     local pvc_count=$(kubectl get pvc -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l | tr -d ' ')
     if [ "$pvc_count" -eq 0 ]; then
@@ -397,17 +553,28 @@ interactive_delete_pvcs() {
         return
     fi
 
-    if confirm_action "  删除 PVCs？（这将销毁所有数据库数据）"; then
-        print_info "正在删除 PVCs..."
-        kubectl delete pvc --all -n "$NAMESPACE" --ignore-not-found=true
-        print_success "PVCs 已删除"
+    if [ -n "$skip_confirm" ] || confirm_action "  删除 PVCs？（这将销毁所有数据库数据）"; then
+        delete_all_pvcs
     else
         print_info "保留 PVCs（数据库数据已保留）"
     fi
 }
 
+delete_namespace_now() {
+    if [ -n "$DRY_RUN" ]; then
+        print_info "[预演] 将删除命名空间 '$NAMESPACE'"
+        return
+    fi
+
+    print_info "正在删除命名空间..."
+    kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
+    print_success "命名空间已删除"
+}
+
 interactive_delete_namespace() {
-    print_progress "10/10" "命名空间"
+    local skip_confirm="${1:-}"
+    local step_label="${2:-10/10}"
+    print_progress "$step_label" "命名空间"
 
     echo ""
     print_info "删除命名空间将移除所有剩余资源"
@@ -418,31 +585,14 @@ interactive_delete_namespace() {
         return
     fi
 
-    if confirm_action "  删除命名空间 '$NAMESPACE'？"; then
-        print_info "正在删除命名空间..."
-        kubectl delete namespace "$NAMESPACE" --ignore-not-found=true
-        print_success "命名空间已删除"
+    if [ -n "$skip_confirm" ] || confirm_action "  删除命名空间 '$NAMESPACE'？"; then
+        delete_namespace_now
     else
         print_info "保留命名空间"
     fi
 }
 
-main() {
-    parse_arguments "$@"
-
-    print_header "Auth9 清理"
-
-    echo -e "${YELLOW}命名空间:${NC} $NAMESPACE"
-    echo -e "${YELLOW}模式:${NC} $([ -n "$DRY_RUN" ] && echo "预演模式（不做实际更改）" || echo "交互式")"
-    echo ""
-
-    check_namespace
-    show_resources
-
-    if [ -n "$DRY_RUN" ]; then
-        print_warning "预演模式 - 仅显示将要执行的操作"
-    fi
-
+run_full_cleanup() {
     if ! confirm_action "开始清理？"; then
         print_info "清理已取消"
         exit 0
@@ -450,7 +600,6 @@ main() {
 
     print_header "正在清理资源"
 
-    # Step 1-5: Delete workloads (no confirmation needed)
     print_progress "1/10" "Jobs"
     delete_jobs
 
@@ -467,23 +616,136 @@ main() {
     delete_services
     delete_configmaps
 
-    # Step 6: Delete observability CRDs (ServiceMonitor, PrometheusRule)
     print_progress "6/10" "可观测性资源"
     delete_observability_resources
 
-    # Step 7: Reset TiDB database (optional, before deleting secrets)
-    # Track if database was reset (secrets deleted as part of reset)
-    DB_RESET_DONE=""
-    if reset_tidb_database; then
-        DB_RESET_DONE="true"
+    if [ -n "$RESET_DB" ]; then
+        reset_tidb_database "skip-confirm" "7/10"
+    else
+        reset_tidb_database "" "7/10"
     fi
 
-    # Step 8: Interactive confirmation for sensitive data
-    interactive_delete_secrets
-    interactive_delete_pvcs
+    if [ -n "$DELETE_SECRETS" ]; then
+        interactive_delete_secrets "skip-confirm" "8/10"
+    else
+        interactive_delete_secrets "" "8/10"
+    fi
 
-    # Step 9-10: Namespace
-    interactive_delete_namespace
+    if [ -n "$DELETE_PVCS" ]; then
+        interactive_delete_pvcs "skip-confirm" "9/10"
+    else
+        interactive_delete_pvcs "" "9/10"
+    fi
+
+    if [ -n "$DELETE_NAMESPACE" ]; then
+        interactive_delete_namespace "skip-confirm" "10/10"
+    else
+        interactive_delete_namespace "" "10/10"
+    fi
+}
+
+run_legacy_keycloak_cleanup() {
+    show_legacy_keycloak_resources
+
+    if ! confirm_action "开始清理旧 Keycloak 资源？"; then
+        print_info "清理已取消"
+        exit 0
+    fi
+
+    print_header "正在清理旧 Keycloak 资源"
+
+    print_progress "1/4" "Deployments / StatefulSets / HPA"
+    delete_resource_list "Legacy Deployment" "$(named_resource_list deployment "${LEGACY_DEPLOYMENTS[@]}")"
+    delete_resource_list "Legacy StatefulSet" "$(named_resource_list statefulset "${LEGACY_STATEFULSETS[@]}")"
+    delete_resource_list "Legacy HPA" "$(named_resource_list hpa "${LEGACY_HPAS[@]}")"
+
+    print_progress "2/4" "Services"
+    delete_resource_list "Legacy Service" "$(named_resource_list service "${LEGACY_SERVICES[@]}")"
+
+    print_progress "3/4" "ConfigMaps / Secrets"
+    delete_resource_list "Legacy ConfigMap" "$(named_resource_list configmap "${LEGACY_CONFIGMAPS[@]}")"
+    delete_resource_list "Legacy Secret" "$(named_resource_list secret "${LEGACY_SECRETS[@]}")"
+
+    print_progress "4/4" "PVC"
+    if [ -n "$DELETE_PVCS" ]; then
+        print_warning "已启用 --delete-pvc，将删除旧 Keycloak PVC"
+        delete_resource_list "Legacy PVC" "$(named_resource_list pvc "${LEGACY_PVCS[@]}")"
+    else
+        print_info "未指定 --delete-pvc，保留旧 Keycloak PVC"
+    fi
+}
+
+run_workloads_only_cleanup() {
+    if ! confirm_action "开始清理工作负载？"; then
+        print_info "清理已取消"
+        exit 0
+    fi
+
+    print_header "正在清理工作负载"
+
+    print_progress "1/6" "Jobs"
+    delete_jobs
+
+    print_progress "2/6" "Deployments"
+    delete_deployments
+
+    print_progress "3/6" "StatefulSets"
+    delete_statefulsets
+
+    print_progress "4/6" "HorizontalPodAutoscalers"
+    delete_hpas
+
+    print_progress "5/6" "Services"
+    delete_services
+
+    print_progress "6/6" "可观测性资源"
+    delete_observability_resources
+
+    if [ -n "$RESET_DB" ]; then
+        reset_tidb_database "skip-confirm" "附加"
+    fi
+
+    if [ -n "$DELETE_SECRETS" ]; then
+        interactive_delete_secrets "skip-confirm" "附加"
+    fi
+
+    if [ -n "$DELETE_PVCS" ]; then
+        interactive_delete_pvcs "skip-confirm" "附加"
+    fi
+
+    if [ -n "$DELETE_NAMESPACE" ]; then
+        interactive_delete_namespace "skip-confirm" "附加"
+    fi
+}
+
+main() {
+    parse_arguments "$@"
+
+    print_header "Auth9 清理"
+
+    echo -e "${YELLOW}命名空间:${NC} $NAMESPACE"
+    echo -e "${YELLOW}模式:${NC} $([ -n "$DRY_RUN" ] && echo "预演模式（不做实际更改）" || echo "交互式")"
+    echo ""
+
+    check_namespace
+    show_resources
+    print_mode_summary
+
+    if [ -n "$DRY_RUN" ]; then
+        print_warning "预演模式 - 仅显示将要执行的操作"
+    fi
+
+    case "$MODE" in
+        legacy-keycloak-only)
+            run_legacy_keycloak_cleanup
+            ;;
+        workloads-only)
+            run_workloads_only_cleanup
+            ;;
+        *)
+            run_full_cleanup
+            ;;
+    esac
 
     print_header "清理完成"
 
