@@ -313,9 +313,16 @@ fi
 echo "[7/7] Verifying..."
 $DC ps --format "table {{.Name}}\t{{.Status}}" 2>/dev/null || $DC ps
 
+# Seed test data: MFA user + QA test client (non-production, idempotent)
+echo ""
+echo "[Post-setup] Seeding test data..."
+node "$SCRIPT_DIR/seed-test-data.mjs" || echo "  WARNING: Test data seeding failed (non-fatal)"
+
 echo ""
 echo "URLs:"
 echo "  Portal:     http://localhost:3000  (admin@auth9.local / SecurePass123!)"
+echo "  MFA User:   mfa-user@auth9.local / SecurePass123! (TOTP: JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP)"
+echo "  QA Client:  auth9-qa-test (PKCE, redirect: http://localhost:19876/callback)"
 echo "  Demo:       http://localhost:3002  (SDK integration guide)"
 echo "  Mailpit:    http://localhost:8025"
 echo "  Grafana:    http://localhost:3001"
