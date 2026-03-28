@@ -78,12 +78,20 @@ curl -sf -X POST http://localhost:8080/api/v1/services/$SERVICE_ID/actions \
 
 2. 通过 Hosted Login 获取 Identity Token:
 
+> **注意**: Auth9 没有 `/api/v1/auth/login` 端点。Auth9 使用 OIDC 流程，直接密码认证端点为 `/api/v1/hosted-login/password`。
+
 ```bash
-IDENTITY_TOKEN=$(curl -sf -X POST http://localhost:8080/api/v1/auth/login \
+# 正确方式：通过 hosted-login/password 端点获取 Identity Token
+IDENTITY_TOKEN=$(curl -sf -X POST http://localhost:8080/api/v1/hosted-login/password \
   -H "Content-Type: application/json" \
   -d '{"email": "test@example.com", "password": "Test1234!"}' \ # pragma: allowlist secret
-  | jq -r '.access_token // .identity_token // .token')
+  | jq -r '.identity_token // .access_token // .token')
+
+# 或使用 gen-admin-token.sh 快速获取（适用于 admin 用户）：
+# IDENTITY_TOKEN=$(.claude/skills/tools/gen-admin-token.sh)
 ```
+
+> **常见误报**: 如果调用 `/api/v1/auth/login` 返回 404，这不是 bug。Auth9 的认证流程基于 OIDC，密码认证通过 `/api/v1/hosted-login/password` 端点完成，登录后获得 Identity Token，再通过 `/api/v1/auth/token-exchange` 换取 Tenant Access Token。
 
 3. 验证 Identity Token **不含** action claims:
 

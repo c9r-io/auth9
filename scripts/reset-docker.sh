@@ -320,8 +320,8 @@ node "$SCRIPT_DIR/seed-test-data.mjs" || echo "  WARNING: Test data seeding fail
 
 echo ""
 echo "URLs:"
-echo "  Portal:     http://localhost:3000  (admin@auth9.local / SecurePass123!)"
-echo "  MFA User:   mfa-user@auth9.local / SecurePass123! (TOTP: JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP)"
+echo "  Portal:     http://localhost:3000  (admin@auth9.local / Auth9Dev!2026x)"
+echo "  MFA User:   mfa-user@auth9.local / Auth9Dev!2026x (TOTP: JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP)"
 echo "  QA Client:  auth9-qa-test (PKCE, redirect: http://localhost:19876/callback)"
 echo "  Demo:       http://localhost:3002  (SDK integration guide)"
 echo "  Mailpit:    http://localhost:8025"

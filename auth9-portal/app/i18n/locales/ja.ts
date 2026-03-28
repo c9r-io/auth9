@@ -4,6 +4,7 @@ export default {
     buttons: {
       signIn: "サインイン",
       signOut: "サインアウト",
+      signOutConfirm: "サインアウトしてもよろしいですか？",
       signUp: "サインアップ",
       createAccount: "アカウント作成",
       creating: "作成中...",

@@ -4,6 +4,7 @@ export default {
     buttons: {
       signIn: "Sign in",
       signOut: "Sign out",
+      signOutConfirm: "Are you sure you want to sign out?",
       signUp: "Sign up",
       createAccount: "Create account",
       creating: "Creating...",

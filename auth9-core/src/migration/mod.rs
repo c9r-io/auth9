@@ -847,6 +847,12 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
                 .execute(&pool)
                 .await
                 .context("Failed to seed admin password credential")?;
+                // Set password_changed_at so admin is not forced to change password on first login
+                sqlx::query("UPDATE users SET password_changed_at = NOW() WHERE id = ? AND password_changed_at IS NULL")
+                    .bind(&actual_user_id)
+                    .execute(&pool)
+                    .await
+                    .context("Failed to set admin password_changed_at")?;
                 info!("Admin password credential set from AUTH9_ADMIN_PASSWORD");
             }
             Err(e) => {

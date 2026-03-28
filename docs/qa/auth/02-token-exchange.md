@@ -162,8 +162,8 @@ SELECT COUNT(*) FROM tenant_users WHERE user_id = '{user_id}' AND tenant_id = '{
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | Token Exchange - 成功 | ✅ PASS | 2026-02-15 | Gemini | |
-| 2 | Token Exchange - 非成员 | ✅ PASS | 2026-02-15 | Gemini | |
-| 3 | Token 验证 | ✅ PASS | 2026-02-15 | Gemini | |
-| 4 | Token 过期验证 | ✅ PASS | 2026-02-15 | Gemini | |
-| 5 | Token 内省 | ✅ PASS | 2026-02-15 | Gemini | |
+| 1 | Token Exchange - 成功 | ✅ PASS | 2026-03-28 | opencode | |
+| 2 | Token Exchange - 非成员 | ✅ PASS | 2026-03-28 | opencode | |
+| 3 | Token 验证 | ✅ PASS | 2026-03-28 | opencode | |
+| 4 | Token 过期验证 | ✅ PASS | 2026-03-28 | opencode | |
+| 5 | Token 内省 | ✅ PASS | 2026-03-28 | opencode | |

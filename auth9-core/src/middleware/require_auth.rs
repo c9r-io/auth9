@@ -105,7 +105,7 @@ pub async fn require_auth_middleware(
                         aud = %claims.aud,
                         "Tenant access token rejected: audience not in registered client set"
                     );
-                    None
+                    return unauthorized_response("Token audience is not registered");
                 }
                 Err(e) => {
                     tracing::error!(error = %e, "Audience validation failed (Redis error), rejecting request (fail-closed)");

@@ -18,7 +18,7 @@ scenario 1 "用户重复加入同一租户" '
   db_exec "DELETE FROM tenant_users WHERE user_id IN (SELECT id FROM users WHERE email = '\''$TEST_EMAIL'\'')"
   db_exec "DELETE FROM users WHERE email = '\''$TEST_EMAIL'\''"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Dup Tenant User\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Dup Tenant User\",\"password\":\"Auth9Dev!2026x\"}")
   assert_http_status "$(resp_status "$resp")" 201 "user created"
   USER_ID=$(echo "$(resp_body "$resp")" | jq -r ".data.id")
 
@@ -42,7 +42,7 @@ scenario 2 "修改用户在租户中的角色" '
   db_exec "DELETE FROM tenant_users WHERE user_id IN (SELECT id FROM users WHERE email = '\''$TEST_EMAIL'\'')"
   db_exec "DELETE FROM users WHERE email = '\''$TEST_EMAIL'\''"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Role User\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Role User\",\"password\":\"Auth9Dev!2026x\"}")
   assert_http_status "$(resp_status "$resp")" 201 "user created"
   USER_ID=$(echo "$(resp_body "$resp")" | jq -r ".data.id")
 
@@ -66,19 +66,19 @@ scenario 3 "邮箱格式验证" '
   TOKEN=$(gen_tenant_token "$ADMIN_ID" "$TENANT_ID")
   qa_set_token "$TOKEN"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"invalidemail\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"invalidemail\",\"password\":\"Auth9Dev!2026x\"}")
   STATUS=$(resp_status "$resp")
   assert_match "$STATUS" "^4[0-9][0-9]$" "no-@ email rejected (status $STATUS)"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"test@\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"test@\",\"password\":\"Auth9Dev!2026x\"}")
   STATUS=$(resp_status "$resp")
   assert_match "$STATUS" "^4[0-9][0-9]$" "no-domain email rejected (status $STATUS)"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"@example.com\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"@example.com\",\"password\":\"Auth9Dev!2026x\"}")
   STATUS=$(resp_status "$resp")
   assert_match "$STATUS" "^4[0-9][0-9]$" "no-user email rejected (status $STATUS)"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"test<script>@example.com\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"test<script>@example.com\",\"password\":\"Auth9Dev!2026x\"}")
   STATUS=$(resp_status "$resp")
   assert_match "$STATUS" "^4[0-9][0-9]$" "special-char email rejected (status $STATUS)"
 

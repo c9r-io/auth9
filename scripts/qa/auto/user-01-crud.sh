@@ -18,7 +18,7 @@ scenario 1 "创建用户" '
   db_exec "DELETE FROM tenant_users WHERE user_id IN (SELECT id FROM users WHERE email = '\''$TEST_EMAIL'\'')"
   db_exec "DELETE FROM users WHERE email = '\''$TEST_EMAIL'\''"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"QA Create User\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"QA Create User\",\"password\":\"Auth9Dev!2026x\"}")
   assert_http_status "$(resp_status "$resp")" 201 "POST /api/v1/users returns 201"
 
   body=$(resp_body "$resp")
@@ -44,11 +44,11 @@ scenario 2 "创建重复邮箱的用户" '
   db_exec "DELETE FROM tenant_users WHERE user_id IN (SELECT id FROM users WHERE email = '\''$TEST_EMAIL'\'')"
   db_exec "DELETE FROM users WHERE email = '\''$TEST_EMAIL'\''"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"First User\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"First User\",\"password\":\"Auth9Dev!2026x\"}")
   assert_http_status "$(resp_status "$resp")" 201 "first user created"
   USER_ID=$(echo "$(resp_body "$resp")" | jq -r ".data.id")
 
-  resp2=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Duplicate User\",\"password\":\"SecurePass123!\"}")
+  resp2=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Duplicate User\",\"password\":\"Auth9Dev!2026x\"}")
   assert_http_status "$(resp_status "$resp2")" 409 "duplicate email returns 409"
 
   assert_db "SELECT COUNT(*) FROM users WHERE email = '\''$TEST_EMAIL'\''" "1" "only one user with this email"
@@ -67,7 +67,7 @@ scenario 3 "更新用户信息" '
   db_exec "DELETE FROM tenant_users WHERE user_id IN (SELECT id FROM users WHERE email = '\''$TEST_EMAIL'\'')"
   db_exec "DELETE FROM users WHERE email = '\''$TEST_EMAIL'\''"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Old Name\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Old Name\",\"password\":\"Auth9Dev!2026x\"}")
   assert_http_status "$(resp_status "$resp")" 201 "user created for update test"
   USER_ID=$(echo "$(resp_body "$resp")" | jq -r ".data.id")
 
@@ -99,7 +99,7 @@ scenario 4 "添加用户到租户" '
   db_exec "DELETE FROM tenant_users WHERE user_id IN (SELECT id FROM users WHERE email = '\''$TEST_EMAIL'\'')"
   db_exec "DELETE FROM users WHERE email = '\''$TEST_EMAIL'\''"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Tenant User\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Tenant User\",\"password\":\"Auth9Dev!2026x\"}")
   assert_http_status "$(resp_status "$resp")" 201 "user created for tenant test"
   USER_ID=$(echo "$(resp_body "$resp")" | jq -r ".data.id")
 
@@ -126,7 +126,7 @@ scenario 5 "从租户移除用户" '
   db_exec "DELETE FROM tenant_users WHERE user_id IN (SELECT id FROM users WHERE email = '\''$TEST_EMAIL'\'')"
   db_exec "DELETE FROM users WHERE email = '\''$TEST_EMAIL'\''"
 
-  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Remove User\",\"password\":\"SecurePass123!\"}")
+  resp=$(api_post /api/v1/users "{\"email\":\"$TEST_EMAIL\",\"display_name\":\"Remove User\",\"password\":\"Auth9Dev!2026x\"}")
   assert_http_status "$(resp_status "$resp")" 201 "user created"
   USER_ID=$(echo "$(resp_body "$resp")" | jq -r ".data.id")
 

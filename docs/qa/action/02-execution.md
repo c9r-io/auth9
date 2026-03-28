@@ -302,6 +302,18 @@ ORDER BY a.execution_order ASC;
 
 ---
 
+## 常见误报：Token 类型导致 API 调用失败
+
+> **重要**: Action 的创建和管理 API（`/api/v1/services/{id}/actions`）属于租户管理端点，**需要使用 Tenant Access Token**，不能使用 Identity Token。
+>
+> Identity Token 仅允许访问以下路径：`/api/v1/auth/*`、`/api/v1/users/me*`、`/api/v1/admin/*`、`/api/v1/system/*`、`/api/v1/mfa/*` 等白名单路径。
+>
+> 如果使用 Identity Token（如 `gen-admin-token.sh` 生成的 token）调用 `/api/v1/services/*` 端点，会返回 `403 FORBIDDEN: "Identity token is only allowed for tenant selection and exchange"`。
+
+| 症状 | 原因 | 解决方法 |
+|------|------|----------|
+| 403 "Identity token is only allowed for tenant selection and exchange" | 使用了 Identity Token 调用 Service/Action 管理 API | 使用 Tenant Access Token：`node .claude/skills/tools/gen-test-tokens.js tenant-owner` |
+| Action 创建成功但测试 API 返回 403 | 混用了 Identity Token 和管理 API | 确保测试 Action CRUD 操作时始终使用 Tenant Access Token |
 
 ---
 

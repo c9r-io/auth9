@@ -4,6 +4,7 @@ export default {
     buttons: {
       signIn: "登录",
       signOut: "退出登录",
+      signOutConfirm: "确定要退出登录吗？",
       signUp: "注册",
       createAccount: "创建账户",
       creating: "创建中...",

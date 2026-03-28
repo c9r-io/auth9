@@ -18,7 +18,7 @@ services:
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY must be set in .env — run scripts/init-dev-env.sh}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?JWT_PUBLIC_KEY must be set in .env — run scripts/init-dev-env.sh}
       JWT_PREVIOUS_PUBLIC_KEY: ${JWT_PREVIOUS_PUBLIC_KEY:-}
-      AUTH9_ADMIN_PASSWORD: SecurePass123!  # Fixed password for local development (must meet 12-char policy)
+      AUTH9_ADMIN_PASSWORD: Auth9Dev!2026x  # Fixed password for local development (must meet 12-char policy, not in HIBP)
       DEV_SMTP_HOST: mailpit  # Enable dev email config seeding
       # Password Reset Security
       PASSWORD_RESET_HMAC_KEY: dev-password-reset-hmac-key-change-in-production
@@ -59,7 +59,7 @@ services:
       JWT_PRIVATE_KEY: ${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY must be set in .env — run scripts/init-dev-env.sh}
       JWT_PUBLIC_KEY: ${JWT_PUBLIC_KEY:?JWT_PUBLIC_KEY must be set in .env — run scripts/init-dev-env.sh}
       JWT_PREVIOUS_PUBLIC_KEY: ${JWT_PREVIOUS_PUBLIC_KEY:-}
-      AUTH9_ADMIN_PASSWORD: ${AUTH9_ADMIN_PASSWORD:-SecurePass123!}
+      AUTH9_ADMIN_PASSWORD: ${AUTH9_ADMIN_PASSWORD:-Auth9Dev!2026x}
       # Webhook HMAC secret (required by auth9-core for event signature verification)
       KEYCLOAK_WEBHOOK_SECRET: ${KEYCLOAK_WEBHOOK_SECRET:-dev-webhook-secret-change-in-production}
       IDENTITY_WEBHOOK_SECRET: ${IDENTITY_WEBHOOK_SECRET:-dev-webhook-secret-change-in-production}
@@ -83,8 +83,8 @@ services:
       # Branding - allowed domains for logo/favicon URLs
       BRANDING_ALLOWED_DOMAINS: "cdn.example.com,assets.example.com"
       # Production Security
-      # Disable breached password check in local dev (default admin password triggers HIBP block)
-      HIBP_ENABLED: "false"
+      # Breached password detection via HIBP k-Anonymity API (admin password is not in HIBP)
+      HIBP_ENABLED: "true"
       ENVIRONMENT: production
       JWT_TENANT_ACCESS_ALLOWED_AUDIENCES: auth9-portal
       AUTH9_PORTAL_CLIENT_ID: auth9-portal

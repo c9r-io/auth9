@@ -41,13 +41,41 @@
 
 ## 场景 3：公开注册关闭时 `register` 回跳
 
+> **重要**: `/register` 页面读取的是 **服务级别** branding（通过 `GET /api/v1/public/branding?client_id=auth9-portal`），而非系统级别 branding。
+> 必须通过服务 branding API 关闭注册，而非 `PUT /api/v1/system/branding`。
+
+### 步骤 0：Gate Check
+1. 获取 Portal 所属 service 的 ID：
+   ```sql
+   SELECT s.id FROM services s JOIN clients c ON c.service_id = s.id WHERE c.client_id = 'auth9-portal' LIMIT 1;
+   ```
+2. 确认该 service 有 branding 且 `allow_registration=true`：
+   ```sql
+   SELECT JSON_EXTRACT(config, '$.allow_registration') FROM service_branding WHERE service_id = '<service_id>';
+   ```
+
 ### 测试步骤
-1. 将 `allow_registration` 设置为 `false`
+1. 通过 **服务 branding API** 关闭注册（需要管理员 Token）：
+   ```bash
+   curl -X PUT "http://localhost:8080/api/v1/services/<service_id>/branding" \
+     -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"config":{"primary_color":"#007AFF","secondary_color":"#5856D6","background_color":"#F5F5F7","text_color":"#1D1D1F","allow_registration":false,"email_otp_enabled":false}}'
+   ```
 2. 访问 `http://localhost:3000/register`
 
 ### 预期结果
 - 页面重定向到 `/login`
 - 不展示注册表单
+
+### 测试后恢复
+将 `allow_registration` 恢复为 `true`（避免影响后续场景）。
+
+### 常见误报
+
+| 现象 | 原因 | 解决方案 |
+|------|------|----------|
+| 注册页面仍然显示 | 通过系统 branding API 关闭了注册 | 必须通过服务 branding API 关闭（服务级别覆盖系统级别） |
 
 ---
 

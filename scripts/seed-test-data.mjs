@@ -221,7 +221,7 @@ try {
     const serviceId = uuid();
     sql(`INSERT IGNORE INTO services (id, tenant_id, name, base_url, redirect_uris, logout_uris, status, created_at, updated_at)
          VALUES ('${serviceId}', NULL, 'Auth9 QA Test Service', 'http://localhost:19876',
-                 '["${QA_REDIRECT_URI}"]', '[]', 'active', NOW(), NOW())`);
+                 '["${QA_REDIRECT_URI}"]', '["${QA_REDIRECT_URI}"]', 'active', NOW(), NOW())`);
     sql(`INSERT IGNORE INTO clients (id, service_id, client_id, client_secret_hash, name, public_client, created_at)
          VALUES ('${uuid()}', '${serviceId}', '${QA_CLIENT_ID}', '', 'QA Test Client', 1, NOW())`);
     console.log(`  QA test client seeded: ${QA_CLIENT_ID} (public, PKCE-capable)`);
@@ -230,10 +230,58 @@ try {
   console.error(`  ERROR seeding QA test client: ${e.message}`);
 }
 
-// ── Part 3: Enable Registration for Portal ─────────────────────────────────────
+// ── Part 3: Fix Admin User password_changed_at ──────────────────────────────────
+//
+// Ensure the admin user has password_changed_at set so they are not forced
+// to change password on first login.
+
+try {
+  const adminHasDate = sql(
+    "SELECT password_changed_at FROM users WHERE email = 'admin@auth9.local' LIMIT 1"
+  );
+  if (adminHasDate && adminHasDate !== "NULL") {
+    console.log("  Admin password_changed_at already set, skipping.");
+  } else {
+    sql("UPDATE users SET password_changed_at = NOW(), email_otp_enabled = FALSE WHERE email = 'admin@auth9.local' AND password_changed_at IS NULL");
+    console.log("  Admin user password_changed_at set, email_otp_enabled reset.");
+  }
+} catch (e) {
+  console.error(`  ERROR setting admin password_changed_at: ${e.message}`);
+}
+
+// ── Part 4: Enable Registration (System Level) ──────────────────────────────────
+//
+// Set allow_registration=true on system-level branding so the user creation
+// endpoint allows unauthenticated public registration.
+
+try {
+  const existingSystem = sql(
+    "SELECT JSON_EXTRACT(value, '$.allow_registration') FROM system_settings WHERE category = 'branding' AND setting_key = 'config' LIMIT 1"
+  );
+  if (existingSystem === "true") {
+    console.log("  System branding allow_registration already true, skipping.");
+  } else {
+    const systemBranding = JSON.stringify({
+      primary_color: "#007AFF",
+      secondary_color: "#5856D6",
+      background_color: "#F5F5F7",
+      text_color: "#1D1D1F",
+      allow_registration: true,
+      email_otp_enabled: false,
+    });
+    sql(`INSERT INTO system_settings (category, setting_key, value, encrypted, description, created_at, updated_at)
+         VALUES ('branding', 'config', '${escapeSQL(systemBranding)}', FALSE, 'Login page branding configuration', NOW(), NOW())
+         ON DUPLICATE KEY UPDATE value = JSON_SET(value, '$.allow_registration', true), updated_at = NOW()`);
+    console.log("  System branding allow_registration=true set.");
+  }
+} catch (e) {
+  console.error(`  ERROR setting system branding: ${e.message}`);
+}
+
+// ── Part 5: Enable Registration for Portal (Service Level) ──────────────────────
 //
 // Set allow_registration=true on the Auth9 Admin Portal service branding
-// so /register is accessible in the QA environment.
+// so /register page renders correctly.
 
 try {
   const portalServiceId = sql(

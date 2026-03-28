@@ -273,6 +273,11 @@ export default function Dashboard() {
             </Link>
             <Link
               to="/logout"
+              onClick={(e) => {
+                if (!window.confirm(t("common.buttons.signOutConfirm"))) {
+                  e.preventDefault();
+                }
+              }}
               className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-secondary)] transition-colors"
               title={t("common.buttons.signOut")}
               aria-label={t("common.buttons.signOut")}

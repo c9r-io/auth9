@@ -21,9 +21,29 @@
 
 ## 场景 1：MFA 首次配置（TOTP 注册）
 
+### 前置条件（防止误报）
+
+> **MFA 测试用户**: 使用 `./scripts/reset-docker.sh` 种子化的 MFA 测试用户 `mfa-user@auth9.local`，该用户已预配置为"MFA 已启用但 TOTP 未配置"状态，适合直接测试首次 TOTP 注册流程。
+>
+> **启用 MFA 的 API 需要 Tenant Access Token**: `POST /api/v1/users/{id}/mfa` 是租户管理端点，不接受 Identity Token。如果使用 Identity Token 调用会返回 `403: "Identity token is only allowed for tenant selection and exchange"`。必须使用 Tenant Access Token：
+> ```bash
+> # 生成 Tenant Access Token
+> TENANT_TOKEN=$(node .claude/skills/tools/gen-test-tokens.js tenant-owner | grep 'Bearer' | awk '{print $2}')
+> # 使用 Tenant Access Token 启用 MFA
+> curl -X POST http://localhost:8080/api/v1/users/{id}/mfa \
+>   -H "Authorization: Bearer $TENANT_TOKEN" \
+>   -H "Content-Type: application/json"
+> ```
+>
+> | 症状 | 原因 | 解决方法 |
+> |------|------|----------|
+> | 无 "MFA enabled but TOTP not configured" 状态的用户 | 环境未种子化 MFA 测试用户 | 运行 `./scripts/reset-docker.sh`，使用 `mfa-user@auth9.local` |
+> | 403 "Identity token is only allowed for tenant selection and exchange" | 使用 Identity Token 调用 MFA 启用 API | 改用 Tenant Access Token（见上方命令） |
+
 ### 初始状态
-- 管理员已通过 Portal 为用户启用 MFA（`POST /api/v1/users/{id}/mfa`）
+- 管理员已通过 Portal 为用户启用 MFA（`POST /api/v1/users/{id}/mfa`）——**需使用 Tenant Access Token**
 - 用户尚未完成 TOTP 注册（required action: `CONFIGURE_TOTP`）
+- **推荐使用种子化的 MFA 测试用户 `mfa-user@auth9.local`**（运行 `./scripts/reset-docker.sh` 后自动创建）
 - **用户必须能够成功完成密码登录**（依赖 `auth9-core init` 已正确种子化 admin 密码凭据）
 
 ### 目的

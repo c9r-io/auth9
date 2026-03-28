@@ -275,18 +275,27 @@ TOKEN=$(.claude/skills/tools/gen-admin-token.sh)
 TENANT_ID=$(curl -s http://localhost:8080/api/v1/tenants \
   -H "Authorization: Bearer $TOKEN" | jq -r '.data[0].id')
 
-# 获取 service 的 client credentials
-SERVICE_INFO=$(curl -s http://localhost:8080/api/v1/tenants/$TENANT_ID/services \
-  -H "Authorization: Bearer $TOKEN" | jq '.data[0].clients[0]')
-SC_CLIENT_ID=$(echo $SERVICE_INFO | jq -r '.client_id')
-SC_CLIENT_SECRET=$(echo $SERVICE_INFO | jq -r '.client_secret')
+# 使用种子化的 M2M 测试客户端（由 reset-docker.sh 创建）
+# 正确凭据:
+SC_CLIENT_ID="auth9-m2m-test"
+SC_CLIENT_SECRET="m2m-test-secret-do-not-use-in-production" # pragma: allowlist secret
+
+# 获取 M2M 测试 Service 的 identifier
 SERVICE_IDENTIFIER=$(curl -s http://localhost:8080/api/v1/tenants/$TENANT_ID/services \
-  -H "Authorization: Bearer $TOKEN" | jq -r '.data[0].identifier')
+  -H "Authorization: Bearer $TOKEN" | jq -r '.data[] | select(.clients[]?.client_id == "auth9-m2m-test") | .identifier')
+
+# 如果上述查询为空，可使用任意租户 Service 的 identifier
+if [ -z "$SERVICE_IDENTIFIER" ]; then
+  SERVICE_IDENTIFIER=$(curl -s http://localhost:8080/api/v1/tenants/$TENANT_ID/services \
+    -H "Authorization: Bearer $TOKEN" | jq -r '.data[0].identifier')
+fi
 ```
+
+> **注意**: 不要使用 `client_id: "test"` / `client_secret: "test"` 等占位凭据——环境中不存在这些客户端。正确的 M2M 测试客户端为 `auth9-m2m-test`（由 `auth9-core` 迁移自动种子化）。
 
 ### 初始状态
 - Auth9 Core 运行中，Redis 正常
-- 拥有 Service 的 client_id 和 client_secret
+- 拥有 Service 的 client_id 和 client_secret（使用种子化的 M2M 测试客户端）
 
 ### 目的
 验证通过 client_credentials 流获取的 Service client token（`token_type = ServiceClient`）不受 audience 校验逻辑影响，正常访问 API
@@ -306,6 +315,13 @@ SC_TOKEN=$(curl -s -X POST http://localhost:8080/api/v1/auth/client-credentials 
 echo $SC_TOKEN | head -c 20
 # 预期: 输出 JWT 前缀
 ```
+
+> **常见误报**
+>
+> | 症状 | 原因 | 解决方法 |
+> |------|------|----------|
+> | client_credentials 返回 401 "Invalid client credentials" | 使用了错误的 client_id/secret（如 `"test"`/`"test"`） | 使用正确的 M2M 测试凭据：`auth9-m2m-test` / `m2m-test-secret-do-not-use-in-production` |
+> | client_credentials 返回 404 | M2M Service 未种子化 | 运行 `./scripts/reset-docker.sh` 重新初始化环境 |
 
 2. 使用 service client token 访问受保护端点：
 ```bash
