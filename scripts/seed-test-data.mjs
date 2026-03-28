@@ -6,6 +6,7 @@
  *
  * 1. MFA test user (mfa-user@auth9.local) with deterministic TOTP + recovery codes
  * 2. PKCE test client (auth9-qa-test) — public client for QA OIDC testing
+ * 3. Registration enabled for portal — allow_registration=true on portal branding
  */
 
 import { execSync } from "node:child_process";
@@ -227,5 +228,41 @@ try {
   }
 } catch (e) {
   console.error(`  ERROR seeding QA test client: ${e.message}`);
-  process.exit(1);
+}
+
+// ── Part 3: Enable Registration for Portal ─────────────────────────────────────
+//
+// Set allow_registration=true on the Auth9 Admin Portal service branding
+// so /register is accessible in the QA environment.
+
+try {
+  const portalServiceId = sql(
+    "SELECT s.id FROM services s JOIN clients c ON c.service_id = s.id WHERE c.client_id = 'auth9-portal' LIMIT 1"
+  );
+  if (!portalServiceId) {
+    console.log("  Portal service not found, skipping registration toggle.");
+  } else {
+    const existingBranding = sql(
+      `SELECT JSON_EXTRACT(config, '$.allow_registration') FROM service_branding WHERE service_id = '${portalServiceId}' LIMIT 1`
+    );
+    if (existingBranding === "true") {
+      console.log("  Registration already enabled for portal, skipping.");
+    } else {
+      // Upsert branding config — must include all required fields (BrandingConfig struct)
+      const brandingConfig = JSON.stringify({
+        primary_color: "#007AFF",
+        secondary_color: "#5856D6",
+        background_color: "#F5F5F7",
+        text_color: "#1D1D1F",
+        allow_registration: true,
+        email_otp_enabled: false,
+      });
+      sql(`INSERT INTO service_branding (id, service_id, config, created_at, updated_at)
+           VALUES ('${uuid()}', '${portalServiceId}', '${escapeSQL(brandingConfig)}', NOW(), NOW())
+           ON DUPLICATE KEY UPDATE config = JSON_SET(config, '$.allow_registration', true), updated_at = NOW()`);
+      console.log("  Registration enabled for portal (allow_registration=true).");
+    }
+  }
+} catch (e) {
+  console.error(`  ERROR enabling registration: ${e.message}`);
 }
