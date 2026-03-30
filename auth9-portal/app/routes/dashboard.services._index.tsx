@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Form, useActionData, useLoaderData, useNavigation, useSubmit } from "react-router";
-import { PlusIcon, DotsHorizontalIcon, Pencil2Icon, TrashIcon, CopyIcon } from "@radix-ui/react-icons";
+import { PlusIcon, DotsHorizontalIcon, Pencil2Icon, TrashIcon, CopyIcon, GlobeIcon } from "@radix-ui/react-icons";
 import { useEffect, useState } from "react";
 import { useConfirm } from "~/hooks/useConfirm";
 import { Card, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
@@ -270,8 +270,14 @@ export default function ServicesPage() {
               </div>
             ))}
             {data.data.length === 0 && (
-              <div className="col-span-full rounded-xl border border-[var(--glass-border-subtle)] bg-[var(--glass-bg)] px-4 py-6 text-center text-[var(--text-secondary)]">
-                {t("services.noServices")}
+              <div className="col-span-full text-center py-12">
+                <GlobeIcon className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-[17px] font-semibold text-[var(--text-primary)] mb-2">{t("services.emptyTitle")}</h3>
+                <p className="text-[13px] text-[var(--text-secondary)] mb-4">{t("services.emptyDescription")}</p>
+                <Button onClick={() => setIsCreateOpen(true)}>
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  {t("services.registerFirst")}
+                </Button>
               </div>
             )}
           </div>

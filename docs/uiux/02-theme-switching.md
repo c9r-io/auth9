@@ -64,6 +64,8 @@
 - 刷新页面后保持用户选择的主题
 - 新标签页打开时继承主题设置
 
+> **主题持久化实现说明**: 主题持久化通过 `public/theme-init.js`（阻塞脚本）和 `localStorage` key `auth9-theme` 实现。如果主题在刷新后看似重置，请检查：(1) `localStorage` 未被浏览器设置清除，(2) `theme-init.js` 在 React hydration 之前加载。
+
 ### 验证工具
 ```javascript
 // 检查当前主题

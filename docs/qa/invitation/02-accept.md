@@ -105,6 +105,8 @@ WHERE tu.user_id = '{user_id}' AND tu.tenant_id = '{tenant_id}';
 - 显示错误：「邀请已过期」
 - 用户未被添加到租户
 
+> **故障排除**: 如果过期邀请显示「无效邀请」而非「邀请已过期」，请验证 API 响应中包含 `status: 'expired'`（而非 `status: 'invalid'`）。检查邀请 token 是否为空或格式错误，空/畸形 token 会触发 invalid 路径而非 expired 路径。
+
 ### 预期数据状态
 ```sql
 SELECT status FROM invitations WHERE id = '{invitation_id}';

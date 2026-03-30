@@ -41,9 +41,11 @@ Auth9 资源访问模型：
 4. 检查是否能访问或修改
 
 ### 预期安全行为
-- 返回 403 或 404
+- 返回 **404 Not Found**（IDOR 防护：策略层统一返回 404，防止泄露资源或租户存在性）
 - 不泄露资源是否存在
 - 不执行任何操作
+
+> **IDOR 防护说明**: 跨租户 IDOR 访问统一返回 404 而非 403。返回 403 会泄露"该资源存在但属于其他租户"的信息，攻击者可通过遍历 UUID 枚举有效资源。
 
 ### 验证方法
 ```bash
@@ -60,19 +62,19 @@ SERVICE_B_ID="..."
 # 读取
 curl -H "Authorization: Bearer $TOKEN_A" \
   http://localhost:8080/api/v1/services/$SERVICE_B_ID
-# 预期: 403 或 404
+# 预期: 404 Not Found（IDOR 防护）
 
 # 修改
 curl -X PUT -H "Authorization: Bearer $TOKEN_A" \
   -H "Content-Type: application/json" \
   http://localhost:8080/api/v1/services/$SERVICE_B_ID \
   -d '{"name":"hacked"}'
-# 预期: 403 或 404
+# 预期: 404 Not Found（IDOR 防护）
 
 # 删除
 curl -X DELETE -H "Authorization: Bearer $TOKEN_A" \
   http://localhost:8080/api/v1/services/$SERVICE_B_ID
-# 预期: 403 或 404
+# 预期: 404 Not Found（IDOR 防护）
 
 # 验证资源未被修改
 SELECT * FROM services WHERE id = '$SERVICE_B_ID';
@@ -84,12 +86,12 @@ SELECT * FROM services WHERE id = '$SERVICE_B_ID';
 |------|------|------|
 | 跨租户访问返回 200 | 使用了 Platform Admin 用户的 Token | 换用非 Platform Admin 的普通租户用户 |
 | 所有请求返回 401 | Token 过期或格式错误 | 重新生成 Token |
-| 返回 404 而非 403 | 目标资源不存在 | 先确认 SERVICE_B_ID 存在于数据库中 |
+| 返回 404 | **正确行为（IDOR 防护）**：跨租户访问统一返回 404，防止租户/资源 ID 枚举 | 确认 SERVICE_B_ID 确实存在于数据库中，且属于另一个租户。404 即为预期结果 |
 
 ### 修复建议
 - 每次访问验证资源归属
 - 使用不可预测的 ID (UUID v4)
-- 404 和 403 返回相同响应 (防止枚举)
+- 跨租户访问统一返回 404 (防止枚举) -- 已实现
 - 记录可疑访问模式
 
 ---

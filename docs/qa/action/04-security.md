@@ -226,7 +226,7 @@ ORDER BY executed_at DESC LIMIT 1;
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | V8 沙箱隔离 - 文件系统访问阻止 | ☐ | | | |
-| 2 | V8 沙箱隔离 - Node.js API 阻止 | ☐ | | | |
-| 3 | V8 沙箱隔离 - 进程访问阻止 | ☐ | | | |
-| 4 | 资源耗尽攻击 - 无限循环 | ☐ | | | |
+| 1 | V8 沙箱隔离 - 文件系统访问阻止 | ✅ PASS | 2026-03-29 | | Action执行成功(success=1)，Deno.readTextFile被阻止 |
+| 2 | V8 沙箱隔离 - Node.js API 阻止 | ✅ PASS | 2026-03-29 | | Action执行成功(success=1)，require()被阻止 |
+| 3 | V8 沙箱隔离 - 进程访问阻止 | ✅ PASS | 2026-03-29 | | Action执行成功(success=1)，process.env被阻止 |
+| 4 | 资源耗尽攻击 - 无限循环 | ✅ PASS | 2026-03-29 | | strict_mode=1时登录被阻断，Action在~1秒后超时 |

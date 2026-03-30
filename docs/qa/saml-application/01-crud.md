@@ -29,6 +29,16 @@ Auth9 作为 SAML Identity Provider，可向外部 Service Provider 签发 SAML 
 
 ---
 
+## JWT Key Synchronization
+
+> **JWT Token Generation**: Always use `node .claude/skills/tools/gen_token.js` which reads the private key from `.env` (matching the Docker container). Other scripts may use hardcoded key paths that don't match.
+
+| 症状 | 原因 | 修复方法 |
+|------|------|----------|
+| JWT 签名验证失败 (401) | 使用了 hardcoded key path 的脚本，与 Docker 容器中的 key 不一致 | 改用 `node .claude/skills/tools/gen_token.js`，它从 `.env` 读取私钥 |
+
+---
+
 ## 数据库表结构参考
 
 ```sql

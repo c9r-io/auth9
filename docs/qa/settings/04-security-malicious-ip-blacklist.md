@@ -44,6 +44,8 @@
 
 ## 场景 1：安全设置入口可见性与黑名单列表加载
 
+> **Playwright 无头浏览器注意**: Playwright headless browser 可能无法在页面重新加载时维持 session cookies。对于 UI 场景，请使用 headed 浏览器（`--headed` 标志）或单独验证纯 API 场景（#2-#5）。
+
 ### 初始状态
 - 平台管理员已登录
 - 当前环境可访问 Portal
@@ -217,6 +219,8 @@ WHERE ip_address = '203.0.113.10';
 ---
 
 ## 通用场景：认证状态检查
+
+> **Playwright 无头浏览器注意**: Playwright headless browser 可能无法在页面重新加载时维持 session cookies。对于 UI 场景，请使用 headed 浏览器（`--headed` 标志）或单独验证纯 API 场景（#2-#5）。
 
 ### 初始状态
 - 用户已登录管理后台

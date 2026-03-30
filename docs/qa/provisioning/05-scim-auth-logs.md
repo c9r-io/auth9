@@ -18,6 +18,16 @@ SCIM 端点使用独立的鉴权中间件（`scim_auth_middleware`），与 JWT 
 
 ---
 
+## JWT Key Synchronization
+
+> **JWT Token Generation**: Always use `node .claude/skills/tools/gen_token.js` which reads the private key from `.env` (matching the Docker container). Other scripts may use hardcoded key paths that don't match.
+
+| 症状 | 原因 | 修复方法 |
+|------|------|----------|
+| JWT 签名验证失败 (401) | 使用了 hardcoded key path 的脚本，与 Docker 容器中的 key 不一致 | 改用 `node .claude/skills/tools/gen_token.js`，它从 `.env` 读取私钥 |
+
+---
+
 ## 场景 1：无 Authorization Header 访问 SCIM 端点
 
 ### 初始状态
@@ -76,7 +86,7 @@ curl -s "http://localhost:8080/api/v1/scim/v2/Users" \
   -w "\nHTTP: %{http_code}"
 
 # JWT token（不是 SCIM token）
-TOKEN=$(.claude/skills/tools/gen-admin-token.sh)
+TOKEN=$(node .claude/skills/tools/gen_token.js)
 curl -s "http://localhost:8080/api/v1/scim/v2/Users" \
   -H "Authorization: Bearer $TOKEN" \
   -w "\nHTTP: %{http_code}"
@@ -288,7 +298,7 @@ WHERE connector_id = '{connector_id}';
 
 | 症状 | 原因 | 修复方法 |
 |------|------|----------|
-| `FORBIDDEN: Identity token is only allowed for tenant selection and exchange` | 使用了 Identity Token（`gen-admin-token.sh`）访问管理 API | 使用 `node .claude/skills/tools/gen-test-tokens.js tenant-owner --tenant-id $TENANT_ID` 生成 Tenant Access Token |
+| `FORBIDDEN: Identity token is only allowed for tenant selection and exchange` | 使用了 Identity Token（旧版 `gen-admin-token.sh`）访问管理 API | 使用 `node .claude/skills/tools/gen_token.js` 生成 Token（从 `.env` 读取私钥，与 Docker 容器匹配） |
 | 创建 SCIM Token 返回 `FORBIDDEN` | 同上，创建 SCIM Token 的 API 也需要 Tenant Access Token | 同上 |
 | SCIM Token 验证失败（手动插入 DB） | SCIM Token 通过 SHA-256 hash 验证，手动插入的 hash 不匹配 | 必须通过管理 API 创建 SCIM Token，API 返回原始 token 字符串 |
 | 场景 4 无法获取有效 SCIM Token | 未通过管理 API 创建 token | 先用 Tenant Owner Token 调用 `POST .../scim/tokens` 创建，保存返回的 `.token` 值 |

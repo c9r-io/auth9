@@ -154,10 +154,21 @@ curl -s -X PUT http://localhost:8080/api/v1/tenants/$TENANT_ID/password-policy \
   -H "Content-Type: application/json" \
   -d '{"breach_check_mode": "warn", "min_breach_count": 1}'
 # 预期: HTTP 200
+
+# [必须] 验证 breach_check_mode 确实已保存为 "warn"
+curl -s http://localhost:8080/api/v1/tenants/$TENANT_ID/password-policy \
+  -H "Authorization: Bearer $TOKEN" | jq '.breach_check_mode'
+# 预期: "warn"（如果仍为 "block"，说明 PUT 未生效，需排查）
 ```
 
+> **排查提示**: 如果注册时返回 422 而不是预期的 201（warn 模式应放行），请验证密码策略是否确实保存：
+> ```sql
+> SELECT password_policy FROM tenants WHERE id='<tenant_id>';
+> ```
+> 检查返回的 JSON 中 `breach_check_mode` 是否为 `warn`。如果仍为 `block`，说明 PUT 请求未成功更新策略。
+
 ### 初始状态
-- 租户 PasswordPolicy `breach_check_mode = "warn"`
+- 租户 PasswordPolicy `breach_check_mode = "warn"`（已通过 Gate Check 验证）
 - HIBP API 可达
 
 ### 目的
@@ -204,6 +215,11 @@ curl -s -w "\n%{http_code}" -X POST http://localhost:8080/api/v1/users \
 }
 ```
 - 步骤 2：HTTP **201**（或 200），用户创建成功。响应体**不包含** `password_warning` 字段
+
+> **`password_warning` 字段行为说明**:
+> - `password_warning` 仅在 `breach_check_mode=warn` **且** HIBP 返回的 `breach_count >= min_breach_count` 时才包含在响应中。
+> - 该字段使用 `#[serde(skip_serializing_if = "Option::is_none")]`，因此当不适用时，字段在 JSON 中**完全不存在**（不是 `null`，而是缺席）。
+> - 如果模式为 `block` 或 `disabled`，或者泄露次数低于阈值，响应中不会出现此字段。
 
 ### 预期数据状态
 ```sql
@@ -352,9 +368,16 @@ curl -s http://localhost:8080/api/v1/hosted-login/pending-actions \
   -H "Authorization: Bearer $LOGIN_TOKEN" | jq .
 ```
 
+> **注意**: 异步泄露检查在后台任务中运行，`update_password` action 可能需要几秒钟才会出现。如果首次查询未发现，请等待 5 秒后重试。
+>
+> **排查提示**: 如果等待后仍未出现 `update_password` action，检查 auth9-core 日志中是否有 `Failed to create breach password update action` 警告。该日志表示异步任务执行失败（可能原因：HIBP API 不可达、数据库写入失败等）。
+> ```bash
+> docker logs auth9-core 2>&1 | grep -i "breach\|update_password" | tail -20
+> ```
+
 ### 预期结果
 - 步骤 2：HTTP **200**，登录成功（登录本身不被 breach check 阻止）
-- 步骤 3：pending actions 列表中出现 `update_password` 类型的 action：
+- 步骤 3：pending actions 列表中出现 `update_password` 类型的 action（注意：由于异步执行，可能需要等待数秒）：
 ```json
 [
   {

@@ -79,6 +79,8 @@ SELECT client_id FROM clients c JOIN services s ON s.id = c.service_id WHERE s.n
 ### 预期结果
 - 显示错误：`"A resource with this identifier already exists."`（英文错误消息）
 
+> **i18n 注意**: 错误消息语言取决于用户的 locale 设置。中文 locale 返回「具有相同标识的资源已存在」，英文 locale 返回 "A resource with this identifier already exists"。两者均为正确行为，通过 i18n 映射 `conflict` 错误码实现。
+
 ### 预期数据状态
 ```sql
 SELECT COUNT(*) FROM services WHERE name = 'My Web App';

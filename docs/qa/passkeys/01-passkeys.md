@@ -7,6 +7,12 @@
 
 ---
 
+## 前置条件
+
+> **确保用户凭据正确配置**: 确保用户凭据在身份引擎中正确设置。运行 `./scripts/reset-docker.sh` 重置环境。如果 `admin@auth9.local` 的密码登录失败，请验证种子数据中的密码是否正确。
+
+---
+
 ## 背景说明
 
 Passkeys 使用原生 WebAuthn 实现。注册流程完全在 Auth9 内完成：前端调用浏览器 WebAuthn API，后端使用 `webauthn-rs` 处理挑战和验证，凭据存储在 TiDB `webauthn_credentials` 表中。

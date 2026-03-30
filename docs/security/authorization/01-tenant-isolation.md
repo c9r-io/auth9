@@ -38,11 +38,11 @@ Auth9 是多租户系统，核心隔离要求：
 
 | 现象 | 原因 | 解决方法 |
 |------|------|----------|
-| 所有跨租户请求返回 200 而非 403 | 使用了平台管理员账号（如 `admin@auth9.local`） | 创建非平台管理员的测试用户，用该用户的 token 测试 |
+| 所有跨租户请求返回 200 而非 404 | 使用了平台管理员账号（如 `admin@auth9.local`） | 创建非平台管理员的测试用户，用该用户的 token 测试 |
 | Token 邮箱非管理员，但仍绕过隔离 | Token 的 `sub`（user_id）复用了管理员用户的 ID，DB 查询发现该 user_id 在 auth9-platform 租户中有 admin 角色 | **Token 的 user_id 也不能使用管理员用户的 ID**。使用随机 UUID 或非管理员用户的真实 ID |
 | Token 无 tenant_id 却能访问租户数据 | Identity Token 被平台管理员绕过识别 | 确认测试账号不在 `PLATFORM_ADMIN_EMAILS` 列表中 |
 | 租户管理员能执行平台操作 | 该用户同时是平台管理员 | 检查 `PLATFORM_ADMIN_EMAILS` 配置，确保测试用户不在其中 |
-| 跨租户请求返回 404 而非预期的 403 | **设计行为**：系统故意返回 404 防止泄露租户存在性（IDOR 防护） | 这是正确行为，不是 bug。验证返回 404 即可 |
+| 跨租户请求返回 404 | **设计行为**：系统故意返回 404 防止泄露租户存在性（IDOR 防护） | 这是正确行为，不是 bug。所有跨租户访问均应返回 404 |
 | **`gen-test-tokens.js tenant-owner` 生成的 token 可访问系统设置** | **`tenant-owner` 类型硬编码使用 `admin@auth9.local` 邮箱**（平台管理员），返回 200 是正确行为 | **测试非管理员场景时，使用 `tenant-access` 类型**（邮箱为 `regular-user@example.com`），而非 `tenant-owner` |
 
 ---
@@ -190,7 +190,9 @@ WHERE user_id NOT IN (
 ### 预期安全行为
 - 所有资源访问检查租户归属
 - 关联操作验证双方租户一致性
-- 返回 403 或 404
+- 返回 **404 Not Found**（IDOR 防护：策略层统一返回 404，防止泄露资源或租户存在性）
+
+> **IDOR 防护说明**: 跨租户访问统一返回 404 而非 403。返回 403 会泄露"该资源存在但属于其他租户"的信息，攻击者可通过遍历 UUID 枚举有效资源。
 
 ### 验证方法
 ```bash
@@ -205,7 +207,7 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 -e "INSERT INTO services (id, tenant_id
 # 访问其他租户的服务
 curl -s -w "\nHTTP: %{http_code}" -H "Authorization: Bearer $TOKEN_A" \
   http://localhost:8080/api/v1/services/99999999-9999-9999-9999-999999999999
-# 预期: 403 Forbidden
+# 预期: 404 Not Found（IDOR 防护）
 
 # 尝试为其他租户用户分配角色
 curl -X POST -H "Authorization: Bearer $TOKEN_A" \
@@ -225,7 +227,7 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 -e "DELETE FROM services WHERE id = '99
 
 | 症状 | 原因 | 解决 |
 |------|------|------|
-| 跨租户请求返回 200 而非 403 | 使用了 `tenant-owner` token 类型（email 为 `admin@auth9.local`，是平台管理员） | 使用 `tenant-access` token 类型（email 为 `regular-user@example.com`） |
+| 跨租户请求返回 200 而非 404 | 使用了 `tenant-owner` token 类型（email 为 `admin@auth9.local`，是平台管理员） | 使用 `tenant-access` token 类型（email 为 `regular-user@example.com`） |
 | Token 的 user_id 是管理员 ID | DB 查询发现该 user_id 在 auth9-platform 租户有 admin 角色，触发平台管理员绕过 | Token 的 user_id 也不能使用管理员用户的 ID |
 
 ### 修复建议

@@ -186,6 +186,12 @@ WHERE li.user_id = '{user_id}';
 
 ---
 
+## 故障排除
+
+> **HIBP 密码泄露检查阻止管理员登录**: 如果管理员登录被 HIBP breach check（密码在泄露数据库中）阻止，可选择以下方式解决：(a) 将管理员密码改为未泄露的密码，或 (b) 临时将租户设置 `breach_check_mode=disabled`，或 (c) 运行 `./scripts/reset-docker.sh` 重置环境为干净的种子数据。
+
+---
+
 ## 检查清单
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |

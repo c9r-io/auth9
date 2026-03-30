@@ -60,7 +60,7 @@ echo $TOKEN | head -c 20
 
 ## 场景 1：Tenants CRUD 全流程
 
-> **⚠️ 重要**: Tenant Access Token 具有租户作用域。创建新租户后，GET/PUT/DELETE 该新租户时，如果 token 是为其他租户签发的，即使是平台管理员也会返回 403（`"Cannot access another tenant with a tenant-scoped token"`）。这是安全设计：TenantAccess token 始终限于签发时的租户上下文。测试 GET 新租户时，需使用场景中同一步骤创建+获取的方式（见步骤 2），或使用 Identity Token 代替。
+> **⚠️ 重要**: Tenant Access Token 具有租户作用域。创建新租户后，GET/PUT/DELETE 该新租户时，如果 token 是为其他租户签发的，即使是平台管理员也会返回 404（IDOR 防护：跨租户访问统一返回 404 而非 403，防止租户 ID 枚举）。这是安全设计：TenantAccess token 始终限于签发时的租户上下文。测试 GET 新租户时，需使用场景中同一步骤创建+获取的方式（见步骤 2），或使用 Identity Token 代替。
 
 ### 步骤
 

@@ -1103,6 +1103,9 @@ export default {
     deleteDescriptionLead: "Are you sure you want to delete",
     deleteDescriptionTail: "? This action cannot be undone.",
     noServices: "No services found",
+    emptyTitle: "No services registered",
+    emptyDescription: "Register your first OIDC client application to get started.",
+    registerFirst: "Register your first service",
     initialSecretTitle: "Initial Client Secret Generated", // pragma: allowlist secret
     initialSecretDescription: "Please copy this value. It will not be shown again.", // pragma: allowlist secret
     close: "Close",

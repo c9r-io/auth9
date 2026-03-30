@@ -3,7 +3,7 @@
 use crate::error::{AppError, Result};
 use crate::http_support::PaginatedResponse;
 use crate::middleware::auth::AuthUser;
-use crate::policy::{enforce, PolicyAction, PolicyInput, ResourceScope};
+use crate::policy::{enforce_with_state, PolicyAction, PolicyInput, ResourceScope};
 use crate::repository::audit::AuditLogQuery;
 use crate::repository::AuditRepository;
 use crate::state::HasServices;
@@ -27,14 +27,15 @@ pub async fn list<S: HasServices>(
     auth: AuthUser,
     Query(query): Query<AuditLogQuery>,
 ) -> Result<impl IntoResponse> {
-    enforce(
-        state.config(),
+    enforce_with_state(
+        &state,
         &auth,
         &PolicyInput {
             action: PolicyAction::AuditRead,
             scope: ResourceScope::Global,
         },
-    )?;
+    )
+    .await?;
 
     // Validate per_page and page values
     if let Some(limit) = query.limit {

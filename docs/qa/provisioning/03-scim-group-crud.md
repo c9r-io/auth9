@@ -41,6 +41,16 @@ SCIM Group 资源映射到 Auth9 的 Role 体系。IdP 推送的 Group 通过 `s
 
 ---
 
+## JWT Key Synchronization
+
+> **JWT Token Generation**: Always use `node .claude/skills/tools/gen_token.js` which reads the private key from `.env` (matching the Docker container). Other scripts may use hardcoded key paths that don't match.
+
+| 症状 | 原因 | 修复方法 |
+|------|------|----------|
+| JWT 签名验证失败 (401) | 使用了 hardcoded key path 的脚本，与 Docker 容器中的 key 不一致 | 改用 `node .claude/skills/tools/gen_token.js`，它从 `.env` 读取私钥 |
+
+---
+
 ## 场景 1：SCIM 创建 Group
 
 ### 初始状态
@@ -204,7 +214,7 @@ echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq '{token_type, tenant_id}'
 # TOKEN=$(node .claude/skills/tools/gen-test-tokens.js service-client --tenant-id $TENANT_ID)
 ```
 
-> 管理 API (`/api/v1/tenants/*`) 要求 Tenant Access Token 或 Service Client Token。Identity Token（如 `gen-admin-token.sh` 生成的）不能访问此路径，会返回 `FORBIDDEN` 错误。
+> 管理 API (`/api/v1/tenants/*`) 要求 Tenant Access Token 或 Service Client Token。Identity Token（如旧版 `gen-admin-token.sh` 生成的）不能访问此路径，会返回 `FORBIDDEN` 错误。请使用 `node .claude/skills/tools/gen_token.js` 生成正确的 Token。
 
 ### 目的
 验证管理员可以通过 JWT 保护的 API 查看和手动调整 SCIM Group → Auth9 Role 映射

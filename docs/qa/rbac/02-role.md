@@ -23,6 +23,12 @@
 
 ## 前置条件
 
+> **JWT Token Generation**: Always use `node .claude/skills/tools/gen_token.js` which reads the private key from `.env` (matching the Docker container). Other scripts may use hardcoded key paths that don't match.
+
+| 症状 | 原因 | 修复方法 |
+|------|------|----------|
+| JWT 签名验证失败 (401) | 使用了 hardcoded key path 的脚本，与 Docker 容器中的 key 不一致 | 改用 `node .claude/skills/tools/gen_token.js`，它从 `.env` 读取私钥 |
+
 > **MFA 对 UI 测试的影响**：所有默认种子用户均已启用 MFA：
 > - `admin@auth9.local` 要求 WebAuthn（硬件密钥）
 > - `mfa-user@auth9.local` 要求 TOTP

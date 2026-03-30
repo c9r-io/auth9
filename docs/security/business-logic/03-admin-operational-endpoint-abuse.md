@@ -160,13 +160,15 @@ echo $NORMAL_TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq '{token_type, tena
 2. 查询 `tenant_services` 是否发生写入。
 
 ### 预期安全行为
-- 返回 `403 Forbidden`（消息: "Cannot access another tenant"）
+- 返回 `404 Not Found`（IDOR 防护：策略层统一返回 404，防止泄露目标租户存在性）
 - `tenant_services` 不发生新增/更新
+
+> **IDOR 防护说明**: 跨租户访问返回 404 而非 403 是设计行为。返回 403 会泄露"该租户 ID 存在"的信息，攻击者可通过遍历 UUID 枚举有效租户。
 
 ### 安全防护层
 本端点已实现以下防护：
-1. **Policy layer**: `enforce(TenantServiceWrite, Tenant(tenant_id))` → `require_tenant_admin_or_permission()` 校验 `token_tenant_id == tenant_id`
-2. 跨租户请求在 policy 层即被拒绝，不会到达数据库操作
+1. **Policy layer**: `enforce(TenantServiceWrite, Tenant(tenant_id))` → `require_tenant_admin_or_permission()` 检测 `token_tenant_id != tenant_id` 时返回 404
+2. 跨租户请求在 policy 层即被拒绝（返回 404），不会到达数据库操作
 
 ### 验证方法
 ```bash
@@ -182,7 +184,7 @@ curl -i -X POST "http://localhost:8080/api/v1/tenants/$OTHER_TENANT_ID/services"
   -H "Content-Type: application/json" \
   -d '{"service_id":"'$GLOBAL_SERVICE_ID'","enabled":false}'
 
-# 预期: 403 "Cannot access another tenant"
+# 预期: 404 Not Found（IDOR 防护）
 
 # 3. 验证数据库未被修改
 mysql -h 127.0.0.1 -P 4000 -u root -D auth9 -e "
@@ -196,7 +198,7 @@ WHERE tenant_id='$OTHER_TENANT_ID' AND service_id='$GLOBAL_SERVICE_ID';
 
 | 现象 | 原因 | 解决 |
 |------|------|------|
-| 返回 200 而非 403 | Token 的 `tenant_id` 与 `OTHER_TENANT_ID` 相同（实际测试的是同租户操作） | 确保 token 属于不同租户 |
+| 返回 200 而非 404 | Token 的 `tenant_id` 与 `OTHER_TENANT_ID` 相同（实际测试的是同租户操作） | 确保 token 属于不同租户 |
 | 返回 200 且数据变更 | Token 持有者是目标租户的 admin 或拥有 `tenant_service:write` 权限 | 使用 member 角色且无特殊权限的 token |
 
 ---
@@ -224,12 +226,14 @@ echo $NORMAL_TOKEN | cut -d. -f2 | base64 -d 2>/dev/null | jq '{token_type, tena
 3. 尝试重置 webhook secret。
 
 ### 预期安全行为
-- 所有请求返回 `403`（消息: "Cannot access another tenant"）
+- 所有请求返回 `404 Not Found`（IDOR 防护：策略层统一返回 404，防止泄露目标租户存在性）
 - 配置不被篡改、secret 不被轮换
+
+> **IDOR 防护说明**: 跨租户访问返回 404 而非 403 是设计行为。返回 403 会泄露"该租户 ID 存在"的信息，攻击者可通过遍历 UUID 枚举有效租户。
 
 ### 安全防护层
 本端点已实现以下防护：
-1. **Policy layer**: `enforce(WebhookWrite, Tenant(tenant_id))` → `require_tenant_admin_or_permission()` 校验 `token_tenant_id == tenant_id`
+1. **Policy layer**: `enforce(WebhookWrite, Tenant(tenant_id))` → `require_tenant_admin_or_permission()` 检测 `token_tenant_id != tenant_id` 时返回 404
 2. **Handler layer**: 额外检查 `existing.tenant_id != path_tenant_id` 防御同租户越权
 
 ### 验证方法
@@ -246,16 +250,16 @@ curl -i -X POST "http://localhost:8080/api/v1/tenants/$OTHER_TENANT_ID/webhooks/
 curl -i -X DELETE "http://localhost:8080/api/v1/tenants/$OTHER_TENANT_ID/webhooks/$WEBHOOK_ID" \
   -H "Authorization: Bearer $NORMAL_TOKEN"
 
-# 预期: 所有请求返回 403 "Cannot access another tenant"
+# 预期: 所有请求返回 404 Not Found（IDOR 防护）
 ```
 
 ### 常见误报
 
 | 现象 | 原因 | 解决 |
 |------|------|------|
-| 返回 200 而非 403 | Token 的 `tenant_id` 与 `OTHER_TENANT_ID` 相同 | 确保 token 属于不同租户 |
-| 返回 200 而非 403 | **使用了 Platform Admin 的 Identity Token** 而非普通用户的 Tenant Access Token | Platform Admin 在 policy 层有跨租户 bypass，这是设计行为。**必须使用非管理员邮箱的 Tenant Access Token** 进行测试 |
-| PUT 返回 403 但 DELETE 返回 200 | 不应发生；两者均有 policy + handler 双重检查 | 检查 token 是否过期后重新生成 |
+| 返回 200 而非 404 | Token 的 `tenant_id` 与 `OTHER_TENANT_ID` 相同 | 确保 token 属于不同租户 |
+| 返回 200 而非 404 | **使用了 Platform Admin 的 Identity Token** 而非普通用户的 Tenant Access Token | Platform Admin 在 policy 层有跨租户 bypass，这是设计行为。**必须使用非管理员邮箱的 Tenant Access Token** 进行测试 |
+| PUT 返回 404 但 DELETE 返回 200 | 不应发生；两者均有 policy + handler 双重检查 | 检查 token 是否过期后重新生成 |
 
 > 本场景测试的是 **普通用户** 的跨租户越权，不是 Platform Admin 的跨租户访问。Platform Admin 拥有跨租户管理权限，这是设计行为。
 

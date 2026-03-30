@@ -1,5 +1,7 @@
 # 系统设置 - 邮件模板管理测试
 
+> **[DEFERRED - pending FR: settings_email_templates.md]** The email_templates table and API have not been implemented yet. See [docs/feature_request/settings_email_templates.md](../../feature_request/settings_email_templates.md) for the feature request. All scenarios below are blocked until the FR is implemented.
+
 **模块**: 系统设置
 **测试范围**: 邮件模板查看、编辑、预览、重置
 **场景数**: 5

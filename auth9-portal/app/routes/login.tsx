@@ -77,9 +77,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const ldapView = url.searchParams.get("view") === "ldap";
   const ldapConnectorAlias = url.searchParams.get("connector") || undefined;
   const apiBaseUrl = process.env.AUTH9_CORE_PUBLIC_URL || process.env.AUTH9_CORE_URL || "http://localhost:8080";
-  const brandingClientId = url.searchParams.get("client_id")
-    || process.env.AUTH9_PORTAL_CLIENT_ID
-    || "auth9-portal";
+  const brandingClientId = url.searchParams.get("client_id") || undefined;
   let branding: BrandingConfig = DEFAULT_PUBLIC_BRANDING;
 
   try {

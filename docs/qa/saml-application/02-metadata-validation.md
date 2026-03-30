@@ -174,14 +174,14 @@ curl -s "http://localhost:8080/api/v1/tenants/{tenant_b_id}/saml-apps/{app_id}" 
 ```bash
 curl -s "http://localhost:8080/api/v1/tenants/{tenant_a_id}/saml-apps/{app_id}" \
   -H "Authorization: Bearer $TOKEN_B" | jq .
-# 预期: 403 Forbidden（tenant access policy 拦截，token 无权访问 tenant_a）
+# 预期: 404 Not Found（IDOR 防护：策略层检测到跨租户访问后返回 404，防止租户 ID 枚举）
 ```
 
 ### 预期结果
 - **跨租户路径 + 正确 Token**（路径 tenant_b + TOKEN_B → 查 app 不属于 B）返回 **404**（app 在 tenant_b 下不存在）
-- **越权 Token**（路径 tenant_a + TOKEN_B → policy 拒绝）返回 **403**（tenant access policy 先于数据查询）
+- **越权 Token**（路径 tenant_a + TOKEN_B → policy 拒绝）返回 **404**（IDOR 防护：策略层统一返回 404，防止泄露租户存在性）
 
-> **安全设计说明**: 场景 4a 返回 404 而非 403 是正确的安全行为——从请求租户的视角，该资源不存在。返回 403 反而会泄露"该资源在其他租户中存在"的信息。场景 4b 返回 403 是因为 token 本身无权访问目标租户，policy 层在数据查询前即拦截。
+> **安全设计说明（IDOR 防护）**: 场景 4a 和 4b 均返回 404 而非 403，这是正确的安全行为。返回 403 会泄露"该租户 ID 存在"或"该资源在其他租户中存在"的信息，攻击者可通过遍历 UUID 枚举有效租户。统一返回 404 使攻击者无法区分"租户/资源不存在"和"租户/资源存在但无权访问"。
 
 ---
 

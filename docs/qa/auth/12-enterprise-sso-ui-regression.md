@@ -116,3 +116,5 @@ WHERE d.domain = '{corp_domain}' AND c.enabled = 1;
 | 5 | Portal /login 页面输入未配置域名邮箱显示错误（UI 回归） | ✅ 通过 | 2026-03-11 | opencode | 页面停留/login，显示错误提示"The requested resource was not found." |
 | 6 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ✅ 通过 | 2026-03-15 | opencode | 成功跳转到Auth9授权链路，client_id=test-oidc-client |
 | 7 | Portal /login 页面输入未配置域名邮箱显示错误（UI 回归） | ✅ 通过 | 2026-03-15 | opencode | 页面停留/login，显示错误提示"リクエストされたリソースが見つかりません。" |
+| 8 | Portal /login 页面输入未配置域名邮箱显示错误（UI 回归） | ✅ 通过 | 2026-03-29 | opencode | 页面停留/login，显示错误提示"请求的资源不存在。" |
+| 9 | Portal /login 页面通过 UI 输入企业邮箱触发 SSO 发现 | ⏭️ 跳过 | 2026-03-29 | opencode | 环境中无已配置域名的 SSO 连接器 |

@@ -68,21 +68,24 @@ curl -i -X POST "http://localhost:8080/api/v1/tenants/{TENANT_ID}/abac/policies"
 1. 使用 `TENANT_A_ADMIN_TOKEN`（非平台租户）调用 `TENANT_B` 的 ABAC 列表/创建/发布接口
 
 ### 预期安全行为
-- 全部返回 `403 Forbidden`（"Cannot access another tenant"）
+- 全部返回 `404 Not Found`（IDOR 防护：策略层统一返回 404，防止泄露目标租户存在性）
 - `TENANT_B` 的策略记录不变
+
+> **IDOR 防护说明**: 跨租户访问返回 404 而非 403 是设计行为。返回 403 会泄露"该租户 ID 存在"的信息，攻击者可通过遍历 UUID 枚举有效租户。
 
 ### 验证方法
 ```bash
 # 注意: TENANT_A 和 TENANT_B 必须都是普通租户（非 auth9-platform）
 curl -i -X GET "http://localhost:8080/api/v1/tenants/{TENANT_B}/abac/policies" \
   -H "Authorization: Bearer {TENANT_A_ADMIN_TOKEN}"
+# 预期: 404 Not Found
 ```
 
 ### 常见误报
 
 | 症状 | 原因 | 解决方法 |
 |------|------|---------|
-| 返回 200 而非 403 | 使用了 Auth9 Platform 的 admin token | 平台管理员有全局权限，改用非平台租户的 admin token |
+| 返回 200 而非 404 | 使用了 Auth9 Platform 的 admin token | 平台管理员有全局权限，改用非平台租户的 admin token |
 | 返回 200 且用户 email 在 `platform_admin_emails` 配置中 | 配置级平台管理员 | 使用不在平台管理员列表中的用户 |
 
 ---

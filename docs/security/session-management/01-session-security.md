@@ -217,23 +217,32 @@ ORDER BY created_at DESC;
 4. 测试踢出其他 Session
 
 ### 预期安全行为
-- 可配置的 Session 数量限制
+
+> **重要说明 — 并发会话设计**:
+> 系统**有意允许**每个用户最多 10 个并发会话（`MAX_SESSIONS_PER_USER = 10`，定义于 `session.rs`）。
+> 这是为了支持用户在多个设备（手机、平板、桌面浏览器等）上同时登录的正常使用场景。
+>
+> - 创建第 1~10 个会话时，所有会话均保持有效。
+> - 创建第 11 个会话时，系统**自动撤销最旧的会话**（FIFO 淘汰策略），确保活跃会话数不超过 10。
+> - 测试中如果预期"只有 1 个活跃会话"，这是**不正确的** — 系统设计为允许多设备并发。
+
+- 每用户最多 10 个并发 Session（超出时自动淘汰最旧 Session）
 - 用户可查看活跃 Session
 - 可撤销其他 Session
 
 ### 验证方法
 ```bash
-# 从多个客户端登录
+# 从多个客户端登录（5 个会话均应有效）
 for i in {1..5}; do
   curl -c "session_$i.txt" -X POST http://localhost:3000/login \
     -d '{"username":"test","password":"test123"}'
 done
 
-# 检查 Session 列表
+# 检查 Session 列表（预期: 5 个活跃会话）
 curl -b "session_1.txt" \
   http://localhost:8080/api/v1/users/me/sessions
 
-# 验证所有 Session 都有效
+# 验证所有 5 个 Session 都有效（均不应被淘汰）
 for i in {1..5}; do
   curl -b "session_$i.txt" http://localhost:3000/dashboard
 done
@@ -242,9 +251,19 @@ done
 curl -X DELETE -b "session_1.txt" \
   http://localhost:8080/api/v1/sessions/{session_id}
 
-# 验证被撤销的 Session
+# 验证被撤销的 Session 失效
 curl -b "session_2.txt" http://localhost:3000/dashboard
-# 预期: 重定向到登录 (如果是被撤销的)
+# 预期: 如果 session_2 是被撤销的那个，重定向到登录页
+
+# [可选] 测试超出上限的淘汰行为
+# 创建 11 个会话，验证最旧的会话被自动撤销
+for i in {1..11}; do
+  curl -c "session_overflow_$i.txt" -X POST http://localhost:3000/login \
+    -d '{"username":"test","password":"test123"}'
+done
+# 验证 session_overflow_1 已失效（被第 11 个会话淘汰）
+curl -b "session_overflow_1.txt" http://localhost:3000/dashboard
+# 预期: 重定向到登录页（最旧会话已被自动撤销）
 ```
 
 ### 修复建议

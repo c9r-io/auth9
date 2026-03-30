@@ -439,10 +439,13 @@ async fn require_user_tenant_read_with_state<S: HasServices>(
                 ));
             }
             let has_admin_role = auth.roles.iter().any(|r| r == "admin" || r == "owner");
-            let has_permission = auth
-                .permissions
-                .iter()
-                .any(|p| p == "user:read" || p == "user:*");
+            let has_permission = auth.permissions.iter().any(|p| {
+                p == "user:read"
+                    || p == "user:*"
+                    || p == "admin:*"
+                    || p == "admin:full"
+                    || p == "*"
+            });
             if has_admin_role || has_permission {
                 Ok(())
             } else {
@@ -468,10 +471,13 @@ async fn require_user_read_other_with_state<S: HasServices>(
         )),
         TokenType::TenantAccess => {
             let has_admin_permission = auth.roles.iter().any(|r| r == "admin" || r == "owner")
-                || auth
-                    .permissions
-                    .iter()
-                    .any(|p| p == "user:read" || p == "user:*");
+                || auth.permissions.iter().any(|p| {
+                    p == "user:read"
+                        || p == "user:*"
+                        || p == "admin:*"
+                        || p == "admin:full"
+                        || p == "*"
+                });
             if has_admin_permission {
                 Ok(())
             } else {
@@ -579,8 +585,8 @@ fn require_tenant_admin_or_permission(
                 .ok_or_else(|| AppError::Forbidden("No tenant context in token".to_string()))?;
 
             if token_tenant_id != *tenant_id {
-                return Err(AppError::Forbidden(
-                    "Cannot access another tenant".to_string(),
+                return Err(AppError::NotFound(
+                    "Resource not found".to_string(),
                 ));
             }
 
@@ -619,8 +625,8 @@ fn require_tenant_scope_match(
             if auth.tenant_id == Some(*tenant_id) {
                 Ok(())
             } else {
-                Err(AppError::Forbidden(
-                    "Cannot access another tenant".to_string(),
+                Err(AppError::NotFound(
+                    "Resource not found".to_string(),
                 ))
             }
         }
@@ -633,8 +639,8 @@ fn require_tenant_scope_match(
             if auth.tenant_id == Some(*tenant_id) {
                 Ok(())
             } else {
-                Err(AppError::Forbidden(
-                    "Cannot access another tenant".to_string(),
+                Err(AppError::NotFound(
+                    "Resource not found".to_string(),
                 ))
             }
         }
@@ -912,7 +918,7 @@ mod tests {
 
         let result = enforce(&config, &user, &input);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
+        assert!(matches!(result.unwrap_err(), AppError::NotFound(_)));
     }
 
     #[test]
@@ -1359,7 +1365,7 @@ mod tests {
 
         let result = enforce(&config, &user, &input);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
+        assert!(matches!(result.unwrap_err(), AppError::NotFound(_)));
     }
 
     #[test]
@@ -1442,7 +1448,7 @@ mod tests {
 
         let result = enforce(&config, &user, &input);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
+        assert!(matches!(result.unwrap_err(), AppError::NotFound(_)));
     }
 
     #[test]
