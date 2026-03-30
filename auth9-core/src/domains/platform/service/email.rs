@@ -1,26 +1,19 @@
 //! Email service for sending emails through configured providers
 
-use crate::domains::platform::service::SystemSettingsService;
+use crate::domains::platform::service::{EmailTemplateService, SystemSettingsService};
 use crate::email::{
-    EmailProvider, EmailProviderError, SesEmailProvider, SmtpEmailProvider, TemplateEngine,
+    EmailProvider, EmailProviderError, RenderedEmail, SesEmailProvider, SmtpEmailProvider,
+    TemplateEngine,
 };
 use crate::error::{AppError, Result};
 use crate::models::email::{
     EmailAddress, EmailMessage, EmailProviderConfig, EmailSendResult, TenantEmailSettings,
 };
+use crate::models::email_template::EmailTemplateType;
 use crate::repository::SystemSettingsRepository;
 use async_trait::async_trait;
+use std::collections::HashMap;
 use std::sync::Arc;
-
-/// HTML-escape user-controlled text to prevent XSS in email bodies.
-fn html_escape(input: &str) -> String {
-    input
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#x27;")
-}
 
 /// Factory for building an [`EmailProvider`] from configuration.
 ///
@@ -74,6 +67,7 @@ impl EmailProviderFactory for DefaultEmailProviderFactory {
 pub struct EmailService<R: SystemSettingsRepository> {
     settings_service: Arc<SystemSettingsService<R>>,
     provider_factory: Arc<dyn EmailProviderFactory>,
+    template_service: Option<Arc<EmailTemplateService<R>>>,
 }
 
 impl<R: SystemSettingsRepository> EmailService<R> {
@@ -81,7 +75,14 @@ impl<R: SystemSettingsRepository> EmailService<R> {
         Self {
             settings_service,
             provider_factory: Arc::new(DefaultEmailProviderFactory),
+            template_service: None,
         }
+    }
+
+    /// Set the template service for customizable email templates.
+    pub fn with_template_service(mut self, template_service: Arc<EmailTemplateService<R>>) -> Self {
+        self.template_service = Some(template_service);
+        self
     }
 
     #[cfg(test)]
@@ -92,7 +93,34 @@ impl<R: SystemSettingsRepository> EmailService<R> {
         Self {
             settings_service,
             provider_factory,
+            template_service: None,
         }
+    }
+
+    /// Resolve template content (custom or default) and render with variables.
+    pub async fn resolve_and_render(
+        &self,
+        template_type: EmailTemplateType,
+        variables: &HashMap<String, String>,
+    ) -> Result<RenderedEmail> {
+        use crate::email::templates::EmailTemplate;
+
+        let content = if let Some(ts) = &self.template_service {
+            ts.get_content(template_type).await?
+        } else {
+            EmailTemplate::default_content(template_type)
+        };
+
+        let mut engine = TemplateEngine::new();
+        for (key, value) in variables {
+            engine.set(key, value);
+        }
+
+        Ok(RenderedEmail {
+            subject: engine.render(&content.subject),
+            html_body: engine.render_html(&content.html_body),
+            text_body: engine.render(&content.text_body),
+        })
     }
 
     /// Send an email using the configured provider
@@ -175,7 +203,7 @@ impl<R: SystemSettingsRepository> EmailService<R> {
         reset_token: &str,
         user_name: Option<&str>,
     ) -> Result<EmailSendResult> {
-        let display_name = html_escape(user_name.unwrap_or("User"));
+        let display_name = user_name.unwrap_or("User");
         let reset_url = format!(
             "{}/reset-password?token={}",
             std::env::var("AUTH9_PORTAL_URL")
@@ -183,48 +211,25 @@ impl<R: SystemSettingsRepository> EmailService<R> {
             reset_token
         );
 
-        let html_body = format!(
-            r#"<!DOCTYPE html>
-<html>
-<head><title>Password Reset</title></head>
-<body style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-    <h1 style="color: #2563eb;">Password Reset Request</h1>
-    <p>Hello {},</p>
-    <p>We received a request to reset your password. Click the button below to set a new password:</p>
-    <p style="text-align: center; margin: 30px 0;">
-        <a href="{}" style="display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
-            Reset Password
-        </a>
-    </p>
-    <p>If you didn't request this, you can safely ignore this email. The link will expire in 1 hour.</p>
-    <p style="color: #666; font-size: 12px;">
-        If the button doesn't work, copy and paste this link into your browser:<br>
-        <a href="{}" style="color: #2563eb;">{}</a>
-    </p>
-    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-    <p style="color: #666; font-size: 12px;">
-        &copy; {} Auth9
-    </p>
-</body>
-</html>"#,
-            display_name,
-            reset_url,
-            reset_url,
-            reset_url,
-            chrono::Utc::now().format("%Y")
+        let mut vars = HashMap::new();
+        vars.insert("user_name".to_string(), display_name.to_string());
+        vars.insert("reset_link".to_string(), reset_url);
+        vars.insert("expires_in_minutes".to_string(), "60".to_string());
+        vars.insert("app_name".to_string(), "Auth9".to_string());
+        vars.insert(
+            "year".to_string(),
+            chrono::Utc::now().format("%Y").to_string(),
         );
 
-        let text_body = format!(
-            "Password Reset Request\n\nHello {},\n\nWe received a request to reset your password. Visit the link below to set a new password:\n\n{}\n\nIf you didn't request this, you can safely ignore this email. The link will expire in 1 hour.",
-            display_name,
-            reset_url
-        );
+        let rendered = self
+            .resolve_and_render(EmailTemplateType::PasswordReset, &vars)
+            .await?;
 
         self.send_with_from(
             EmailAddress::new(to_email),
-            "Password Reset Request",
-            &html_body,
-            Some(&text_body),
+            &rendered.subject,
+            &rendered.html_body,
+            Some(&rendered.text_body),
             None,
         )
         .await
@@ -236,43 +241,27 @@ impl<R: SystemSettingsRepository> EmailService<R> {
         to_email: &str,
         user_name: Option<&str>,
     ) -> Result<EmailSendResult> {
-        let display_name = html_escape(user_name.unwrap_or("User"));
+        let display_name = user_name.unwrap_or("User");
         let now = chrono::Utc::now();
 
-        let html_body = format!(
-            r#"<!DOCTYPE html>
-<html>
-<head><title>Password Changed</title></head>
-<body style="font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-    <h1 style="color: #2563eb;">Password Changed Successfully</h1>
-    <p>Hello {},</p>
-    <p>Your password was changed on {}.</p>
-    <p>If you made this change, you can safely ignore this email.</p>
-    <p style="color: #dc2626; font-weight: bold;">
-        If you did not make this change, please contact support immediately and secure your account.
-    </p>
-    <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
-    <p style="color: #666; font-size: 12px;">
-        &copy; {} Auth9
-    </p>
-</body>
-</html>"#,
-            display_name,
-            now.format("%Y-%m-%d %H:%M:%S UTC"),
-            now.format("%Y")
+        let mut vars = HashMap::new();
+        vars.insert("user_name".to_string(), display_name.to_string());
+        vars.insert(
+            "changed_at".to_string(),
+            now.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
         );
+        vars.insert("app_name".to_string(), "Auth9".to_string());
+        vars.insert("year".to_string(), now.format("%Y").to_string());
 
-        let text_body = format!(
-            "Password Changed Successfully\n\nHello {},\n\nYour password was changed on {}.\n\nIf you made this change, you can safely ignore this email.\n\nIf you did not make this change, please contact support immediately and secure your account.",
-            display_name,
-            now.format("%Y-%m-%d %H:%M:%S UTC")
-        );
+        let rendered = self
+            .resolve_and_render(EmailTemplateType::PasswordChanged, &vars)
+            .await?;
 
         self.send_with_from(
             EmailAddress::new(to_email),
-            "Password Changed Successfully",
-            &html_body,
-            Some(&text_body),
+            &rendered.subject,
+            &rendered.html_body,
+            Some(&rendered.text_body),
             None,
         )
         .await

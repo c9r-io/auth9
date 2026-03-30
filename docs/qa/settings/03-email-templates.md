@@ -1,7 +1,5 @@
 # 系统设置 - 邮件模板管理测试
 
-> **[DEFERRED - pending FR: settings_email_templates.md]** The email_templates table and API have not been implemented yet. See [docs/feature_request/settings_email_templates.md](../../feature_request/settings_email_templates.md) for the feature request. All scenarios below are blocked until the FR is implemented.
-
 **模块**: 系统设置
 **测试范围**: 邮件模板查看、编辑、预览、重置
 **场景数**: 5
@@ -10,15 +8,18 @@
 
 ## 数据库表结构参考
 
-### email_templates 表
+### system_settings 表（email_templates 分类）
+
+邮件模板存储在 `system_settings` 表中，`category = 'email_templates'`，`setting_key` 为模板类型。
+
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| id | CHAR(36) | UUID 主键 |
-| template_type | VARCHAR(50) | 模板类型 |
-| subject | VARCHAR(255) | 邮件主题 |
-| html_body | TEXT | HTML 正文 |
-| text_body | TEXT | 纯文本正文 |
-| is_customized | BOOLEAN | 是否已自定义 |
+| id | INT (AUTO_INCREMENT) | 主键 |
+| category | VARCHAR(100) | 固定为 `email_templates` |
+| setting_key | VARCHAR(100) | 模板类型（如 `invitation`） |
+| value | JSON | 模板内容 `{subject, html_body, text_body}` |
+| encrypted | BOOLEAN | 固定为 FALSE |
+| description | TEXT | 描述信息 |
 | created_at | TIMESTAMP | 创建时间 |
 | updated_at | TIMESTAMP | 更新时间 |
 
@@ -56,8 +57,8 @@
 
 ### 预期数据状态
 ```sql
-SELECT template_type, is_customized FROM email_templates;
--- 预期: 列出所有模板类型
+SELECT setting_key, value FROM system_settings WHERE category = 'email_templates';
+-- 预期: 列出已自定义的模板（未自定义的模板不会有数据库行，使用硬编码默认值）
 ```
 
 ---
@@ -87,10 +88,10 @@ SELECT template_type, is_customized FROM email_templates;
 
 ### 预期数据状态
 ```sql
-SELECT template_type, subject, is_customized, updated_at
-FROM email_templates
-WHERE template_type = 'invitation';
--- 预期: is_customized = true, subject = "You've been invited to join {{tenant_name}}"
+SELECT setting_key, value, updated_at
+FROM system_settings
+WHERE category = 'email_templates' AND setting_key = 'invitation';
+-- 预期: 存在一行，value 中 subject = "You've been invited to join {{tenant_name}}"
 ```
 
 ---
@@ -190,10 +191,9 @@ WHERE category = 'email' AND setting_key = 'provider';
 
 ### 预期数据状态
 ```sql
-SELECT template_type, is_customized
-FROM email_templates
-WHERE template_type = '{template_type}';
--- 预期: is_customized = false，内容为默认值
+SELECT setting_key FROM system_settings
+WHERE category = 'email_templates' AND setting_key = '{template_type}';
+-- 预期: 无结果（自定义记录已被删除，API 将返回硬编码默认模板）
 ```
 
 ---

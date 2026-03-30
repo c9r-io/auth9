@@ -704,11 +704,14 @@ pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) ->
         identity_sync_service.clone(),
     ));
 
-    // Create email service
-    let email_service = Arc::new(EmailService::new(system_settings_service.clone()));
-
     // Create email template service
     let email_template_service = Arc::new(EmailTemplateService::new(system_settings_repo.clone()));
+
+    // Create email service (with template service for customizable templates)
+    let email_service = Arc::new(
+        EmailService::new(system_settings_service.clone())
+            .with_template_service(email_template_service.clone()),
+    );
 
     // Create branding service with identity sync
     let branding_service = Arc::new(

@@ -57,29 +57,43 @@ pub async fn send_verification<S: HasServices + HasEmailVerification + HasSystem
         .create_verification_token(&user.identity_subject)
         .await?;
 
-    // Build and send the email
-    use crate::email::templates::{EmailTemplate, TemplateEngine};
+    // Resolve custom or default EmailVerification template and send
     use crate::models::email::{EmailAddress, EmailMessage};
+    use crate::models::email_template::EmailTemplateType;
 
-    let mut engine = TemplateEngine::new();
-    engine
-        .set("user_name", user.display_name.as_deref().unwrap_or(&email))
-        .set("verification_link", &link)
-        .set("expires_in_hours", "24")
-        .set("year", chrono::Utc::now().format("%Y").to_string())
-        .set("app_name", "Auth9");
+    let mut vars = std::collections::HashMap::new();
+    vars.insert(
+        "user_name".to_string(),
+        user.display_name.as_deref().unwrap_or(&email).to_string(),
+    );
+    vars.insert("verification_link".to_string(), link);
+    vars.insert("expires_in_hours".to_string(), "24".to_string());
+    vars.insert(
+        "year".to_string(),
+        chrono::Utc::now().format("%Y").to_string(),
+    );
+    vars.insert("app_name".to_string(), "Auth9".to_string());
 
-    let rendered = engine.render_template(EmailTemplate::EmailVerification);
+    match state
+        .email_service()
+        .resolve_and_render(EmailTemplateType::EmailVerification, &vars)
+        .await
+    {
+        Ok(rendered) => {
+            let message = EmailMessage::new(
+                EmailAddress::with_name(&email, user.display_name.as_deref().unwrap_or("")),
+                &rendered.subject,
+                &rendered.html_body,
+            )
+            .with_text_body(&rendered.text_body);
 
-    let message = EmailMessage::new(
-        EmailAddress::with_name(&email, user.display_name.as_deref().unwrap_or("")),
-        rendered.subject,
-        rendered.html_body,
-    )
-    .with_text_body(rendered.text_body);
-
-    if let Err(e) = state.email_service().send(&message, None).await {
-        tracing::error!(error = %e, "Failed to send verification email to {}", email);
+            if let Err(e) = state.email_service().send(&message, None).await {
+                tracing::error!(error = %e, "Failed to send verification email to {}", email);
+            }
+        }
+        Err(e) => {
+            tracing::error!(error = %e, "Failed to resolve verification email template");
+        }
     }
 
     let _ = write_audit_log_generic(

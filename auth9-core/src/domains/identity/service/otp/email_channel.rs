@@ -2,11 +2,12 @@
 
 use super::channel::{OtpChannel, OtpChannelType};
 use crate::domains::platform::service::email::EmailService;
-use crate::email::{EmailTemplate, TemplateEngine};
 use crate::error::Result;
 use crate::models::email::{EmailAddress, EmailMessage};
+use crate::models::email_template::EmailTemplateType;
 use crate::repository::SystemSettingsRepository;
 use async_trait::async_trait;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Email OTP channel wrapping the existing EmailService
@@ -27,15 +28,20 @@ impl<R: SystemSettingsRepository + 'static> OtpChannel for EmailOtpChannel<R> {
     }
 
     async fn send_code(&self, destination: &str, code: &str, ttl_minutes: u32) -> Result<()> {
-        let mut engine = TemplateEngine::new();
-        engine
-            .set("user_name", destination)
-            .set("verification_code", code)
-            .set("expires_in_minutes", ttl_minutes.to_string())
-            .set("app_name", "Auth9")
-            .set("year", chrono::Utc::now().format("%Y").to_string());
+        let mut vars = HashMap::new();
+        vars.insert("user_name".to_string(), destination.to_string());
+        vars.insert("verification_code".to_string(), code.to_string());
+        vars.insert("expires_in_minutes".to_string(), ttl_minutes.to_string());
+        vars.insert("app_name".to_string(), "Auth9".to_string());
+        vars.insert(
+            "year".to_string(),
+            chrono::Utc::now().format("%Y").to_string(),
+        );
 
-        let rendered = engine.render_template(EmailTemplate::EmailMfa);
+        let rendered = self
+            .email_service
+            .resolve_and_render(EmailTemplateType::EmailMfa, &vars)
+            .await?;
 
         let message = EmailMessage::new(
             EmailAddress::new(destination),

@@ -13,4 +13,4 @@ pub mod templates;
 pub use provider::{EmailProvider, EmailProviderError};
 pub use ses::SesEmailProvider;
 pub use smtp::SmtpEmailProvider;
-pub use templates::{EmailTemplate, TemplateEngine};
+pub use templates::{EmailTemplate, RenderedEmail, TemplateEngine};

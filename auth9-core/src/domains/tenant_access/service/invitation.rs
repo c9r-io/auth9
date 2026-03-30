@@ -1,10 +1,10 @@
 //! Invitation service for managing user invitations
 
 use crate::domains::platform::service::EmailService;
-use crate::email::{EmailTemplate, TemplateEngine};
 use crate::error::{AppError, Result};
 use crate::models::common::StringUuid;
 use crate::models::email::EmailAddress;
+use crate::models::email_template::EmailTemplateType;
 use crate::models::invitation::{CreateInvitationInput, Invitation, InvitationStatus};
 use crate::repository::{InvitationRepository, SystemSettingsRepository, TenantRepository};
 use argon2::{
@@ -13,6 +13,7 @@ use argon2::{
 };
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use rand::Rng;
+use std::collections::HashMap;
 use std::sync::Arc;
 use validator::Validate;
 
@@ -100,32 +101,37 @@ where
 
         let expires_in_hours = input.expires_in_hours.unwrap_or(72);
 
-        let mut engine = TemplateEngine::new();
-        engine
-            .set("inviter_name", inviter_name)
-            .set("tenant_name", &tenant.name)
-            .set("invite_link", &invite_link)
-            .set("expires_in_hours", expires_in_hours.to_string())
-            .set("year", chrono::Utc::now().format("%Y").to_string())
-            .set("app_name", "Auth9");
+        let mut vars = HashMap::new();
+        vars.insert("inviter_name".to_string(), inviter_name.to_string());
+        vars.insert("tenant_name".to_string(), tenant.name.clone());
+        vars.insert("invite_link".to_string(), invite_link);
+        vars.insert("expires_in_hours".to_string(), expires_in_hours.to_string());
+        vars.insert(
+            "year".to_string(),
+            chrono::Utc::now().format("%Y").to_string(),
+        );
+        vars.insert("app_name".to_string(), "Auth9".to_string());
 
-        let rendered = engine.render_template(EmailTemplate::Invitation);
-
-        // Send the email
-        let _ = self
+        if let Ok(rendered) = self
             .email_service
-            .send_with_from(
-                EmailAddress::new(&input.email),
-                &rendered.subject,
-                &rendered.html_body,
-                Some(&rendered.text_body),
-                None, // Use system email settings
-            )
+            .resolve_and_render(EmailTemplateType::Invitation, &vars)
             .await
-            .map_err(|e| {
-                tracing::error!("Failed to send invitation email: {}", e);
-                e
-            });
+        {
+            let _ = self
+                .email_service
+                .send_with_from(
+                    EmailAddress::new(&input.email),
+                    &rendered.subject,
+                    &rendered.html_body,
+                    Some(&rendered.text_body),
+                    None,
+                )
+                .await
+                .map_err(|e| {
+                    tracing::error!("Failed to send invitation email: {}", e);
+                    e
+                });
+        }
 
         Ok(invitation)
     }
@@ -272,16 +278,24 @@ where
 
         let hours_until_expiry = (invitation.expires_at - chrono::Utc::now()).num_hours();
 
-        let mut engine = TemplateEngine::new();
-        engine
-            .set("inviter_name", inviter_name)
-            .set("tenant_name", &tenant.name)
-            .set("invite_link", &invite_link)
-            .set("expires_in_hours", hours_until_expiry.to_string())
-            .set("year", chrono::Utc::now().format("%Y").to_string())
-            .set("app_name", "Auth9");
+        let mut vars = HashMap::new();
+        vars.insert("inviter_name".to_string(), inviter_name.to_string());
+        vars.insert("tenant_name".to_string(), tenant.name.clone());
+        vars.insert("invite_link".to_string(), invite_link);
+        vars.insert(
+            "expires_in_hours".to_string(),
+            hours_until_expiry.to_string(),
+        );
+        vars.insert(
+            "year".to_string(),
+            chrono::Utc::now().format("%Y").to_string(),
+        );
+        vars.insert("app_name".to_string(), "Auth9".to_string());
 
-        let rendered = engine.render_template(EmailTemplate::Invitation);
+        let rendered = self
+            .email_service
+            .resolve_and_render(EmailTemplateType::Invitation, &vars)
+            .await?;
 
         self.email_service
             .send_with_from(

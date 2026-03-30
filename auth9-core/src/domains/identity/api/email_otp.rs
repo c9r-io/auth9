@@ -1,12 +1,13 @@
 //! Email OTP (passwordless) authentication handlers
 
 use crate::domains::identity::service::otp::{OtpChannelType, OtpManager, OtpRateLimitConfig};
-use crate::email::{EmailTemplate, TemplateEngine};
 use crate::error::{AppError, Result};
 use crate::models::email::{EmailAddress, EmailMessage};
+use crate::models::email_template::EmailTemplateType;
 use crate::state::{HasBranding, HasCache, HasServices, HasSessionManagement, HasSystemSettings};
 use axum::{extract::State, http::HeaderMap, Json};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use utoipa::ToSchema;
 
@@ -102,26 +103,32 @@ pub async fn send_email_otp<S: HasCache + HasSystemSettings + HasBranding>(
         )
         .await?;
 
-    // Send email using the EmailMfa template (same as EmailOtpChannel)
-    let mut engine = TemplateEngine::new();
-    engine
-        .set("user_name", &email)
-        .set("verification_code", &code)
-        .set("expires_in_minutes", OTP_TTL_MINUTES.to_string())
-        .set("app_name", "Auth9")
-        .set("year", chrono::Utc::now().format("%Y").to_string());
+    // Resolve custom or default EmailMfa template and send
+    let mut vars = HashMap::new();
+    vars.insert("user_name".to_string(), email.clone());
+    vars.insert("verification_code".to_string(), code.clone());
+    vars.insert("expires_in_minutes".to_string(), OTP_TTL_MINUTES.to_string());
+    vars.insert("app_name".to_string(), "Auth9".to_string());
+    vars.insert(
+        "year".to_string(),
+        chrono::Utc::now().format("%Y").to_string(),
+    );
 
-    let rendered = engine.render_template(EmailTemplate::EmailMfa);
+    if let Ok(rendered) = state
+        .email_service()
+        .resolve_and_render(EmailTemplateType::EmailMfa, &vars)
+        .await
+    {
+        let message = EmailMessage::new(
+            EmailAddress::new(&email),
+            &rendered.subject,
+            &rendered.html_body,
+        )
+        .with_text_body(&rendered.text_body);
 
-    let message = EmailMessage::new(
-        EmailAddress::new(&email),
-        &rendered.subject,
-        &rendered.html_body,
-    )
-    .with_text_body(&rendered.text_body);
-
-    // Send email — errors are silenced to prevent enumeration
-    let _ = state.email_service().send(&message, None).await;
+        // Send email — errors are silenced to prevent enumeration
+        let _ = state.email_service().send(&message, None).await;
+    }
 
     Ok(Json(SendEmailOtpResponse {
         message: "If this email is registered, a verification code has been sent.".to_string(),
