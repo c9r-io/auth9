@@ -119,3 +119,5 @@ curl -sf -X POST http://localhost:8080/api/v1/hosted-login/password \
 - 登录页、注册页、忘记密码页均渲染 CAPTCHA 组件
 - 组件通过动态加载 Turnstile 脚本呈现
 - 表单中包含隐藏的 `captchaToken` 字段
+
+> **CSP 注意**: Content-Security-Policy 已更新，`script-src` 和 `frame-src` 均允许 `challenges.cloudflare.com`。如果 Turnstile 组件未渲染，请先检查浏览器控制台是否有 CSP 拦截错误。

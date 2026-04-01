@@ -143,6 +143,13 @@ impl<R: ActionRepository + 'static> ActionService<R> {
         // Update action
         let result = self.action_repo.update(id, &input).await;
 
+        // Invalidate cached compiled script so the updated script takes effect immediately
+        if result.is_ok() {
+            if let Some(ref engine) = self.action_engine {
+                engine.invalidate_script_cache(&id.to_string()).await;
+            }
+        }
+
         // Record metrics
         let duration = start.elapsed().as_secs_f64();
         let status = if result.is_ok() { "success" } else { "error" };
@@ -162,6 +169,13 @@ impl<R: ActionRepository + 'static> ActionService<R> {
         let _action = self.get(id, service_id).await?;
 
         let result = self.action_repo.delete(id).await;
+
+        // Invalidate cached compiled script for deleted action
+        if result.is_ok() {
+            if let Some(ref engine) = self.action_engine {
+                engine.invalidate_script_cache(&id.to_string()).await;
+            }
+        }
 
         // Record metrics
         let duration = start.elapsed().as_secs_f64();

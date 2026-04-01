@@ -138,14 +138,14 @@ export default function TenantsIndexPage() {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-2">
           <h1 className="text-[24px] font-semibold text-[var(--text-primary)] tracking-tight">{t("tenants.title")}</h1>
           <p className="text-sm text-[var(--text-secondary)]">{t("tenants.description")}</p>
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
-            <Button className="w-full md:w-auto">
+            <Button className="w-full lg:w-auto">
               <PlusIcon className="mr-2 h-4 w-4" /> {t("tenants.actions.create")}
             </Button>
           </DialogTrigger>

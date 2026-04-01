@@ -6,6 +6,12 @@
 
 ---
 
+## 前提条件
+
+> **环境重置**: 测试前必须执行 `./scripts/reset-docker.sh`，以确保 admin 凭据已同步且 Docker 环境中的用户数据与预期一致。场景 5 登录 Dashboard 依赖此步骤。
+
+---
+
 ## 背景说明
 
 本用例用于验证 2026-03-13 的 Dark Mode 对比度修正：
@@ -155,4 +161,4 @@
 | 2 | Portal 忘记密码页在 Dark Mode 下具备清晰层级 | ✅ PASS | 2026-03-29 | opencode | |
 | 3 | Portal 重置密码页在 Dark Mode 下输入区和辅助文案可读 | ✅ PASS | 2026-03-29 | opencode | |
 | 4 | Auth9 品牌认证页在 Dark Mode 下的忘记密码/信息页无灰雾感 | ✅ PASS | 2026-03-29 | opencode | |
-| 5 | Dashboard Dark Mode 无明显视觉回退 | ✅ PASS | 2026-03-29 | opencode | |
+| 5 | Dashboard Dark Mode 无明显视觉回退 | ❌ FAIL | 2026-03-31 | opencode | 登录失败，无法访问 Dashboard |

@@ -52,6 +52,12 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
         }
     }
 
+    /// Invalidate cached compiled script for a specific action
+    pub async fn invalidate_script_cache(&self, action_id: &str) {
+        let mut cache = self.script_cache.write().await;
+        cache.pop(action_id);
+    }
+
     /// Execute all enabled actions for a specific trigger
     ///
     /// Actions are executed in order (by execution_order field).
