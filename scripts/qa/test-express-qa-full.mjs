@@ -5,7 +5,7 @@
 
 import express from "express";
 import http from "http";
-import { auth9Middleware, requirePermission, requireRole } from "./packages/node/dist/middleware/express.js";
+import { auth9Middleware, requirePermission, requireRole } from "../../sdk/packages/node/dist/middleware/express.js";
 
 const GREEN = "\x1b[32m";
 const RED = "\x1b[31m";

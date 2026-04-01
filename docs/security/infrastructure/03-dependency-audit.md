@@ -199,22 +199,25 @@ snyk container test auth9-core:latest
 - 多阶段构建减少攻击面
 - CI 集成镜像扫描
 
-### 已知基础镜像漏洞（2026-02-25 评估）
+### 已知基础镜像漏洞（2026-03-31 评估）
 
-以下漏洞存在于 `debian:bookworm-slim` 基础镜像中，**无可用补丁**，属于已知接受风险：
+ 以下漏洞存在于 `debian:bookworm-slim` 基础镜像中，**无可用补丁**，属于已知接受风险：
 
-| 库 | CVE | 严重性 | 状态 | 影响评估 |
-|----|-----|--------|------|----------|
-| zlib1g | CVE-2023-45853 | CRITICAL | will_not_fix | 影响 minizip 组件（`zipOpenNewFileInZip4_6`），auth9-core 不创建 ZIP 文件，实际风险低 |
-| libc-bin/libc6 | CVE-2026-0861 | HIGH | affected | glibc memalign 整数溢出，需特定内存分配模式触发 |
-| libldap-2.5-0 | CVE-2023-2953 | HIGH | affected | openldap 空指针解引用，auth9-core 不直接使用 LDAP |
+ | 库 | CVE | 严重性 | 状态 | 影响评估 |
+ |----|-----|--------|------|----------|
+ | zlib1g | CVE-2023-45853 | CRITICAL | will_not_fix | 影响 minizip 组件（`zipOpenNewFileInZip4_6`），auth9-core 不创建 ZIP 文件，实际风险低 |
+ | libc-bin/libc6 | CVE-2026-0861 | HIGH | affected | glibc memalign 整数溢出，需特定内存分配模式触发 |
+ | libldap-2.5-0 | CVE-2023-2953 | HIGH | affected | openldap 空指针解引用，auth9-core 不直接使用 LDAP |
+ | libnghttp2-14 | CVE-2026-27135 | HIGH | affected | nghttp2 拒绝服务，需恶意 HTTP/2 帧触发 |
+ | libsystemd0/libudev1 | CVE-2026-29111 | HIGH | affected | systemd 任意代码执行或 DoS，需特定 IPC 消息 |
+ | libtinfo6/ncurses-* | CVE-2025-69720 | HIGH | affected | ncurses 缓冲区溢出，可导致任意代码执行 |
 
-**缓解措施**:
-- Dockerfile 已包含 `apt-get upgrade -y` 确保可用补丁已应用
-- 运行时以非 root 用户（`auth9`）执行
-- auth9-portal 和 auth9-demo 已使用 `node:20-alpine` 基础镜像（更少 CVE）
+ **缓解措施**:
+ - Dockerfile 已包含 `apt-get upgrade -y` 确保可用补丁已应用
+ - 运行时以非 root 用户（`auth9`）执行
+ - auth9-portal 和 auth9-demo 已使用 `node:20-alpine` 基础镜像（更少 CVE）
 
-**后续追踪**: 考虑将 auth9-core 运行时切换到 `gcr.io/distroless/cc-debian12` 以消除非必要系统包。
+ **后续追踪**: 考虑将 auth9-core 运行时切换到 `gcr.io/distroless/cc-debian12` 或 `alpine` 以消除非必要系统包。
 
 ---
 
@@ -276,10 +279,10 @@ npx socket npm info <package-name>
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 发现问题 |
 |---|------|------|----------|----------|----------|
-| 1 | Rust 依赖审计 | ✅ | 2026-03-24 | QA | 1个已知漏洞(RUSTSEC-2026-0049)，3个警告(已维护) |
-| 2 | Node.js 依赖审计 | ✅ | 2026-03-24 | QA | 0漏洞 |
-| 3 | Docker 镜像扫描 | ⚠️ | 2026-03-24 | QA | 4个已知OS漏洞(已在文档记录)，6个node-tar/esbuild漏洞 |
-| 4 | 供应链安全 | ✅ | 2026-03-24 | QA | npm registry官方，package-lock.json有integrity字段 |
+| 1 | Rust 依赖审计 | ✅ | 2026-03-31 | QA | 3个警告(已维护的传递依赖): adler, bincode, paste |
+| 2 | Node.js 依赖审计 | ✅ | 2026-03-31 | QA | 0漏洞 |
+| 3 | Docker 镜像扫描 | ⚠️ | 2026-03-31 | QA | auth9-core: 10个OS漏洞(9 HIGH, 1 CRITICAL); auth9-portal: 0漏洞 |
+| 4 | 供应链安全 | ✅ | 2026-03-31 | QA | npm registry官方(https://registry.npmjs.org/)，package-lock.json有integrity字段 |
 
 ---
 
@@ -399,7 +402,9 @@ updates:
 ### 回归记录表
 | 检查项ID | 执行结果(pass/fail) | 风险等级 | 证据（请求/响应/日志/截图） | 备注 |
 |---|---|---|---|---|
-|  |  |  |  |  |
+| M-INFRA-03-C01 | pass | 低 | cargo audit: 3个警告(无漏洞) | adler/bincode/paste为传递依赖警告，已维护 |
+| M-INFRA-03-C02 | pass | 低 | npm audit: 0 vulnerabilities | |
+| M-INFRA-03-C03 | pass | 中 | trivy: auth9-core有10个OS漏洞(已文档化)，auth9-portal 0漏洞 | 已知漏洞无法修复，使用Alpine基础镜像可消除 |
 
 ### 退出准则
 1. 所有检查项执行完成，且高风险项无 `fail`。

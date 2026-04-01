@@ -298,8 +298,8 @@ curl -s -X POST http://localhost:8080/api/v1/invitations/$INV_ID/revoke \
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | Tenants CRUD 全流程 | ☐ | | | |
-| 2 | Users 子客户端 — 创建与租户关联 | ☐ | | | |
-| 3 | Services 子客户端 — CRUD 与 Client 管理 | ☐ | | | |
-| 4 | Roles & Permissions — RBAC 管理 | ☐ | | | |
-| 5 | Invitations — 创建与撤销 | ☐ | | | |
+| 1 | Tenants CRUD 全流程 | ✅ | 2026-03-31 | QA | GET 跨租户返回 null (IDOR 防护) |
+| 2 | Users 子客户端 — 创建与租户关联 | ✅ | 2026-03-31 | QA | |
+| 3 | Services 子客户端 — CRUD 与 Client 管理 | ✅ | 2026-03-31 | QA | Integration 端点返回数据在 `endpoints` 子对象中 |
+| 4 | Roles & Permissions — RBAC 管理 | ✅ | 2026-03-31 | QA | |
+| 5 | Invitations — 创建与撤销 | ✅ | 2026-03-31 | QA | 需使用 token 对应租户的 tenant_id |

@@ -134,6 +134,6 @@ TENANT_OWNER_TOKEN=$(node .claude/skills/tools/gen-test-tokens.js tenant-owner)
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | 服务启动后健康检查正常 | ☐ | | | |
-| 2 | Session API 保持可访问 | ☐ | | | |
-| 3 | Identity Provider API 保持可访问 | ☐ | | | |
+| 1 | 服务启动后健康检查正常 | ✅ PASS | 2026-03-31 | | |
+| 2 | Session API 保持可访问 | ✅ PASS | 2026-03-31 | | |
+| 3 | Identity Provider API 保持可访问 | ✅ PASS | 2026-03-31 | | |
