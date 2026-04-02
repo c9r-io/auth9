@@ -1,5 +1,6 @@
 import type { MetaFunction, LoaderFunctionArgs } from "react-router";
 import { Link } from "react-router";
+import { ClockIcon } from "@radix-ui/react-icons";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { useI18n } from "~/i18n";
@@ -27,6 +28,7 @@ export default function OnboardPending() {
         </CardDescription>
       </CardHeader>
       <CardContent className="text-center space-y-4">
+        <ClockIcon className="h-12 w-12 text-[var(--accent-orange)] mx-auto" />
         <p className="text-sm text-[var(--text-secondary)]">
           {t("onboarding.pendingHint")}
         </p>

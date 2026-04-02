@@ -32,6 +32,8 @@ Auth9 的 OIDC 授权码流程已实现 PKCE（Proof Key for Code Exchange, RFC 
 
 ## 场景 1：Portal 密码登录 — PKCE 参数透传验证
 
+> **Note**: Since the auth9-oidc replacement (2026-03-21), password login uses the Hosted Login API directly without PKCE. PKCE parameters are only used for social and SSO login flows. This scenario tests the social/SSO PKCE flow instead.
+
 ### 初始状态
 - 用户未登录
 - 所有服务健康（auth9-core、Redis）

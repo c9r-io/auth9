@@ -36,6 +36,8 @@
 > - (a) 在测试前手动删除该用户的 TOTP 凭据（通过数据库或 API），或
 > - (b) 创建一个新的测试用户，设置 `mfa_enabled=1` 但不配置 TOTP 凭据
 >
+> **前置条件**: 种子数据中 `mfa-user@auth9.local` 已配置 TOTP 凭据。若需测试首次 TOTP 注册流程，需先通过 API 删除该用户的 TOTP 凭据：`DELETE /api/v1/users/{user_id}/credentials/totp`
+>
 > 如果直接使用 `mfa-user@auth9.local` 登录，系统会跳过 TOTP 注册页直接进入 TOTP 验证页（因为 TOTP 已配置），这不是 bug。
 
 > **MFA 测试用户**: 使用 `./scripts/reset-docker.sh` 种子化的 MFA 测试用户 `mfa-user@auth9.local`，该用户已预配置为"MFA 已启用但 TOTP 未配置"状态，适合直接测试首次 TOTP 注册流程。

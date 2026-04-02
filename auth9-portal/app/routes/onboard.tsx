@@ -1,5 +1,6 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { redirect, Outlet, useLoaderData } from "react-router";
+import { LanguageSwitcher } from "~/components/LanguageSwitcher";
 import { ThemeToggle } from "~/components/ThemeToggle";
 import { requireAuthWithUpdate } from "~/services/session.server";
 import { userApi } from "~/services/api";
@@ -38,7 +39,8 @@ export default function OnboardLayout() {
   const { email } = useLoaderData<typeof loader>();
   return (
     <>
-      <div className="fixed top-6 right-6 z-20">
+      <div className="fixed top-6 right-6 z-20 flex items-center gap-3">
+        <LanguageSwitcher />
         <ThemeToggle />
       </div>
 

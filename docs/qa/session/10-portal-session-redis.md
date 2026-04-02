@@ -101,7 +101,7 @@ docker exec auth9-redis redis-cli PING
 - Redis key 存在且前缀为 `portal:session:`
 - Session 数据为 JSON 结构，包含以下字段：
   - `identityAccessToken` — 非空字符串（identity token）
-  - `refreshToken` — 非空字符串（仅存在于 Redis，不在 Cookie 中）
+  - `refreshToken` — 仅在 OAuth/OIDC 授权码流程登录时存在。密码登录和 MFA 流程不返回 refresh token，此字段为空。
   - 注意：`accessToken` 和 `expiresAt` 是冗余别名，已在存储时剥离（读取时由 `normalizeSession` 重建）
 - TTL 值在合理范围内（登录后应接近 28800 秒 = 8 小时）
 

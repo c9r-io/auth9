@@ -208,6 +208,10 @@ pub async fn update_password_policy<S: HasPasswordManagement + HasServices>(
         .update_policy(tenant_id, input)
         .await?;
 
+    // Invalidate tenant config cache so subsequent reads (e.g. user creation)
+    // see the updated password policy instead of the stale cached version.
+    state.tenant_service().invalidate_config_cache(tenant_id).await;
+
     let _ = write_audit_log_generic(
         &state,
         &headers,

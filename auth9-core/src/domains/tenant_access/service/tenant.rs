@@ -541,6 +541,14 @@ impl<
         Ok(())
     }
 
+    /// Invalidate the cached tenant config. Call this after updating
+    /// tenant-level settings (e.g. password policy) outside of TenantService.
+    pub async fn invalidate_config_cache(&self, id: StringUuid) {
+        if let Some(cache) = &self.cache_manager {
+            let _ = cache.invalidate_tenant_config(Uuid::from(id)).await;
+        }
+    }
+
     pub async fn disable(&self, id: StringUuid) -> Result<Tenant> {
         let _ = self.get(id).await?;
         let input = UpdateTenantInput {

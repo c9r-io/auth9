@@ -41,8 +41,13 @@ export async function loader({ params, request }: LoaderFunctionArgs) {
       connectors: connectorsRes.data,
       corePublicUrl,
     };
-  } catch {
-    throw redirect("/dashboard/tenants");
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    const status = (error as { status?: number })?.status;
+    if (status === 401) {
+      throw redirect("/login");
+    }
+    throw new Response("Failed to load SSO data", { status: status || 500 });
   }
 }
 

@@ -188,8 +188,8 @@ curl -s http://localhost:8080/.well-known/jwks.json | jq .
 
 | # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
 |---|------|------|----------|----------|------|
-| 1 | Google 登录（Auth9 Broker） | ☐ | | | 需要真实 OAuth credentials |
-| 2 | 已登录用户主动关联社交身份 | ☐ | | | 需要真实 IdP 凭据环境验证 |
-| 3 | 解除社交账户 | ☐ | | | |
-| 4 | OIDC Discovery | ☐ | | | |
-| 5 | JWKS 端点 | ☐ | | | |
+| 1 | Google 登录（Auth9 Broker） | SKIP | 2026-04-01 | | 环境未配置IdP |
+| 2 | 已登录用户主动关联社交身份 | SKIP | 2026-04-01 | | 环境未配置IdP |
+| 3 | 解除社交账户 | SKIP | 2026-04-01 | | 环境未配置IdP |
+| 4 | OIDC Discovery | PASS | 2026-04-01 | | |
+| 5 | JWKS 端点 | PASS | 2026-04-01 | | |

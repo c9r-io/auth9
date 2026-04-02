@@ -27,7 +27,7 @@ function section(title) {
 }
 
 // Generate admin token
-const identityToken = execSync(".claude/skills/tools/gen-admin-token.sh")
+const identityToken = execSync("node .claude/skills/tools/gen-test-tokens.js identity-user")
   .toString()
   .trim();
 

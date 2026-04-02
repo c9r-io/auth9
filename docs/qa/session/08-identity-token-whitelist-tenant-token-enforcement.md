@@ -234,7 +234,7 @@ curl -i "http://localhost:8080/api/v1/tenants/{tenant_b}" \
 
 ### 预期结果
 - 切换动作触发新的 tenant token exchange
-- 第 3 步返回 `403 FORBIDDEN`
+- 第 3 步返回 `403 FORBIDDEN`（注：此行为已修复，跨租户 Tenant Access Token 访问现在正确返回 403 Forbidden，之前版本曾返回 404）
 - 第 4 步返回 `200 OK`
 
 ### 故障排查

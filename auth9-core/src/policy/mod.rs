@@ -625,8 +625,8 @@ fn require_tenant_scope_match(
             if auth.tenant_id == Some(*tenant_id) {
                 Ok(())
             } else {
-                Err(AppError::NotFound(
-                    "Resource not found".to_string(),
+                Err(AppError::Forbidden(
+                    "Access denied: token is scoped to a different tenant".to_string(),
                 ))
             }
         }
@@ -639,8 +639,8 @@ fn require_tenant_scope_match(
             if auth.tenant_id == Some(*tenant_id) {
                 Ok(())
             } else {
-                Err(AppError::NotFound(
-                    "Resource not found".to_string(),
+                Err(AppError::Forbidden(
+                    "Access denied: token is scoped to a different tenant".to_string(),
                 ))
             }
         }

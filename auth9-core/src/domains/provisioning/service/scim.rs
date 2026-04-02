@@ -118,6 +118,7 @@ where
                 Some(existing.id),
                 "success",
                 None,
+                Some(200),
             )
             .await;
 
@@ -150,6 +151,7 @@ where
                         None,
                         "error",
                         Some(&format!("Identity backend error: {}", e)),
+                        Some(500),
                     )
                     .await;
                     return Err(AppError::IdentityBackend(format!(
@@ -203,6 +205,7 @@ where
             Some(user.id),
             "success",
             None,
+            Some(201),
         )
         .await;
 
@@ -284,6 +287,7 @@ where
             Some(user_id),
             "success",
             None,
+            Some(200),
         )
         .await;
 
@@ -356,6 +360,7 @@ where
             Some(user_id),
             "success",
             None,
+            Some(200),
         )
         .await;
 
@@ -391,6 +396,7 @@ where
             Some(user_id),
             "success",
             None,
+            Some(204),
         )
         .await;
 
@@ -541,6 +547,7 @@ where
             Some(mapping.id),
             "success",
             None,
+            Some(201),
         )
         .await;
 
@@ -699,7 +706,7 @@ where
             }
         }
 
-        self.log_operation(ctx, "patch", "Group", None, Some(group_id), "success", None)
+        self.log_operation(ctx, "patch", "Group", None, Some(group_id), "success", None, Some(200))
             .await;
 
         self.get_group(group_id, ctx).await
@@ -857,6 +864,7 @@ where
             Some(group_id),
             "success",
             None,
+            Some(204),
         )
         .await;
 
@@ -1108,6 +1116,7 @@ where
         auth9_resource_id: Option<StringUuid>,
         status: &str,
         error_detail: Option<&str>,
+        response_status: Option<i32>,
     ) {
         let input = CreateScimLogInput {
             tenant_id: ctx.tenant_id,
@@ -1118,7 +1127,7 @@ where
             auth9_resource_id,
             status: status.to_string(),
             error_detail: error_detail.map(|s| s.to_string()),
-            response_status: None,
+            response_status,
         };
         if let Err(e) = self.log_repo.create(&input).await {
             tracing::warn!("Failed to log SCIM operation: {}", e);
