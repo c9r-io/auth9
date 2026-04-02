@@ -342,7 +342,9 @@ pub async fn enforce_with_state<S: HasServices>(
                     .tenant_id
                     .ok_or_else(|| AppError::Forbidden("No tenant context in token".to_string()))?;
                 if token_tenant_id != **tenant_id {
-                    return Err(AppError::NotFound("Not found".to_string()));
+                    return Err(AppError::Forbidden(
+                        "Access denied: token is scoped to a different tenant".to_string(),
+                    ));
                 }
             }
         }
@@ -585,8 +587,8 @@ fn require_tenant_admin_or_permission(
                 .ok_or_else(|| AppError::Forbidden("No tenant context in token".to_string()))?;
 
             if token_tenant_id != *tenant_id {
-                return Err(AppError::NotFound(
-                    "Resource not found".to_string(),
+                return Err(AppError::Forbidden(
+                    "Access denied: token is scoped to a different tenant".to_string(),
                 ));
             }
 
@@ -918,7 +920,7 @@ mod tests {
 
         let result = enforce(&config, &user, &input);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::NotFound(_)));
+        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
     }
 
     #[test]
@@ -1365,7 +1367,7 @@ mod tests {
 
         let result = enforce(&config, &user, &input);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::NotFound(_)));
+        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
     }
 
     #[test]
@@ -1448,7 +1450,7 @@ mod tests {
 
         let result = enforce(&config, &user, &input);
         assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), AppError::NotFound(_)));
+        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
     }
 
     #[test]
@@ -1462,6 +1464,71 @@ mod tests {
         };
 
         let result = enforce(&config, &user, &input);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
+    }
+
+    // ── Cross-tenant enforcement tests (TenantAccess and ServiceClient) ──
+
+    #[test]
+    fn test_tenant_read_cross_tenant_returns_forbidden() {
+        let config = create_test_config(vec![]);
+        let tenant_a = StringUuid::new_v4();
+        let tenant_b = StringUuid::new_v4();
+        let user = create_tenant_admin(tenant_a);
+        let input = PolicyInput {
+            action: PolicyAction::TenantRead,
+            scope: ResourceScope::Tenant(tenant_b),
+        };
+
+        let result = enforce(&config, &user, &input);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
+    }
+
+    #[test]
+    fn test_tenant_write_cross_tenant_returns_forbidden() {
+        let config = create_test_config(vec![]);
+        let tenant_a = StringUuid::new_v4();
+        let tenant_b = StringUuid::new_v4();
+        let user = create_tenant_owner(tenant_a);
+        let input = PolicyInput {
+            action: PolicyAction::TenantWrite,
+            scope: ResourceScope::Tenant(tenant_b),
+        };
+
+        let result = enforce(&config, &user, &input);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
+    }
+
+    #[test]
+    fn test_service_client_cross_tenant_returns_forbidden() {
+        let config = create_test_config(vec![]);
+        let tenant_a = StringUuid::new_v4();
+        let tenant_b = StringUuid::new_v4();
+        let client = create_service_client(Some(tenant_a));
+        let input = PolicyInput {
+            action: PolicyAction::TenantRead,
+            scope: ResourceScope::Tenant(tenant_b),
+        };
+
+        let result = enforce(&config, &client, &input);
+        assert!(result.is_err());
+        assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
+    }
+
+    #[test]
+    fn test_identity_token_requires_tenant_scoped_token() {
+        let config = create_test_config(vec![]);
+        let tenant_id = StringUuid::new_v4();
+        let admin = create_platform_admin();
+        let input = PolicyInput {
+            action: PolicyAction::TenantRead,
+            scope: ResourceScope::Tenant(tenant_id),
+        };
+
+        let result = enforce(&config, &admin, &input);
         assert!(result.is_err());
         assert!(matches!(result.unwrap_err(), AppError::Forbidden(_)));
     }

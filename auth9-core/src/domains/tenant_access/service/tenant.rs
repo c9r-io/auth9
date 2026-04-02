@@ -1199,4 +1199,12 @@ mod tests {
         let result = service.disable(id).await;
         assert!(matches!(result, Err(AppError::NotFound(_))));
     }
+
+    #[tokio::test]
+    async fn test_invalidate_config_cache_without_cache() {
+        let mock = MockTenantRepository::new();
+        let service = create_test_service(mock);
+        // Should not panic when no cache manager is set
+        service.invalidate_config_cache(StringUuid::new_v4()).await;
+    }
 }

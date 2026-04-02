@@ -1304,4 +1304,81 @@ mod tests {
         assert_eq!(result.total_results, 1);
         assert_eq!(result.resources[0].user_name, "john@example.com");
     }
+
+    #[tokio::test]
+    async fn test_log_operation_passes_response_status() {
+        let user_mock = MockUserRepository::new();
+        let group_mock = MockScimGroupRoleMappingRepository::new();
+        let mut log_mock = MockScimProvisioningLogRepository::new();
+
+        // Verify that response_status is passed through to the repository
+        log_mock
+            .expect_create()
+            .withf(|input| input.response_status == Some(201))
+            .returning(|_| {
+                Ok(ScimProvisioningLog {
+                    id: StringUuid::new_v4(),
+                    tenant_id: StringUuid::new_v4(),
+                    connector_id: StringUuid::new_v4(),
+                    operation: "create".to_string(),
+                    resource_type: "User".to_string(),
+                    scim_resource_id: None,
+                    auth9_resource_id: None,
+                    status: "success".to_string(),
+                    error_detail: None,
+                    response_status: Some(201),
+                    created_at: chrono::Utc::now(),
+                })
+            });
+
+        let service = ScimService::new(
+            Arc::new(user_mock),
+            Arc::new(group_mock),
+            Arc::new(log_mock),
+            None,
+        );
+
+        let ctx = make_ctx();
+        service
+            .log_operation(&ctx, "create", "User", None, None, "success", None, Some(201))
+            .await;
+    }
+
+    #[tokio::test]
+    async fn test_log_operation_passes_none_response_status() {
+        let user_mock = MockUserRepository::new();
+        let group_mock = MockScimGroupRoleMappingRepository::new();
+        let mut log_mock = MockScimProvisioningLogRepository::new();
+
+        log_mock
+            .expect_create()
+            .withf(|input| input.response_status.is_none())
+            .returning(|_| {
+                Ok(ScimProvisioningLog {
+                    id: StringUuid::new_v4(),
+                    tenant_id: StringUuid::new_v4(),
+                    connector_id: StringUuid::new_v4(),
+                    operation: "create".to_string(),
+                    resource_type: "User".to_string(),
+                    scim_resource_id: None,
+                    auth9_resource_id: None,
+                    status: "error".to_string(),
+                    error_detail: None,
+                    response_status: None,
+                    created_at: chrono::Utc::now(),
+                })
+            });
+
+        let service = ScimService::new(
+            Arc::new(user_mock),
+            Arc::new(group_mock),
+            Arc::new(log_mock),
+            None,
+        );
+
+        let ctx = make_ctx();
+        service
+            .log_operation(&ctx, "create", "User", None, None, "error", None, None)
+            .await;
+    }
 }
