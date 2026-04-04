@@ -245,6 +245,7 @@ export default function ServiceDetailPage() {
             actionError={actionError}
             clients={clients}
             formatDate={(value) => formatters.date(value)}
+            integration={integration as ServiceIntegrationInfo | null}
             isAddClientOpen={isAddClientOpen}
             isSubmitting={isSubmitting}
             service={service}

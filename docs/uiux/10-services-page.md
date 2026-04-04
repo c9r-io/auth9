@@ -8,7 +8,7 @@
 
 ## 场景 1：Client Secret 显示区域响应式
 
-> **[DEFERRED - pending FR: portal_client_secret_display.md]**
+> **[IMPLEMENTED]** — Client Secret 显示已在 Configuration Tab 中实现。详见 QA 文档: [docs/qa/service/07-client-secret-display.md](../qa/service/07-client-secret-display.md)
 
 ### 目的
 验证生成的密钥在不同尺寸下的换行和按钮大小。

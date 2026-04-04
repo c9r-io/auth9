@@ -1,4 +1,4 @@
-import { CopyIcon, PlusIcon, TrashIcon, UpdateIcon } from "@radix-ui/react-icons";
+import { CopyIcon, EyeClosedIcon, EyeOpenIcon, PlusIcon, TrashIcon, UpdateIcon } from "@radix-ui/react-icons";
 import { useState } from "react";
 import { Form } from "react-router";
 import { Button } from "~/components/ui/button";
@@ -15,13 +15,14 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { useI18n } from "~/i18n";
-import type { Client, Service } from "~/services/api";
+import type { Client, Service, ServiceIntegrationInfo } from "~/services/api";
 import { copyToClipboard } from "./copyable-value";
 
 interface ServiceConfigurationTabProps {
   actionError?: string | null;
   clients: Client[];
   formatDate: (value: string) => string;
+  integration: ServiceIntegrationInfo | null;
   isAddClientOpen: boolean;
   isSubmitting: boolean;
   service: Service;
@@ -34,6 +35,7 @@ export function ServiceConfigurationTab({
   actionError,
   clients,
   formatDate,
+  integration,
   isAddClientOpen,
   isSubmitting,
   service,
@@ -43,6 +45,19 @@ export function ServiceConfigurationTab({
 }: ServiceConfigurationTabProps) {
   const { t } = useI18n();
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [revealedSecrets, setRevealedSecrets] = useState<Set<string>>(new Set());
+
+  const toggleReveal = (clientId: string) => {
+    setRevealedSecrets((previous) => {
+      const next = new Set(previous);
+      if (next.has(clientId)) {
+        next.delete(clientId);
+      } else {
+        next.add(clientId);
+      }
+      return next;
+    });
+  };
 
   const handleCopy = async (text: string, fieldName: string) => {
     await copyToClipboard(text);
@@ -161,6 +176,61 @@ export function ServiceConfigurationTab({
                           )}
                         </Button>
                       </div>
+                      {(() => {
+                        const integrationClient = integration?.clients.find(
+                          (c) => c.client_id === client.client_id
+                        );
+                        return (
+                          <div className="mt-1.5">
+                            <span className="text-[11px] text-[var(--text-tertiary)]">
+                              {t("services.detail.clientSecret")}
+                            </span>
+                            {integrationClient?.client_secret ? (
+                              <div className="flex min-w-0 items-center gap-1">
+                                <code className="min-w-0 flex-1 select-all break-all whitespace-normal font-mono text-xs text-[var(--text-primary)] [word-break:break-all]">
+                                  {revealedSecrets.has(client.client_id)
+                                    ? integrationClient.client_secret
+                                    : "••••••••••••••••••••••••"}
+                                </code>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-11 w-11 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] sm:h-6 sm:w-6"
+                                  onClick={() => toggleReveal(client.client_id)}
+                                  title={
+                                    revealedSecrets.has(client.client_id)
+                                      ? t("services.integration.hide")
+                                      : t("services.integration.reveal")
+                                  }
+                                >
+                                  {revealedSecrets.has(client.client_id) ? (
+                                    <EyeClosedIcon className="h-3 w-3" />
+                                  ) : (
+                                    <EyeOpenIcon className="h-3 w-3" />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-11 w-11 shrink-0 text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] sm:h-6 sm:w-6"
+                                  onClick={() => handleCopy(integrationClient.client_secret!, `secret-${client.id}`)}
+                                  title={t("services.integration.copySecret")}
+                                >
+                                  {copiedField === `secret-${client.id}` ? (
+                                    <span className="text-xs text-[var(--accent-green)]">&#10003;</span>
+                                  ) : (
+                                    <CopyIcon className="h-3 w-3" />
+                                  )}
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="text-xs italic text-[var(--text-secondary)]">
+                                {t("services.integration.clientSecretUnavailable")}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                       <div className="mt-1 text-xs text-[var(--text-secondary)]">
                         {client.name || t("services.detail.noDescription")}
                       </div>

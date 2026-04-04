@@ -51,7 +51,7 @@
 | [rbac/04-advanced.md](./rbac/04-advanced.md) | 层次视图、循环检测 | 3 |
 | [rbac/05-abac-policy-management.md](./rbac/05-abac-policy-management.md) | ABAC 策略草稿、发布、回滚、模拟 | 5 |
 
-### 服务与客户端 (6 个文档, 30 个场景)
+### 服务与客户端 (7 个文档, 35 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [service/01-service-crud.md](./service/01-service-crud.md) | 服务 CRUD（含 Actions/Branding 级联删除） | 5 |
@@ -60,6 +60,7 @@
 | [service/04-tenant-service-toggle.md](./service/04-tenant-service-toggle.md) | 租户服务启停 | 5 |
 | [service/05-integration-info.md](./service/05-integration-info.md) | 集成信息 API 与 Portal 页面 | 5 |
 | [service/06-service-branding.md](./service/06-service-branding.md) | Service 级品牌配置、公开端点 client_id、托管认证页品牌集成 | 5 |
+| [service/07-client-secret-display.md](./service/07-client-secret-display.md) | Configuration Tab Client Secret 显示、遮蔽/揭示、复制、降级处理 | 5 |
 
 ### 邀请管理 (3 个文档, 15 个场景)
 | 文档 | 描述 | 场景数 |
