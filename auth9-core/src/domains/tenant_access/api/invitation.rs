@@ -393,6 +393,12 @@ pub async fn accept<S: HasInvitations>(
         .get_by_token(&request.token)
         .await?;
 
+    // Block acceptance on non-active (e.g. suspended) tenants
+    state
+        .tenant_service()
+        .require_active(invitation.tenant_id)
+        .await?;
+
     if !invitation.is_valid() {
         if invitation.is_expired() {
             return Err(AppError::BadRequest("Invitation has expired".to_string()));

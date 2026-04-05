@@ -614,7 +614,7 @@ export default function Login() {
                   )}
 
                   {visibleError && (
-                    <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
+                    <div role="alert" className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
                       {visibleError}
                     </div>
                   )}
@@ -656,7 +656,7 @@ export default function Login() {
                   />
 
                   {visibleError && (
-                    <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
+                    <div role="alert" className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
                       {visibleError}
                     </div>
                   )}
@@ -704,7 +704,7 @@ export default function Login() {
                   />
 
                   {visibleError && (
-                    <div className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
+                    <div role="alert" className="rounded-xl border border-[var(--accent-red)]/25 bg-[var(--accent-red)]/12 p-3 text-sm text-[var(--accent-red)]">
                       {visibleError}
                     </div>
                   )}
@@ -803,7 +803,7 @@ export default function Login() {
                     </div>
                   )}
                 {visibleError && (
-                  <p className="text-sm text-[var(--accent-red)]">{visibleError}</p>
+                  <p role="alert" className="text-sm text-[var(--accent-red)]">{visibleError}</p>
                 )}
 
                 {passkeyError && (

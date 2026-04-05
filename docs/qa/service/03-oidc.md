@@ -8,6 +8,8 @@
 
 ## 场景 1：Redirect URI 验证
 
+> [需要浏览器自动化] 场景 1-2 需要完整的浏览器 OIDC 重定向流程，无法通过 curl 测试。请使用 Playwright 或手动浏览器测试。
+
 ### 初始状态
 - 服务配置了 redirect_uris: `["https://app.example.com/callback"]`
 
@@ -30,6 +32,8 @@ SELECT redirect_uris FROM services WHERE id = '{service_id}';
 ---
 
 ## 场景 2：多 Redirect URI 配置
+
+> [需要浏览器自动化] 场景 1-2 需要完整的浏览器 OIDC 重定向流程，无法通过 curl 测试。请使用 Playwright 或手动浏览器测试。
 
 ### 初始状态
 - 服务需要支持多个回调地址

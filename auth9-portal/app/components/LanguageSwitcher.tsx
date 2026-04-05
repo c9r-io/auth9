@@ -1,4 +1,4 @@
-import { useRevalidator } from "react-router";
+import { useFetcher, useRevalidator } from "react-router";
 import { useLocale, useI18n, type AppLocale } from "~/i18n";
 import {
   DropdownMenu,
@@ -12,11 +12,13 @@ export function LanguageSwitcher() {
   const { t } = useI18n();
   const { locale, setLocale } = useLocale();
   const revalidator = useRevalidator();
+  const fetcher = useFetcher();
 
   const handleChange = async (value: string) => {
     const nextLocale = value as AppLocale;
     if (nextLocale === locale) return;
     await setLocale(nextLocale);
+    fetcher.submit({ locale: nextLocale }, { method: "post", action: "/api/locale" });
     revalidator.revalidate();
   };
 

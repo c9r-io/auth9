@@ -17,6 +17,8 @@
 
 ---
 
+> **前置条件**: 测试用户 `mfa-user@auth9.local` 需通过 `./scripts/reset-docker.sh` 预置。
+
 ## 场景 1：MFA 启用 + 无凭证 — 登录返回 CONFIGURE_TOTP Action
 
 ### 步骤 0（Gate Check）
@@ -25,7 +27,7 @@
 - 存在一个测试用户，`mfa_enabled=true`，且无 TOTP/WebAuthn 凭证
 
 ### 初始状态
-- 测试用户 `mfa-test@example.com` 已存在
+- 测试用户 `mfa-user@auth9.local` 已存在
 - 用户 `mfa_enabled=true`
 - 用户无 TOTP/WebAuthn 凭证记录
 
@@ -43,7 +45,7 @@ TOKEN=$(.claude/skills/tools/gen-admin-token.sh)
 ```bash
 # 查找用户
 USER_ID=$(curl -s http://localhost:8080/api/v1/users \
-  -H "Authorization: Bearer $TOKEN" | jq -r '.items[] | select(.email=="mfa-test@example.com") | .id')
+  -H "Authorization: Bearer $TOKEN" | jq -r '.items[] | select(.email=="mfa-user@auth9.local") | .id')
 
 # 启用 MFA
 curl -s -X PUT "http://localhost:8080/api/v1/users/${USER_ID}/mfa" \
@@ -58,7 +60,7 @@ curl -s -X PUT "http://localhost:8080/api/v1/users/${USER_ID}/mfa" \
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/hosted-login/password \
   -H "Content-Type: application/json" \
-  -d '{"email": "mfa-test@example.com", "password": "Test1234!"}' | jq .
+  -d '{"email": "mfa-user@auth9.local", "password": "Test1234!"}' | jq .
 ```
 
 ### 预期结果
@@ -82,7 +84,7 @@ curl -s -X POST http://localhost:8080/api/v1/hosted-login/password \
 ### 预期数据状态
 ```sql
 SELECT id, action_type, status FROM auth9_oidc.pending_actions
-WHERE user_id = (SELECT identity_subject FROM auth9.users WHERE email = 'mfa-test@example.com')
+WHERE user_id = (SELECT identity_subject FROM auth9.users WHERE email = 'mfa-user@auth9.local')
 AND action_type = 'CONFIGURE_TOTP'
 AND status = 'pending';
 -- 预期: 1 行
@@ -135,7 +137,7 @@ curl -s -X POST http://localhost:8080/api/v1/hosted-login/complete-action \
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/hosted-login/password \
   -H "Content-Type: application/json" \
-  -d '{"email": "mfa-test@example.com", "password": "Test1234!"}' | jq .
+  -d '{"email": "mfa-user@auth9.local", "password": "Test1234!"}' | jq .
 ```
 
 ### 预期结果
@@ -147,13 +149,13 @@ curl -s -X POST http://localhost:8080/api/v1/hosted-login/password \
 ```sql
 -- Action 已完成
 SELECT id, action_type, status, completed_at FROM auth9_oidc.pending_actions
-WHERE user_id = (SELECT identity_subject FROM auth9.users WHERE email = 'mfa-test@example.com')
+WHERE user_id = (SELECT identity_subject FROM auth9.users WHERE email = 'mfa-user@auth9.local')
 AND action_type = 'CONFIGURE_TOTP';
 -- 预期: status = 'completed', completed_at IS NOT NULL
 
 -- TOTP 凭证已创建
 SELECT id, credential_type, is_active FROM auth9_oidc.credentials
-WHERE user_id = (SELECT id FROM auth9.users WHERE email = 'mfa-test@example.com')
+WHERE user_id = (SELECT id FROM auth9.users WHERE email = 'mfa-user@auth9.local')
 AND credential_type = 'totp';
 -- 预期: 1 行, is_active = 1
 ```
@@ -177,7 +179,7 @@ AND credential_type = 'totp';
 ```bash
 curl -s -X POST http://localhost:8080/api/v1/hosted-login/password \
   -H "Content-Type: application/json" \
-  -d '{"email": "mfa-test@example.com", "password": "Test1234!"}' | jq .
+  -d '{"email": "mfa-user@auth9.local", "password": "Test1234!"}' | jq .
 ```
 
 ### 预期结果
@@ -195,7 +197,7 @@ curl -s -X POST http://localhost:8080/api/v1/hosted-login/password \
 ### 预期数据状态
 ```sql
 SELECT id, action_type, status FROM auth9_oidc.pending_actions
-WHERE user_id = (SELECT identity_subject FROM auth9.users WHERE email = 'mfa-test@example.com')
+WHERE user_id = (SELECT identity_subject FROM auth9.users WHERE email = 'mfa-user@auth9.local')
 AND action_type = 'CONFIGURE_TOTP'
 AND status = 'pending';
 -- 预期: 0 行（无新建的 pending action）

@@ -46,6 +46,7 @@ try {
 let explicitUserId = null;
 let tokenType = "access"; // default to access token for SCIM/API tests
 let tenantId = process.env.TENANT_ID || null;
+let audienceOverride = null;
 
 for (let i = 2; i < process.argv.length; i++) {
     const arg = process.argv[i];
@@ -57,6 +58,10 @@ for (let i = 2; i < process.argv.length; i++) {
         tenantId = process.argv[++i];
     } else if (arg.startsWith('--tenant-id=')) {
         tenantId = arg.split('=')[1];
+    } else if (arg === '--audience' && process.argv[i + 1]) {
+        audienceOverride = process.argv[++i];
+    } else if (arg.startsWith('--audience=')) {
+        audienceOverride = arg.split('=')[1];
     } else if (!arg.startsWith('--')) {
         explicitUserId = arg;
     }
@@ -115,7 +120,10 @@ const payload = {
   email: "admin@auth9.local",
   name: "Admin User",
   iss: "http://localhost:8080",
-  aud: "auth9",
+  // auth9-core middleware validates that `aud` matches a registered OAuth client ID.
+  // Access tokens must use "auth9-portal" (a registered client); "auth9" is only valid
+  // for identity tokens. Use --audience=<value> to override.
+  aud: audienceOverride || (tokenType === "access" ? "auth9-portal" : "auth9"),
   token_type: tokenType,
   iat: now,
   exp: now + 3600  // 1小时后过期

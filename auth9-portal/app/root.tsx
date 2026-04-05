@@ -8,6 +8,7 @@ import {
   useRouteError,
   isRouteErrorResponse,
 } from "react-router";
+import { useEffect } from "react";
 import type { LinksFunction, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { I18nProvider, type AppLocale } from "~/i18n";
 import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
@@ -91,6 +92,12 @@ export function ErrorBoundary() {
     || readLocaleFromCookie()
     || (typeof document !== "undefined" && (document.documentElement.lang as AppLocale))
     || "zh-CN";
+
+  useEffect(() => {
+    if (isRouteErrorResponse(error) && error.status === 404) {
+      document.title = `${translate(locale, "common.errors.pageNotFound")} - Auth9`;
+    }
+  }, [error, locale]);
 
   if (isRouteErrorResponse(error)) {
     return (

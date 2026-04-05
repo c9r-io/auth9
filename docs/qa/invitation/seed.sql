@@ -52,12 +52,14 @@ VALUES ('aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaa1', @tenant_id, @admin_user_id, 'own
 ON DUPLICATE KEY UPDATE role_in_tenant = VALUES(role_in_tenant);
 
 -- Seed invitations for list/filter/revoke/delete scenarios
+-- Token values: seed_token_pending, seed_token_expired, seed_token_revoked, seed_token_accepted
+-- Hashes generated with Argon2id (OWASP parameters: m=19456, t=2, p=1)
 INSERT INTO invitations (id, tenant_id, email, role_ids, invited_by, token_hash, status, expires_at, accepted_at, created_at, updated_at)
 VALUES
-  ('66666666-6666-4666-8666-666666666666', @tenant_id, 'pending@example.com', JSON_ARRAY(@role_editor_id, @role_viewer_id), @admin_user_id, 'seed_hash_pending', 'pending', DATE_ADD(NOW(), INTERVAL 72 HOUR), NULL, NOW(), NOW()),
-  ('77777777-7777-4777-8777-777777777777', @tenant_id, 'expired@example.com', JSON_ARRAY(@role_viewer_id), @admin_user_id, 'seed_hash_expired', 'pending', DATE_SUB(NOW(), INTERVAL 1 DAY), NULL, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY)),
-  ('88888888-8888-4888-8888-888888888888', @tenant_id, 'revoked@example.com', JSON_ARRAY(@role_admin_id), @admin_user_id, 'seed_hash_revoked', 'revoked', DATE_ADD(NOW(), INTERVAL 72 HOUR), NULL, NOW(), NOW()),
-  ('99999999-9999-4999-8999-999999999999', @tenant_id, 'accepted@example.com', JSON_ARRAY(@role_viewer_id), @admin_user_id, 'seed_hash_accepted', 'accepted', DATE_ADD(NOW(), INTERVAL 72 HOUR), NOW(), DATE_SUB(NOW(), INTERVAL 1 DAY), NOW())
+  ('66666666-6666-4666-8666-666666666666', @tenant_id, 'pending@example.com', JSON_ARRAY(@role_editor_id, @role_viewer_id), @admin_user_id, '$argon2id$v=19$m=19456,t=2,p=1$1xpDqNXam1NK6R1j7L0X4g$MP45EOZtkBIZrdhTnJLjzz6ACT3W6DfnriAAYtTvwRA', 'pending', DATE_ADD(NOW(), INTERVAL 72 HOUR), NULL, NOW(), NOW()),
+  ('77777777-7777-4777-8777-777777777777', @tenant_id, 'expired@example.com', JSON_ARRAY(@role_viewer_id), @admin_user_id, '$argon2id$v=19$m=19456,t=2,p=1$EyKE0BqD8N57rxUipBRCKA$c1uZz3j7ItjZypxgi0tokrH2sySwwHQhBPL4iWwEdcQ', 'pending', DATE_SUB(NOW(), INTERVAL 1 DAY), NULL, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY)),
+  ('88888888-8888-4888-8888-888888888888', @tenant_id, 'revoked@example.com', JSON_ARRAY(@role_admin_id), @admin_user_id, '$argon2id$v=19$m=19456,t=2,p=1$TSklROj9nxMihBDiPAegdA$VBovmUQfJk0nLeCLgi2axgbsyySeiFrmIthUN6f+YWo', 'revoked', DATE_ADD(NOW(), INTERVAL 72 HOUR), NULL, NOW(), NOW()),
+  ('99999999-9999-4999-8999-999999999999', @tenant_id, 'accepted@example.com', JSON_ARRAY(@role_viewer_id), @admin_user_id, '$argon2id$v=19$m=19456,t=2,p=1$rzVm7L2XMoaQEmJMyTnH2A$WMXhNTjsR+1Xf/9Edw4ObmndSh7LOsIYtn8zwddTpEY', 'accepted', DATE_ADD(NOW(), INTERVAL 72 HOUR), NOW(), DATE_SUB(NOW(), INTERVAL 1 DAY), NOW())
 ON DUPLICATE KEY UPDATE
   status = VALUES(status),
   expires_at = VALUES(expires_at),

@@ -56,6 +56,8 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 < docs/qa/session/seed.sql
 
 ---
 
+> **重要**: 测试用户必须通过 Portal UI 或 API 创建，不能通过直接 SQL INSERT。直接插入 users 表的用户在 auth9-oidc 身份存储中没有凭证，登录将失败。使用 `./scripts/reset-docker.sh` 重置环境以确保测试用户正确配置。
+
 ## 场景 1：暴力破解告警
 
 ### 初始状态
