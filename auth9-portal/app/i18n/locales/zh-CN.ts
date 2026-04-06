@@ -989,6 +989,8 @@ export default {
       connectorCreated: "连接器已创建",
       connectorDeleted: "连接器已删除",
       connectorUpdated: "连接器已更新",
+      editDomains: "编辑域名",
+      domainsValidationError: "请输入至少一个有效域名（如 example.com）",
     },
     samlApps: {
       metaTitle: "SAML 应用 - {{tenantName}} - Auth9",

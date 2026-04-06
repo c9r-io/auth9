@@ -464,6 +464,7 @@ cargo run --bin seed-data -- --dataset=qa-basic --reset
 
 | 日期 | 版本 | 更新内容 |
 |------|------|----------|
+| 2026-04-07 | 5.30.0 | **SSO 连接器域名内联编辑**：更新 `identity-provider/03-tenant-enterprise-sso-connectors.md` 场景 4（移除 PARTIAL 标记），覆盖 Portal 内联域名编辑 UI（铅笔图标、输入框、Save/Cancel）、空域名与无效格式校验、自动去重、API 验证（PUT domains）、DB 验证（enterprise_sso_domains）、i18n 三语支持；文档数与场景数不变；共 123 文档 584 场景 |
 | 2026-03-25 | 5.29.0 | **FR-002 LDAP/AD 企业 SSO 连接器**：新增 `identity-provider/04-enterprise-ldap-connectors.md`（5 场景）、`identity-provider/05-ldap-group-role-mappings.md`（4 场景），覆盖 LDAP 连接器 CRUD、config 校验、连接测试、AD 默认值、级联删除、组角色映射唯一约束；更新 `03-tenant-enterprise-sso-connectors.md` 背景说明；身份提供商 5 文档 24 场景；共 127 文档 597 场景 |
 | 2026-03-19 | 5.26.0 | **Phase 5 FR5 基础设施清理**：新增 integration/qa-infrastructure-keycloak-cleanup（Docker Compose/K8s/Portal/脚本 Keycloak 残留移除）共 5 场景；集成测试 23 文档 106 场景；共 125 文档 588 场景 |
 | 2026-03-19 | 5.25.0 | **Phase 5 FR2 解耦 Keycloak 类型**：新增 identity_engine/decouple_keycloak_types（编译、Clippy、trait 中性化、中性类型定义、SmtpServerConfig 迁移）共 5 场景；纯重构验证；共 124 文档 583 场景 |

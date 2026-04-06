@@ -166,40 +166,90 @@ WHERE domain = '{corp_domain}';
 
 ---
 
-## 场景 4：更新连接器启用状态与域名成功
-
-> **[PARTIAL - pending FR: portal_sso_connector_domain_edit.md]** 域名编辑功能尚未在 Portal UI 实现，启用/禁用开关可正常工作。域名更新需等待 FR 实现后验证。
+## 场景 4：Portal 内联编辑连接器域名
 
 ### 初始状态
-- 已存在连接器 `{connector_id}`，enabled=true，domains 包含 `{old_domain}`
+- 已存在连接器 `{connector_id}`，domains 包含 `corp.example.com`
+- 用户已登录 Portal 并进入「Tenants → {tenant} → Enterprise SSO」页面
 
 ### 目的
-验证连接器更新可同步到数据库并替换域名列表
+验证 Portal UI 内联域名编辑功能的完整流程，包括正常编辑、输入校验、自动去重与页面刷新
 
 ### 测试操作流程
-1. 调用更新接口（可通过 `PUT /demo/enterprise/connectors/{connector_id}`），将 `enabled=false`，domains 修改为 `[{new_domain}]`
-2. 刷新列表页
+
+#### 4a. 正常编辑域名（Happy Path）
+1. 在连接器卡片的域名区域，点击域名旁的铅笔图标（Pencil Icon）
+2. 确认域名区域切换为内联编辑模式，显示输入框和「Save」「Cancel」按钮
+3. 将输入框内容修改为 `new-corp.example.com`
+4. 点击「Save」
+5. 确认页面自动刷新（React Router revalidation），连接器卡片域名更新为 `new-corp.example.com`
+
+#### 4b. 校验：空域名
+1. 点击铅笔图标进入编辑模式
+2. 清空输入框内容
+3. 点击「Save」
+4. 确认页面显示校验错误提示（i18n key: `domainsValidationError`）
+
+#### 4c. 校验：无效格式（不含点号）
+1. 点击铅笔图标进入编辑模式
+2. 输入 `invalidformat`（不含 `.`）
+3. 点击「Save」
+4. 确认页面显示校验错误提示
+
+#### 4d. 自动去重
+1. 点击铅笔图标进入编辑模式
+2. 输入 `sso.example.com, sso.example.com, api.example.com`（包含重复域名）
+3. 点击「Save」
+4. 确认保存成功，连接器卡片域名仅显示 `sso.example.com` 和 `api.example.com`（去重后 2 个）
+
+#### 4e. 取消编辑
+1. 点击铅笔图标进入编辑模式
+2. 修改输入框内容
+3. 点击「Cancel」
+4. 确认域名恢复为编辑前的值，不触发 API 请求
+
+#### 4f. API 验证
+直连 core 接口验证域名更新：
+```bash
+curl -X PUT 'http://localhost:8080/api/v1/tenants/{tenant_id}/sso/connectors/{connector_id}' \
+  -H 'Authorization: Bearer {tenant_access_token}' \
+  -H 'Content-Type: application/json' \
+  -d '{"domains": ["new-corp.example.com", "sso.example.com"]}'
+```
+- 预期 HTTP 状态码 `200`
+- 返回的 `data.domains` 包含 `new-corp.example.com` 和 `sso.example.com`
 
 ### 预期结果
-- 接口返回更新成功
-- 页面状态开关显示为禁用
-- 连接器域名从 `{old_domain}` 变更为 `{new_domain}`
+- 铅笔图标点击后进入内联编辑模式，显示逗号分隔的域名输入框
+- 保存成功后页面自动刷新（无需手动 F5），连接器卡片域名即时更新
+- 空域名或格式无效时显示校验错误，不发送 API 请求
+- 重复域名自动去重后保存
+- 取消编辑不触发 API 调用
+- i18n 支持：错误提示在 en-US / zh-CN / ja 三种语言下均正确显示
 
 ### 预期数据状态
 ```sql
-SELECT enabled FROM enterprise_sso_connectors WHERE id = '{connector_id}';
--- 预期: enabled = 0
-
+-- 4a 正常编辑后
 SELECT domain FROM enterprise_sso_domains WHERE connector_id = '{connector_id}';
--- 预期: 仅 1 行且 domain = '{new_domain}'
+-- 预期: 1 行，domain = 'new-corp.example.com'
+
+-- 4d 去重后
+SELECT domain FROM enterprise_sso_domains WHERE connector_id = '{connector_id}' ORDER BY domain;
+-- 预期: 2 行，分别为 'api.example.com' 和 'sso.example.com'
+
+-- 4b/4c 校验失败后
+SELECT domain FROM enterprise_sso_domains WHERE connector_id = '{connector_id}';
+-- 预期: 域名未变更，保持编辑前的值
 ```
 
 ### Troubleshooting
 
 | 现象 | 原因 | 解决方法 |
 |------|------|----------|
-| UI 显示 "Identity provider updated" 但 `enterprise_sso_connectors.enabled` 未变 | **操作了错误的页面**：Identity Providers 页面（`/dashboard/settings/identity-providers`）只更新全局 IdP 配置，不更新 `enterprise_sso_connectors` 表 | 在 **Tenant SSO Connectors** 页面（`/dashboard/tenants/{tenantId}/sso`）操作，成功消息应为 "Connector updated" |
-| enabled 字段未更新但显示 "Connector updated" | 前端未正确发送 `enabled` 字段 | 检查浏览器 Network 面板中 PUT 请求 body 是否包含 `"enabled": false` |
+| 铅笔图标不可见 | 前端组件未渲染 Pencil2Icon | 检查连接器卡片 JSX 中 `editDomains` 相关代码是否正确引入 |
+| 保存后页面未自动刷新 | React Router revalidation 未触发 | 检查 Form action 返回后是否调用 `revalidator` 或返回 redirect |
+| UI 显示 "Identity provider updated" 但 `enterprise_sso_domains` 未变 | **操作了错误的页面**：Identity Providers 页面（`/dashboard/settings/identity-providers`）只更新全局 IdP 配置 | 在 **Tenant SSO Connectors** 页面（`/dashboard/tenants/{tenantId}/sso`）操作，成功消息应为 "Connector updated" |
+| 去重后仍显示重复域名 | 前端未在提交前执行 `[...new Set(...)]` | 检查 `intent=update_domains` action handler 中的去重逻辑 |
 
 > **注意**：系统有两个类似但不同的 SSO 管理页面：
 > - **Identity Providers**（`Settings → Identity Providers`）：管理全局 IdP 配置，不涉及 `enterprise_sso_connectors` 表
@@ -243,5 +293,5 @@ SELECT * FROM enterprise_sso_domains WHERE connector_id = '{connector_id}';
 | 1 | 创建 SAML 连接器成功 | ☐ | | | |
 | 2 | 创建 OIDC 连接器成功 | ☐ | | | |
 | 3 | 域名冲突时创建失败 | ☐ | | | |
-| 4 | 更新连接器启用状态与域名成功 | ☐ | | | |
+| 4 | Portal 内联编辑连接器域名 | ☐ | | | |
 | 5 | 测试连接与删除连接器 | ☐ | | | |

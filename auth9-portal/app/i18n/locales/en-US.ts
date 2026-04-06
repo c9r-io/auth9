@@ -992,6 +992,8 @@ export default {
       connectorCreated: "Connector created",
       connectorDeleted: "Connector deleted",
       connectorUpdated: "Connector updated",
+      editDomains: "Edit domains",
+      domainsValidationError: "Enter at least one valid domain (e.g. example.com)",
     },
     samlApps: {
       metaTitle: "SAML Applications - {{tenantName}} - Auth9",

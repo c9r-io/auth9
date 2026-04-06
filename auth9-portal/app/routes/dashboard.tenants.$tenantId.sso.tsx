@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs, MetaFunction } from "react-router";
 import { Form, Link, redirect, useActionData, useLoaderData, useNavigation } from "react-router";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { ArrowLeftIcon, Pencil2Icon } from "@radix-ui/react-icons";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
@@ -14,7 +14,7 @@ import { buildMeta, resolveMetaLocale } from "~/i18n/meta";
 import { resolveLocale } from "~/services/locale.server";
 import { translate } from "~/i18n/translate";
 import { mapApiError } from "~/lib/error-messages";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const meta: MetaFunction<typeof loader> = ({ data, matches }) => {
   return buildMeta(resolveMetaLocale(matches), "tenants.sso.metaTitle", undefined, {
@@ -127,6 +127,19 @@ export async function action({ request, params }: ActionFunctionArgs) {
       return { success: true, message: translate(locale, "tenants.sso.connectorUpdated") };
     }
 
+    if (intent === "update_domains") {
+      const connectorId = String(formData.get("connector_id") || "");
+      const domainsRaw = String(formData.get("domains") || "");
+      const domains = [...new Set(
+        domainsRaw.split(",").map((v) => v.trim()).filter(Boolean)
+      )];
+      if (domains.length === 0 || domains.some((d) => !d.includes("."))) {
+        return { error: translate(locale, "tenants.sso.domainsValidationError") };
+      }
+      await tenantSsoApi.update(tenantId, connectorId, { domains }, accessToken || undefined);
+      return { success: true, message: translate(locale, "tenants.sso.connectorUpdated") };
+    }
+
     if (intent === "test") {
       const connectorId = String(formData.get("connector_id") || "");
       const result = await tenantSsoApi.test(tenantId, connectorId, accessToken || undefined);
@@ -147,6 +160,14 @@ export default function TenantSsoPage() {
   const navigation = useNavigation();
   const isSubmitting = navigation.state === "submitting";
   const [providerType, setProviderType] = useState<"saml" | "oidc" | "ldap">("saml");
+  const [editingConnectorId, setEditingConnectorId] = useState<string | null>(null);
+  const [editingDomains, setEditingDomains] = useState("");
+
+  useEffect(() => {
+    if (actionData?.success) {
+      setEditingConnectorId(null);
+    }
+  }, [actionData]);
 
   return (
     <div className="space-y-6">
@@ -331,9 +352,49 @@ export default function TenantSsoPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium text-[var(--text-primary)]">{connector.display_name || connector.alias}</div>
-                    <div className="text-sm text-[var(--text-secondary)]">
-                      {connector.provider_type.toUpperCase()} • {connector.domains.join(", ")}
+                    <div className="text-sm text-[var(--text-secondary)] flex items-center gap-1">
+                      {connector.provider_type.toUpperCase()} •{" "}
+                      {editingConnectorId === connector.id ? null : (
+                        <>
+                          {connector.domains.join(", ")}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingConnectorId(connector.id);
+                              setEditingDomains(connector.domains.join(", "));
+                            }}
+                            className="ml-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                            title={t("tenants.sso.editDomains")}
+                          >
+                            <Pencil2Icon className="h-3 w-3" />
+                          </button>
+                        </>
+                      )}
                     </div>
+                    {editingConnectorId === connector.id && (
+                      <Form method="post" className="flex items-center gap-2 mt-2">
+                        <input type="hidden" name="intent" value="update_domains" />
+                        <input type="hidden" name="connector_id" value={connector.id} />
+                        <Input
+                          name="domains"
+                          value={editingDomains}
+                          onChange={(e) => setEditingDomains(e.target.value)}
+                          className="h-8 text-sm w-64"
+                          placeholder={t("tenants.sso.domainsPlaceholder")}
+                        />
+                        <Button type="submit" size="sm" disabled={isSubmitting}>
+                          {isSubmitting ? t("tenants.actions.saving") : t("tenants.actions.save")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingConnectorId(null)}
+                        >
+                          {t("common.buttons.cancel")}
+                        </Button>
+                      </Form>
+                    )}
                   </div>
                   <Form method="post" className="flex items-center gap-3">
                     <input type="hidden" name="intent" value="toggle" />
