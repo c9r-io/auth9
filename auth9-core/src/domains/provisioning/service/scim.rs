@@ -633,6 +633,13 @@ where
                     if path_lower == "members" {
                         if let Some(value) = &operation.value {
                             let member_refs = self.parse_member_values(value);
+                            if member_refs.is_empty() {
+                                tracing::warn!(
+                                    group_id = %group_id,
+                                    value = %value,
+                                    "SCIM Group PATCH: members value provided but no IDs parsed (expected array of {{value: <uuid>}} or single object)"
+                                );
+                            }
                             for member_id in member_refs {
                                 self.add_member_to_group(
                                     ctx.tenant_id,
@@ -641,6 +648,11 @@ where
                                 )
                                 .await?;
                             }
+                        } else {
+                            tracing::warn!(
+                                group_id = %group_id,
+                                "SCIM Group PATCH add members: no value provided, skipping"
+                            );
                         }
                     } else if path_lower == "displayname" {
                         if let Some(serde_json::Value::String(new_name)) = &operation.value {

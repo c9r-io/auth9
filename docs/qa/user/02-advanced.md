@@ -174,6 +174,31 @@ SELECT mfa_enabled FROM users WHERE id = '{user_id}';
 ### 初始状态
 - 数据库中存在 50 个用户
 
+### 测试数据准备（必须先执行）
+
+> `reset-docker.sh` 默认只 seed 少量用户（≈5 条），不足以验证分页。执行前先批量插入：
+>
+> ```bash
+> # 方式 A：通过 API 批量创建（推荐，走完整注册流程）
+> TOKEN=$(node scripts/qa/gen-access-token.js)
+> for i in $(seq 1 50); do
+>   curl -s -X POST http://localhost:8080/api/v1/users \
+>     -H "Authorization: Bearer $TOKEN" \
+>     -H "Content-Type: application/json" \
+>     -d "{\"user\":{\"email\":\"pagetest${i}@example.com\",\"display_name\":\"Page Test ${i}\"},\"password\":\"SecurePass123!\"}" >/dev/null
+> done
+>
+> # 方式 B：直接 SQL 插入（仅在不需要完整认证时使用）
+> mysql -h 127.0.0.1 -P 4000 -u root auth9 -e "
+>   INSERT INTO users (id, identity_subject, email, display_name, created_at, updated_at)
+>   SELECT UUID(), UUID(), CONCAT('pagetest', seq, '@example.com'),
+>          CONCAT('Page Test ', seq), NOW(), NOW()
+>   FROM (SELECT @row := @row + 1 AS seq FROM information_schema.tables t1,
+>         (SELECT @row := 0) r LIMIT 50) AS seq_tbl;"
+> ```
+>
+> 执行后通过 `SELECT COUNT(*) FROM users;` 确认 ≥50。
+
 ### 目的
 验证用户列表分页和搜索
 

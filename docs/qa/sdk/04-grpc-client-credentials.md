@@ -98,6 +98,17 @@ WHERE tu.user_id = '{user_id}' AND tu.tenant_id = '{tenant_id}';
 
 > **Token user_id 必须引用真实用户**: 测试 token 的 `user_id` 必须对应数据库 `users` 表中的真实用户记录。使用 `gen-test-tokens.js identity-user` 生成的 token 包含虚拟 user_id（不存在于 DB 中），会导致 token exchange 和 getUserRoles 等操作因找不到用户/租户成员关系而失败。推荐使用 `gen-test-tokens.js tenant-access --user-id <real_user_id>` 或通过浏览器 OIDC 登录获取真实 token。
 
+> **⚠️ JWT 签名一致性 (关键)**: 生成 Identity Token 必须使用 `node .claude/skills/tools/gen_token.js --type=identity`，**不要**使用 `gen-test-tokens.js`。
+>
+> | 脚本 | 私钥来源 | 是否与 Docker 容器一致 |
+> |------|---------|------------------------|
+> | `gen_token.js` | 从 `.env` 读取 `JWT_PRIVATE_KEY` | ✅ 一致 |
+> | `gen-test-tokens.js` | 硬编码路径 `jwt_private_clean.key` | ❌ 可能漂移 |
+>
+> **症状**: `16 UNAUTHENTICATED: Invalid identity token: JWT error: InvalidSignature`
+>
+> **修复**: 在 `scripts/qa/test-grpc-client.mjs` 和其他 gRPC 测试脚本中，统一调用 `gen_token.js` 而非 `gen-test-tokens.js`。
+
 ---
 
 ## 场景 2：gRPC ValidateToken 与 IntrospectToken

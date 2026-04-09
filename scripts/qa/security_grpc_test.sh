@@ -7,7 +7,11 @@ GRPC_HELPER="${GRPC_HELPER:-.claude/skills/tools/grpcurl-docker.sh}"
 GRPC_TARGET="${GRPC_TARGET:-auth9-grpc-tls:50051}"
 PROTO="${PROTO:-auth9.proto}"
 API_KEY="${API_KEY:-dev-grpc-api-key}" # pragma: allowlist secret
-JWT_PRIVATE_KEY="${JWT_PRIVATE_KEY:-deploy/dev-certs/jwt/private.key}"
+# JWT signing key source: defaults to `.env` (matches auth9-core's runtime
+# config via gen_token.js), falling back to dev-certs file only when .env has
+# no JWT_PRIVATE_KEY. This avoids InvalidSignature failures when the two keys
+# drift (see ticket grpc-security_scenario2_script-bug).
+JWT_PRIVATE_KEY_FILE="${JWT_PRIVATE_KEY_FILE:-}"
 PORTAL_CLIENT_ID="${PORTAL_CLIENT_ID:-auth9-portal}"
 
 MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
@@ -45,23 +49,39 @@ require_bin() {
 gen_identity_token() {
   local user_id="$1"
   local email="$2"
+  # Load JWT private key from .env (matches auth9-core runtime) with fallback
+  # to a file path for CI environments that mount dev certs.
   node -e '
 const jwt=require("jsonwebtoken");
 const fs=require("fs");
+const path=require("path");
 const now=Math.floor(Date.now()/1000);
-const privateKey=fs.readFileSync(process.argv[1], "utf8");
+let privateKey="";
+const envFile=process.env.ENV_FILE || ".env";
+try {
+  const envContent=fs.readFileSync(envFile, "utf8");
+  const match=envContent.match(/^JWT_PRIVATE_KEY=(.+)$/m);
+  if (match) privateKey=match[1].trim().replace(/\\n/g, "\n");
+} catch {}
+if (!privateKey && process.env.JWT_PRIVATE_KEY_FILE) {
+  privateKey=fs.readFileSync(process.env.JWT_PRIVATE_KEY_FILE, "utf8");
+}
+if (!privateKey) {
+  console.error("ERROR: JWT_PRIVATE_KEY not found in .env and JWT_PRIVATE_KEY_FILE not set");
+  process.exit(1);
+}
 const payload={
-  sub: process.argv[2],
-  email: process.argv[3],
+  sub: process.argv[1],
+  email: process.argv[2],
   iss: "http://localhost:8080",
   aud: "auth9",
   token_type: "identity",
   iat: now,
   exp: now + 3600,
-  sid: "sid-" + process.argv[2].slice(0, 8)
+  sid: "sid-" + process.argv[1].slice(0, 8)
 };
 process.stdout.write(jwt.sign(payload, privateKey, {algorithm:"RS256", keyid:"auth9-current"}));
-' "$JWT_PRIVATE_KEY" "$user_id" "$email"
+' "$user_id" "$email"
 }
 
 echo "=========================================="
@@ -76,9 +96,12 @@ if [[ ! -x "$GRPC_HELPER" ]]; then
   echo "Missing helper: $GRPC_HELPER"
   exit 2
 fi
-if [[ ! -f "$JWT_PRIVATE_KEY" ]]; then
-  echo "Missing key: $JWT_PRIVATE_KEY"
-  exit 2
+# Verify JWT key is available (either in .env or via JWT_PRIVATE_KEY_FILE)
+if ! grep -q '^JWT_PRIVATE_KEY=' .env 2>/dev/null; then
+  if [[ -z "$JWT_PRIVATE_KEY_FILE" || ! -f "$JWT_PRIVATE_KEY_FILE" ]]; then
+    echo "Missing JWT key: .env has no JWT_PRIVATE_KEY and JWT_PRIVATE_KEY_FILE is unset/missing"
+    exit 2
+  fi
 fi
 
 DEMO_TENANT_ID="$(mysql_q "SELECT id FROM tenants WHERE slug='$TEST_TENANT_SLUG' LIMIT 1;")"

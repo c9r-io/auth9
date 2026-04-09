@@ -28,6 +28,12 @@ Auth9 也发送多种邮件通知：
 
 ## 场景 1：OAuth 账户关联劫持
 
+> **[DEFERRED - pending FR: idp_secure_first_login_default]**
+> 当前默认 `first_login_policy=auto_merge` 存在邮箱自动合并风险。已建档
+> `docs/feature_request/idp_secure_first_login_default.md`，在 FR 落地前跳过
+> 本场景的 FAIL 评判；请在回归时手动将 IdP 的 `first_login_policy` 显式设为
+> `create_new` 后再验证"不基于邮箱自动关联"预期。
+
 ### 前置条件
 - 系统配置了至少一个社交登录 IdP
 - 两个测试用户账户

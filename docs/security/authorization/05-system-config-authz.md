@@ -25,14 +25,52 @@ Auth9 当前有三类主要 JWT（见 `auth9-core/src/jwt/mod.rs`）:
 
 ## 测试准备
 
+### 步骤 0: 验证 Token 生成工具（防止误报）
+
+**⚠️ 已知误报源**: `.claude/skills/tools/gen_token.js` 将 `email` 和 `roles` **硬编码**为：
+
+```js
+email: "admin@auth9.local"  // 硬编码
+roles: ["admin"]            // 硬编码
+```
+
+由于默认 `PLATFORM_ADMIN_EMAILS=admin@auth9.local`，**任何**通过该脚本生成的 Token 都会被
+`is_platform_admin_email()` 识别为平台管理员并返回 200，与 `sub`（user_id）无关。如果直接用
+`gen_token.js "<member-user-id>"` 来测试"非管理员越权"，将得到错误的 FAIL 结论。
+
+**正确做法**: 使用 `scripts/qa/test_privilege_escalation.sh` 中内联的 `gen_tenant_access_token`
+函数（它会正确接受 `email` 与 `roles` 为参数），或者直接用 `node -e`/`jwt.sign` 手写生成 Token，
+并确保 payload 中的 `email` **不在** `PLATFORM_ADMIN_EMAILS` 中，且 `roles=["member"]`。
+
+同时验证目标测试用户不是 DB 型平台管理员：
+
+```sql
+-- 目标 user_id 必须在 auth9-platform 租户中无 admin 记录
+SELECT tu.role_in_tenant, t.slug
+FROM tenant_users tu JOIN tenants t ON tu.tenant_id = t.id
+WHERE tu.user_id = '<target-user-id>';
+-- 期望: 不出现 (admin, auth9-platform) 行
+```
+
+如果步骤 0 未做校验，**请勿**为本模块提交 FAIL 工单。
+
 ### 账号/Token 准备
 
 至少准备如下 4 类 token（任一获取方式可行，Portal 登录或脚本均可）:
 
 1. `PLATFORM_ADMIN_ID_TOKEN`: 平台管理员 Identity Token（email 在 `PLATFORM_ADMIN_EMAILS` 中）
 2. `TENANT_OWNER_ACCESS_TOKEN`: 目标租户 owner 的 TenantAccess Token（带 `tenant_id`）
-3. `TENANT_MEMBER_ACCESS_TOKEN`: 目标租户普通成员 TenantAccess Token（无 admin 权限）
+3. `TENANT_MEMBER_ACCESS_TOKEN`: 目标租户普通成员 TenantAccess Token（无 admin 权限，email **不在**
+   `PLATFORM_ADMIN_EMAILS` 中，并且目标用户在 `auth9-platform` 租户中**没有** admin 角色）
 4. `SERVICE_CLIENT_TOKEN`: 某个 service 的 ServiceClient Token（如实现了 client_credentials）
+
+### 常见误报
+
+| 症状 | 原因 | 解决方法 |
+|------|------|---------|
+| `PUT /api/v1/system/email` 返回 200 而非 403 | 使用 `gen_token.js` 生成 Token；该脚本硬编码 `email=admin@auth9.local` + `roles=["admin"]`，绕过平台管理员检查 | 用 `scripts/qa/test_privilege_escalation.sh` 内联的 `gen_tenant_access_token`，或手写 `node -e 'jwt.sign(...)'` 并显式传入非管理员 email 与 roles |
+| 非 `admin@auth9.local` Token 仍被当作平台管理员 | 测试用户在 `auth9-platform` 租户中持有 `admin` 角色，触发 DB 型平台管理员路径（设计行为） | 用另一用户（仅在业务租户中，不在 auth9-platform 租户）；或执行步骤 0 的 SQL 校验 |
+| 404 "Resource not found" | 平台管理员通过 TenantAccess Token 访问其他租户资源 | 使用 Identity Token 或目标租户对应的 TenantAccess Token |
 
 ### 目标租户与校验手段
 
@@ -178,19 +216,33 @@ curl -sS -i -X DELETE "http://localhost:8080/api/v1/system/email-templates/invit
 - `PUT /api/v1/tenants/:id/password-policy`
 
 ### 验证方法
+
+> **步骤 0: 正确生成 `member` 角色 token**
+> `.claude/skills/tools/gen_token.js` 当前把 access token 的 `roles` 硬编码为 `["admin"]`，用它生成的"member"token 实际上仍是 admin，授权会误通过进而触发下游 422。**本场景必须使用 `node .claude/skills/tools/gen-test-tokens.js tenant-member`（正确注入 `roles: ["member"]`）。**
+
+> **步骤 0.1: 使用正确的字段名**
+> 请求体字段名必须是 `require_numbers` / `require_symbols`（复数）。`UpdatePasswordPolicyInput` 启用了 `#[serde(deny_unknown_fields)]`，旧文档里的 `require_number` / `require_symbol`（单数）会在 serde 反序列化阶段失败，返回 422——这与授权无关。
+
 ```bash
-TOKEN="$TENANT_MEMBER_ACCESS_TOKEN"
-TENANT_ID="$TENANT_ID"
+# 使用 gen-test-tokens.js 生成真正的 tenant-member token（roles: ["member"]）
+TOKEN=$(node .claude/skills/tools/gen-test-tokens.js tenant-member --tenant-id "$TENANT_ID")
 
 curl -sS -i -X PUT "http://localhost:8080/api/v1/tenants/$TENANT_ID/password-policy" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"min_length":4,"require_uppercase":false,"require_lowercase":false,"require_number":false,"require_symbol":false,"max_age_days":0}'
+  -d '{"min_length":8,"require_uppercase":false,"require_lowercase":false,"require_numbers":false,"require_symbols":false,"max_age_days":0}'
 ```
 
 ### 预期安全行为
 - 返回 `403 Forbidden`
 - 密码策略不变更
+
+> **故障排除**:
+> | 实际返回 | 根因 | 修复 |
+> |---------|------|------|
+> | `422 Unprocessable Entity` + `"Invalid password policy"` | token 实际带 admin 角色（授权通过），但 JSON 字段名错误 → serde 解析失败。注意 `password.rs` 的 handler 已将 `enforce()` 放在 `serde_json::from_value()` 之前——如果真的是 member token，必然先返 403 而不会走到 422。 | 改用 `gen-test-tokens.js tenant-member`；修正字段名为 `require_numbers`/`require_symbols`。 |
+> | `401 Unauthorized` | token 过期或签名 key 不匹配 | 重新生成 token，确认 `JWT_PRIVATE_KEY` 一致。 |
+> | `200 OK` | 测试用户在 `tenant_users.roles` 里实际带 `owner`/`admin`，或 email 命中 `PLATFORM_ADMIN_EMAILS` | 使用非 seed 用户或 `--email tenant-member@example.com` 规避平台管理员命中。 |
 
 ---
 

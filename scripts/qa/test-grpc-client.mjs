@@ -26,8 +26,11 @@ function section(title) {
   console.log(`\n${YELLOW}${title}${RESET}`);
 }
 
-// Generate admin token
-const identityToken = execSync("node .claude/skills/tools/gen-test-tokens.js identity-user")
+// Generate admin identity token.
+// IMPORTANT: Use gen_token.js (not gen-test-tokens.js) — gen_token.js reads JWT_PRIVATE_KEY
+// from .env (which matches the Docker container), whereas gen-test-tokens.js uses a
+// hardcoded jwt_private_clean.key that can drift out of sync and cause InvalidSignature.
+const identityToken = execSync("node .claude/skills/tools/gen_token.js --type=identity")
   .toString()
   .trim();
 

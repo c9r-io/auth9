@@ -50,7 +50,27 @@ curl -sf -X POST http://localhost:8080/api/v1/hosted-login/password \
 
 ---
 
-## 场景 3: Always 模式下缺少 token 返回 403
+## 场景 3: Always 模式下缺少 token 返回 403 `[DEFERRED - needs CAPTCHA env setup]`
+
+> **⚠️ 环境要求**: 默认的 `docker-compose.yml` **不**设置 CAPTCHA_* 环境变量，
+> `auth9-core` 启动时 `enabled=false`。执行本场景前必须：
+>
+> 1. 创建 `docker-compose.captcha.yml` 覆盖文件，加入：
+>    ```yaml
+>    services:
+>      auth9-core:
+>        environment:
+>          CAPTCHA_ENABLED: "true"
+>          CAPTCHA_MODE: "always"
+>          CAPTCHA_PROVIDER: "turnstile"
+>          # Cloudflare 官方测试站点 key：始终通过
+>          CAPTCHA_SITE_KEY: "1x00000000000000000000AA"
+>          CAPTCHA_SECRET_KEY: "1x0000000000000000000000000000000AA"
+>    ```
+> 2. 运行 `docker compose -f docker-compose.yml -f docker-compose.dev.yml -f docker-compose.captcha.yml up -d auth9-core`
+> 3. 确认 `curl http://localhost:8080/api/v1/public/captcha-config` 返回 `"enabled": true`。
+>
+> 如果以上步骤未完成，本场景及场景 4、5 会因 CAPTCHA 未启用而不可测。
 
 **前提**: CAPTCHA_ENABLED=true, CAPTCHA_MODE=always, CAPTCHA_SITE_KEY=test-site-key
 

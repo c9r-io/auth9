@@ -7,6 +7,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Switch } from "~/components/ui/switch";
+import { Badge } from "~/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -310,9 +311,20 @@ export default function WebhooksPage() {
                   <div className={`w-3 h-3 rounded-full ${webhook.enabled ? "bg-[var(--accent-green)]/100" : "bg-gray-300"}`} />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium">{webhook.name}</div>
-                    <div className="text-sm text-[var(--text-secondary)] truncate">{webhook.url}</div>
+                    <div className="text-sm text-[var(--text-secondary)] truncate font-mono">{webhook.url}</div>
+                    {webhook.events.length > 0 && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {webhook.events.map((eventId) => {
+                          const meta = WEBHOOK_EVENTS.find((e) => e.id === eventId);
+                          return (
+                            <Badge key={eventId} variant="secondary" className="text-xs">
+                              {meta?.label ?? eventId}
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
                     <div className="text-xs text-[var(--text-tertiary)] mt-1" suppressHydrationWarning>
-                      {t("tenants.webhooks.list.eventCount", { count: webhook.events.length })} •{" "}
                       {webhook.failure_count > 0 && (
                         <span className="text-[var(--accent-red)]">
                           {t("tenants.webhooks.list.failures", { count: webhook.failure_count })} •{" "}

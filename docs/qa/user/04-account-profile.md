@@ -38,8 +38,17 @@
 > **种子用户登录限制**：
 > - `testuser*@example.com` 系列用户在种子数据中**未设置密码**，无法直接浏览器登录
 > - `admin@auth9.local` 要求 WebAuthn MFA，无法在普通浏览器环境完成认证
-> - **推荐浏览器测试账号**：`mfa-user@auth9.local`，密码 `Auth9Dev!2026x`，配合 `reset-docker.sh` 输出的 TOTP secret 完成 MFA
-> - **API 测试替代**：不涉及 UI 交互的场景（如场景 1、2、4），优先使用 Access Token 直接调用 API
+> - **推荐浏览器测试账号**：`mfa-user@auth9.local`，密码 `Auth9Dev!2026x`
+> - **TOTP secret（已硬编码在 `scripts/seed-test-data.mjs`）**：`JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP`
+>   - 使用任意 TOTP 工具（例如 `oathtool`、`1password`、Google Authenticator 手动录入）生成 6 位验证码：
+>     ```bash
+>     oathtool --totp -b JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP
+>     ```
+>   - 或在 Node 中直接计算：
+>     ```bash
+>     node -e "const s=require('speakeasy');console.log(s.totp({secret:'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP',encoding:'base32'}))"
+>     ```
+> - **API 测试替代**：不涉及 UI 交互的场景（如场景 1、2、4），优先使用 Access Token 直接调用 API，避免浏览器 MFA 登录流程
 
 ---
 
@@ -142,6 +151,20 @@ ORDER BY created_at DESC LIMIT 1;
 - 用户持有有效 Tenant Access Token
 
 ### 步骤 0：验证 Token 角色为 member
+
+> **澄清：`member` 是 `tenant_users.role_in_tenant` 的值，不是 `roles` 表中的一行**
+>
+> `roles` 表存储的是 RBAC 服务作用域角色（例如 `admin`），由 seed 数据注入。
+> `member`/`admin`/`owner` 这种 tenant-level 角色存储在 `tenant_users.role_in_tenant`
+> 字段中，并且会被 Token Exchange 写入 Access Token 的 `roles` claim。
+>
+> 因此本场景不需要在 `roles` 表中插入 `member` 行；只需要一个 Token，其
+> `roles` claim 为 `["member"]` 且 `permissions` 为空（或不含 `user:*`/`rbac:*`），
+> 即可代表 member 用户。使用下面命令生成：
+>
+> ```bash
+> node scripts/qa/gen-access-token.js "$USER_ID" "$TENANT_ID" "member" ""
+> ```
 
 **测试前必须确认 Token 携带的角色不包含 admin/owner：**
 

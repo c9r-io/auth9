@@ -240,6 +240,32 @@ mysql -h 127.0.0.1 -P 4000 -u root auth9 -e "DELETE FROM services WHERE id = '99
 
 ## 场景 4：管理员权限边界测试
 
+### 步骤 0: 验证测试用户不是 DB 型平台管理员（防止误报）
+
+**⚠️ 已知误报源**: 种子脚本 `scripts/seed-test-data.mjs:191-194` 将 `mfa-user@auth9.local`
+作为 `auth9-platform` 和 `demo` 两个租户的 **admin** 角色加入。因此该用户是
+**DB 型平台管理员**，按设计可通过 `is_platform_admin_with_db` 检查 → 可创建租户、访问系统配置。
+用它做"普通成员越权"测试会得到错误的 FAIL 结论。
+
+同样，`.claude/skills/tools/gen_token.js` 硬编码 `email=admin@auth9.local` 与 `roles=["admin"]`，
+不可直接用其生成"非管理员" Token。
+
+**执行前必须验证**:
+
+```sql
+-- 目标 user_id 不应在 auth9-platform 租户中有 admin 角色
+SELECT tu.role_in_tenant, t.slug, u.email
+FROM tenant_users tu
+  JOIN tenants t ON tu.tenant_id = t.id
+  JOIN users u ON tu.user_id = u.id
+WHERE tu.user_id = '<target-user-id>';
+-- 期望: 不存在 (admin, auth9-platform) 记录
+```
+
+同时确认 Token 的 `email` claim **不在** `PLATFORM_ADMIN_EMAILS`（默认 `admin@auth9.local`）
+中。推荐使用 `scripts/qa/test_privilege_escalation.sh` 种植的 `member@test.local`
+（仅在 demo 租户为 member），或手写 `jwt.sign` 并显式传入非管理员 email/roles。
+
 ### 前置条件
 - **租户 1 的管理员（非平台管理员）**（邮箱不在 `PLATFORM_ADMIN_EMAILS` 中）
 - 平台管理员（如 `admin@auth9.local`，仅用于对比验证）
@@ -315,6 +341,27 @@ curl -s -o /dev/null -w "%{http_code}" \
 ## 场景 5：租户级恶意 IP 黑名单隔离
 
 > **环境排查注意**: When a user belongs to multiple tenants and the test uses a platform-level service client, the tenant context may be ambiguous. Use a tenant-scoped TenantAccess token to avoid ambiguity.
+
+### 步骤 0: 使用单租户测试用户（防止误报）
+
+**⚠️ 已知误报源**: 种子用户 `mfa-user@auth9.local` 同时属于 `auth9-platform`、`demo`
+以及回归测试动态创建的租户（≥3 个租户）。`/api/v1/identity/events` 处理器在用户属于
+多个租户时会记录 `WARN Ambiguous tenant context for multi-tenant identity event; storing without tenant_id`
+并将 `tenant_id=NULL`，导致租户级黑名单无法命中 → 产生误报。
+
+**执行前必须**:
+
+1. 创建一个**仅属于目标租户**的新测试用户（例如 `ip-test@example.com`，只在 `demo` 租户）：
+   ```sql
+   INSERT INTO users (id, identity_subject, email, display_name, mfa_enabled)
+   VALUES ('<new-uuid>', 'ip-test-subject', 'ip-test@example.com', 'IP Test', 0);
+   INSERT INTO tenant_users (id, tenant_id, user_id, role_in_tenant)
+   VALUES ('<tu-uuid>', '<demo-tenant-id>', '<new-uuid>', 'member');
+   ```
+2. 在事件的 `userId` 字段中使用这个新用户的 `id`。
+3. 或者直接在事件 payload 中显式携带目标租户的 `tenantId`（如果 endpoint 支持）。
+
+**请勿**使用 `mfa-user@auth9.local` 触发场景 5 的 LOGIN_ERROR 事件。
 
 ### 前置条件
 - 租户 A 和租户 B 都存在，且各自有独立用户

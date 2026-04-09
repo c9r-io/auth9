@@ -33,7 +33,13 @@
 - **内边距**: Header `p-6`，Content `px-6 pb-6`，Footer `px-6 pb-6`。
 - **入场动画**: `scale(0.95) → scale(1)` + `opacity: 0 → 1`，200ms。
 
-> **故障排除**: 如果某个 Dialog 的 `backdrop-filter` 值不同（如 `blur(20px)`），可能是自定义 className 覆盖了默认样式。应统一使用 `DialogContent` 基础组件的默认样式。
+> **故障排除**:
+> - 如果某个 Dialog 的 `backdrop-filter` 值不同（如 `blur(20px)`），可能是自定义 className 覆盖了默认样式。应统一使用 `DialogContent` 基础组件的默认样式。
+> - **深色模式检测**: Dialog 的 `background` 来自 CSS 变量 `var(--glass-bg)`，该变量由 `<html data-theme="dark">` 级联。测量前务必确认：
+>   1. `document.documentElement.getAttribute('data-theme') === 'dark'`（否则主题未切换到暗色）。
+>   2. 主题切换后等待一次事件循环再读取 `getComputedStyle`（CSS 变量是同步级联，但 DevTools 快照可能来自切换前）。
+>   3. Radix Dialog 使用 Portal 挂载到 `document.body`，body 是 html 的子元素，CSS 变量会自然继承。如果暗色模式下仍测到 `rgba(255,255,255,0.72)`（浅色值），几乎可以肯定 `html` 上的 `data-theme` 属性没更新——这是操作步骤问题，不是代码 bug。
+>   4. 预期深色值 `rgba(44,44,46,0.65)` 定义于 `app/styles/tailwind.css` 的 `[data-theme="dark"]` 规则（`--glass-bg`）。
 
 ---
 

@@ -51,6 +51,22 @@ Auth9 品牌设置支持两级配置：
 | allow_registration | BOOLEAN | 是否允许注册 |
 | email_otp_enabled | BOOLEAN | 是否启用 Email OTP 登录（默认 false，见 [auth/17-email-otp-login.md](../auth/17-email-otp-login.md)） |
 
+> **⚠️ Redis Audience Set 必须已 seed**
+> Portal 调用 Auth9 Core 管理 API 时携带 tenant access token，token 的 `aud` 会通过
+> Redis SET `auth9:valid_audiences` 做动态校验（fail-closed）。这个集合仅在 `auth9-core`
+> **启动时**从 `clients` 表加载一次。
+>
+> **症状**: `Token audience is not registered` (401), Portal 设置页面显示 500。
+>
+> **原因**: Redis 被独立重启、`FLUSHALL` 或未持久化导致集合丢失；或 `auth9-core` 启动
+> 早于 TiDB ready，seed 查询失败。
+>
+> **修复**: 运行 `./scripts/reset-docker.sh` 完整重置环境，或至少 `docker restart auth9-core`
+> 让其重新执行 `refresh_audience_set`。不要单独重启 Redis。
+>
+> 验证：`docker exec auth9-redis redis-cli SMEMBERS auth9:valid_audiences` 应包含
+> `auth9-portal`、`auth9-demo` 等已 seed 的 client_id。
+
 > **Browser Session Persistence (Playwright)**
 > Playwright CLI headless browser may not persist cookies between page navigations in ephemeral contexts.
 > The portal sets a `_session` cookie that must survive across redirects (login -> /tenant/select -> /dashboard/settings).

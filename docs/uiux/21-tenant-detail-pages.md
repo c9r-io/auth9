@@ -56,10 +56,14 @@
 
 ### 预期视觉效果
 - **Webhook 列表**: `divide-y` 分隔，每项 flex 布局：
-  - 左侧: 状态指示点（绿色 = active，灰色 = inactive，`w-2 h-2 rounded-full`）。
+  - 左侧: 状态指示点（绿色 = active，灰色 = inactive，`w-3 h-3 rounded-full`，实现位于 `app/routes/dashboard.tenants.$tenantId.webhooks.tsx`）。
   - 中间: URL（`font-mono text-sm`）+ 事件 Badge 列表。
   - 右侧: 操作按钮组（Test / Regenerate / Edit / Delete）。
-- **事件 Badge**: 小型 pill（`text-xs`），`variant="secondary"`，多个横向排列 `flex-wrap gap-1`。
+- **事件 Badge**: 小型 pill（`text-xs`），`variant="secondary"`，多个横向排列 `flex-wrap gap-1`；每个 Badge 显示可读的事件名（`login.success` → "Login Success"）。
+
+> **故障排除**:
+> - 在 Playwright 等基于 accessibility tree 的快照工具里，纯装饰性的 `div.w-3.h-3.rounded-full` 状态点通常**不会**出现在 `snapshot()` 输出中（没有 role/text），这不代表它不存在。应用 `page.locator('...webhook-row div.rounded-full').first().boundingBox()` 或截图像素比对进行视觉验证。
+> - 如果列表里看到"1 个事件"这种汇总文字而不是独立 Badge，说明正在查看旧版 UI，请拉取最新代码并重启 Portal。
 - **创建 Dialog**:
   - URL Input + 事件复选框网格（`grid-cols-2` 或 `grid-cols-3`）。
   - 复选框: 标准 Checkbox 组件，label 14px。

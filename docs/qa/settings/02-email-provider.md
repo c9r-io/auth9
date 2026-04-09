@@ -25,6 +25,14 @@
 | ses | region, from_email |
 | oracle | smtp_endpoint, port, username, password, from_email |
 
+> **⚠️ 管理员登录凭证**
+> Docker 默认 seed 账号：
+> - 邮箱: `admin@auth9.local`
+> - 密码: `Auth9Dev!2026x` (来自 `docker-compose.yml` 的 `AUTH9_ADMIN_PASSWORD`)
+>
+> 旧版文档中的 `SecurePass123!` / `Admin123!` 等都**不是**当前有效密码，使用会得到
+> `Invalid email or password`。如果密码仍然失败，运行 `./scripts/reset-docker.sh` 重新 seed。
+
 > **Browser Session Persistence (Playwright)**
 > Playwright CLI headless browser may not persist cookies between page navigations in ephemeral contexts.
 > The portal sets a `_session` cookie that must survive across redirects (login -> /tenant/select -> /dashboard/settings).
