@@ -91,7 +91,7 @@
 | [webhook/03-reliability.md](./webhook/03-reliability.md) | 重试、自动禁用 | 4 |
 | [webhook/04-boundary.md](./webhook/04-boundary.md) | URL 验证、边界 | 3 |
 
-### 认证流程 (28 个文档, 132 个场景)
+### 认证流程 (29 个文档, 137 个场景)
 | 文档 | 描述 | 场景数 |
 |------|------|--------|
 | [auth/01-oidc-login.md](./auth/01-oidc-login.md) | OIDC 登录流程（**Sign in with password** 路径） | 4 |
@@ -127,6 +127,7 @@
 | [auth/31-email-otp-user-toggle.md](./auth/31-email-otp-user-toggle.md) | 用户级 Email OTP 开关（MFA 页面卡片、启用/停用、登录双重检查、认证保护） | 5 |
 | [auth/32-breached-password-detection.md](./auth/32-breached-password-detection.md) | 泄露密码检测 HIBP（注册/修改/重置拦截、k-Anonymity、Fail-open 降级、HIBP_ENABLED 开关） | 5 |
 | [auth/36-mfa-enforcement-redirect.md](./auth/36-mfa-enforcement-redirect.md) | MFA 强制配置重定向（mfa_enabled + 无凭证时自动创建 CONFIGURE_TOTP action、TOTP 配置后恢复正常流程） | 4 |
+| [auth/37-idp-first-login-policy.md](./auth/37-idp-first-login-policy.md) | IdP First-Login Policy 安全加固（create_new 默认值、auto_merge 显式设置、策略更新、Portal UI 下拉、安全警告面板） | 5 |
 | [auth/adaptive_mfa.md](./auth/adaptive_mfa.md) | Adaptive MFA 风险驱动策略（策略 GET/PUT、可信设备列表、持久化验证、认证保护） | 5 |
 | [auth/008_auth_boundary_consolidation.md](./auth/008_auth_boundary_consolidation.md) | Auth Boundary Consolidation（AuthUser audience 动态校验、Redis fail-closed 503、token_type 访问控制） | 5 |
 
@@ -268,7 +269,7 @@
 | 邀请管理 | 3 | 15 |
 | 会话与安全 | 8 | 39 |
 | Webhook | 4 | 17 |
-| 认证流程 | 26 | 122 |
+| 认证流程 | 29 | 137 |
 | 系统设置 | 4 | 20 |
 | 身份提供商 | 3 | 15 |
 | Passkeys | 3 | 15 |
@@ -281,12 +282,13 @@
 | SCIM Provisioning | 5 | 25 |
 | Identity Engine | 1 | 5 |
 | 运维与部署 | 1 | 5 |
-| **总计** | **123** | **584** |
+| **总计** | **124** | **589** |
 
 ### 文档对齐记录
 
 | 日期 | 版本 | 变更 |
 |------|------|------|
+| 2026-04-09 | 5.30.0 | **IdP First-Login Policy 安全加固**：新增 `auth/37-idp-first-login-policy.md`（5 场景），覆盖 first_login_policy 默认值 create_new 验证、auto_merge 显式设置向后兼容、策略更新 API、Portal UI 下拉默认值、auto_merge/trust_email 红色安全警告面板；更新 `security/authentication/05-idp-security.md` 场景 1 DEFERRED 标记为 RESOLVED（默认值已安全）；认证 29 文档 137 场景；共 124 文档 589 场景 |
 | 2026-03-27 | 5.29.0 | **部署校验与密钥外部化**：新增 `ops/01-deploy-validation.md`（5 场景），覆盖 upgrade.sh 占位符拦截、--skip-validation 旁路、validate-k8s-deploy.sh 全 6 字段检查、init-dev-env.sh 一键初始化、docker-compose 缺失密钥报错；更新 `security/data-security/03-secrets-management.md` 反映 JWT 密钥外部化后的验证方法与误报排查表；共 123 文档 584 场景 |
 | 2026-03-22 | 5.28.0 | **用户级 Email OTP 开关**：新增 `auth/31-email-otp-user-toggle.md`（5 场景），覆盖 MFA 页面 Email OTP 卡片入口可见性、启用/停用流程、登录双重检查、认证保护；更新 `auth/30-mfa-self-service-portal.md` 场景 1 卡片列表（三→四卡片）；更新 `auth/17-email-otp-login.md` 开关说明（新增用户级双重检查）；更新 `security/authentication/03-mfa-security.md` MFA 端点列表和 Email OTP 说明；认证 24 文档 112 场景；共 120 文档 569 场景 |
 | 2026-03-20 | 5.27.0 | **Portal MFA 自助管理页面**：新增 `auth/30-mfa-self-service-portal.md`（5 场景），覆盖 MFA 页面入口可见性、TOTP 内嵌设置流程、恢复码生成弹窗、TOTP 移除确认、恢复码不足警告；认证 25 文档 117 场景；共 126 文档 593 场景 |

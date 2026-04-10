@@ -1,10 +1,14 @@
 import { API_BASE_URL, ApiResponseError, getHeaders, handleResponse, type ApiError } from "./client";
 
+export type FirstLoginPolicy = "auto_merge" | "prompt_confirm" | "create_new";
+
 export interface IdentityProvider {
   alias: string;
   provider_id: string;
   display_name?: string;
   enabled: boolean;
+  trust_email?: boolean;
+  first_login_policy?: FirstLoginPolicy;
   config: Record<string, string>;
 }
 
@@ -13,6 +17,8 @@ export interface CreateIdentityProviderInput {
   provider_id: string;
   display_name?: string;
   enabled?: boolean;
+  trust_email?: boolean;
+  first_login_policy?: FirstLoginPolicy;
   config: Record<string, string>;
 }
 

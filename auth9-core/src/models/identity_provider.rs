@@ -81,7 +81,7 @@ impl From<BackendIdentityProvider> for IdentityProvider {
             trust_email: backend.trust_email,
             store_token: backend.store_token,
             link_only: backend.link_only,
-            first_login_policy: "auto_merge".to_string(),
+            first_login_policy: "create_new".to_string(),
             first_broker_login_flow_alias: backend.first_broker_login_flow_alias,
             config: backend.config,
         }
@@ -144,7 +144,7 @@ pub struct CreateIdentityProviderInput {
 }
 
 fn default_first_login_policy() -> String {
-    "auto_merge".to_string()
+    "create_new".to_string()
 }
 
 fn default_true() -> bool {
@@ -321,7 +321,7 @@ mod tests {
             trust_email: true,
             store_token: false,
             link_only: false,
-            first_login_policy: "auto_merge".to_string(),
+            first_login_policy: "create_new".to_string(),
             config: HashMap::new(),
         };
         assert!(input.validate().is_ok());
@@ -337,7 +337,7 @@ mod tests {
             trust_email: false,
             store_token: false,
             link_only: false,
-            first_login_policy: "auto_merge".to_string(),
+            first_login_policy: "create_new".to_string(),
             config: HashMap::new(),
         };
         assert!(input.validate().is_err());

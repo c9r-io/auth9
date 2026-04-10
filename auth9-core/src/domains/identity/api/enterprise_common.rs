@@ -113,7 +113,7 @@ pub async fn load_connector(pool: &sqlx::MySqlPool, alias: &str) -> Result<Conne
 
     let first_login_policy: String = row
         .try_get("first_login_policy")
-        .unwrap_or_else(|_| "auto_merge".to_string());
+        .unwrap_or_else(|_| "create_new".to_string());
 
     Ok(ConnectorRecord {
         alias: row.try_get("alias")?,
@@ -158,7 +158,7 @@ pub async fn find_or_create_enterprise_user<S: HasServices + HasIdentityProvider
     let policy = connector
         .first_login_policy
         .parse::<FirstLoginPolicy>()
-        .unwrap_or(FirstLoginPolicy::AutoMerge);
+        .unwrap_or(FirstLoginPolicy::CreateNew);
 
     // If email exists, try to find existing user by email
     if policy != FirstLoginPolicy::CreateNew {
@@ -166,6 +166,14 @@ pub async fn find_or_create_enterprise_user<S: HasServices + HasIdentityProvider
             if let Ok(existing_user) = state.user_service().get_by_email(email).await {
                 match policy {
                     FirstLoginPolicy::AutoMerge => {
+                        tracing::warn!(
+                            connector_alias = %connector.alias,
+                            provider_type = %connector.provider_type,
+                            matched_email = %email,
+                            existing_user_id = %existing_user.id,
+                            tenant_id = %connector.tenant_id,
+                            "First-login policy=auto_merge: linked enterprise identity to existing user by email"
+                        );
                         let input = CreateLinkedIdentityInput {
                             user_id: existing_user.id,
                             provider_type: provider_type.to_string(),
@@ -348,7 +356,7 @@ mod tests {
             tenant_id: "tid".to_string(),
             provider_type: "saml".to_string(),
             config: HashMap::new(),
-            first_login_policy: "auto_merge".to_string(),
+            first_login_policy: "create_new".to_string(),
         };
         assert!(format!("{:?}", record).contains("saml"));
     }

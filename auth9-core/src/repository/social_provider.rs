@@ -272,7 +272,7 @@ mod tests {
             trust_email: true,
             store_token: false,
             link_only: false,
-            first_login_policy: "auto_merge".to_string(),
+            first_login_policy: "create_new".to_string(),
             config,
         };
 

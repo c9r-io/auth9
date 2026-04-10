@@ -77,7 +77,7 @@ pub struct IdentityProviderRepresentation {
 }
 
 fn default_first_login_policy() -> String {
-    "auto_merge".to_string()
+    "create_new".to_string()
 }
 
 /// Neutral SAML protocol mapper representation exposed to business services.

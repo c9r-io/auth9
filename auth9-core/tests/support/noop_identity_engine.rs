@@ -237,7 +237,7 @@ impl FederationBroker for NoOpFederationBroker {
             trust_email: false,
             store_token: false,
             link_only: false,
-            first_login_policy: "auto_merge".to_string(),
+            first_login_policy: "create_new".to_string(),
             first_broker_login_flow_alias: None,
             config: HashMap::new(),
             extra: HashMap::new(),

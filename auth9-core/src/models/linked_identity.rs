@@ -48,11 +48,11 @@ pub struct CreateLinkedIdentityInput {
 #[derive(Default)]
 pub enum FirstLoginPolicy {
     /// Automatically link to existing user by email match
-    #[default]
     AutoMerge,
     /// Show confirmation page before linking to existing account
     PromptConfirm,
     /// Always create a new account, never auto-link by email
+    #[default]
     CreateNew,
 }
 
@@ -218,6 +218,11 @@ mod tests {
         let identity: ProviderFederatedIdentity = serde_json::from_str(json).unwrap();
         assert_eq!(identity.identity_provider, "github");
         assert!(identity.user_name.is_none());
+    }
+
+    #[test]
+    fn test_first_login_policy_default_is_create_new() {
+        assert_eq!(FirstLoginPolicy::default(), FirstLoginPolicy::CreateNew);
     }
 
     #[test]

@@ -863,6 +863,14 @@ async fn find_or_create_user<S: HasServices + HasIdentityProviders>(
         if let Ok(existing_user) = state.user_service().get_by_email(email).await {
             match policy {
                 FirstLoginPolicy::AutoMerge => {
+                    tracing::warn!(
+                        provider_alias = %provider.alias,
+                        provider_type = %provider.provider_id,
+                        matched_email = %email,
+                        existing_user_id = %existing_user.id,
+                        trust_email = provider.trust_email,
+                        "First-login policy=auto_merge: linked external identity to existing user by email"
+                    );
                     // Auto-link to existing user
                     let input = CreateLinkedIdentityInput {
                         user_id: existing_user.id,

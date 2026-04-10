@@ -16,7 +16,7 @@ import { translate } from "~/i18n/translate";
 import { mapApiError } from "~/lib/error-messages";
 import { getAccessToken } from "~/services/session.server";
 import { resolveLocale } from "~/services/locale.server";
-import { identityProviderApi, type CreateIdentityProviderInput, type IdentityProvider } from "~/services/api";
+import { identityProviderApi, type CreateIdentityProviderInput, type FirstLoginPolicy, type IdentityProvider } from "~/services/api";
 
 const PROVIDER_TEMPLATES = [
   { provider_id: "google", key: "google", icon: "G", color: "bg-red-500", requiredFields: ["clientId", "clientSecret"] },
@@ -81,6 +81,8 @@ export async function action({ request }: ActionFunctionArgs) {
         provider_id: formData.get("providerId") as string,
         display_name: (formData.get("displayName") as string) || undefined,
         enabled: formData.get("enabled") === "true",
+        trust_email: formData.get("trustEmail") === "true",
+        first_login_policy: (formData.get("firstLoginPolicy") as CreateIdentityProviderInput["first_login_policy"]) || "create_new",
         config: buildConfig(formData),
       };
       await identityProviderApi.create(input, accessToken || undefined);
@@ -92,6 +94,8 @@ export async function action({ request }: ActionFunctionArgs) {
       const input: Partial<CreateIdentityProviderInput> = {
         display_name: (formData.get("displayName") as string) || undefined,
         enabled: formData.get("enabled") === "true",
+        trust_email: formData.get("trustEmail") === "true",
+        first_login_policy: (formData.get("firstLoginPolicy") as CreateIdentityProviderInput["first_login_policy"]) || undefined,
         config: buildConfig(formData),
       };
       await identityProviderApi.update(alias, input, accessToken || undefined);
@@ -128,7 +132,7 @@ export default function IdentityProvidersPage() {
   const [showDialog, setShowDialog] = useState(false);
   const [editingProvider, setEditingProvider] = useState<IdentityProvider | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState("");
-  const [formData, setFormData] = useState({ alias: "", displayName: "", enabled: true, config: {} as Record<string, string> });
+  const [formData, setFormData] = useState({ alias: "", displayName: "", enabled: true, firstLoginPolicy: "create_new" as FirstLoginPolicy, trustEmail: false, config: {} as Record<string, string> });
   const confirm = useConfirm();
   const isSubmitting = navigation.state === "submitting";
   const wasSubmitting = useRef(false);
@@ -146,14 +150,14 @@ export default function IdentityProvidersPage() {
   }, [actionData, editingProvider, isSubmitting, showDialog]);
 
   function resetForm() {
-    setFormData({ alias: "", displayName: "", enabled: true, config: {} });
+    setFormData({ alias: "", displayName: "", enabled: true, firstLoginPolicy: "create_new", trustEmail: false, config: {} });
     setSelectedTemplate("");
   }
 
   function openEditDialog(provider: IdentityProvider) {
     wasSubmitting.current = false;
     setEditingProvider(provider);
-    setFormData({ alias: provider.alias, displayName: provider.display_name || "", enabled: provider.enabled, config: provider.config });
+    setFormData({ alias: provider.alias, displayName: provider.display_name || "", enabled: provider.enabled, firstLoginPolicy: provider.first_login_policy || "create_new", trustEmail: provider.trust_email || false, config: provider.config });
     setSelectedTemplate(provider.provider_id);
   }
 
@@ -282,6 +286,8 @@ export default function IdentityProvidersPage() {
                   providerId: selectedTemplate,
                   config: JSON.stringify(formData.config),
                   enabled: formData.enabled ? "true" : "false",
+                  firstLoginPolicy: formData.firstLoginPolicy,
+                  trustEmail: formData.trustEmail ? "true" : "false",
                   ...(formData.displayName ? { displayName: formData.displayName } : {}),
                 },
                 { method: "post" }
@@ -346,6 +352,33 @@ export default function IdentityProvidersPage() {
                 )}
                 {templateHasField(template, "signingCertificate") && (
                   <div className="space-y-2"><Label htmlFor="signingCertificate">{t("settings.identityProvidersPage.signingCertificate")} <span className="text-[var(--accent-red)]">*</span></Label><Input id="signingCertificate" required value={formData.config.signingCertificate || ""} onChange={(event) => setFormData((previous) => ({ ...previous, config: { ...previous.config, signingCertificate: event.target.value } }))} placeholder={t("settings.identityProvidersPage.signingCertificatePlaceholder")} /></div>
+                )}
+
+                <div className="space-y-2">
+                  <Label htmlFor="firstLoginPolicy">{t("settings.identityProvidersPage.firstLoginPolicy")}</Label>
+                  <select
+                    id="firstLoginPolicy"
+                    value={formData.firstLoginPolicy}
+                    onChange={(event) => setFormData((previous) => ({ ...previous, firstLoginPolicy: event.target.value as FirstLoginPolicy }))}
+                    className="flex h-10 w-full rounded-md border border-[var(--glass-border-subtle)] bg-[var(--glass-bg)] px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <option value="create_new">{t("settings.identityProvidersPage.firstLoginPolicyCreateNew")}</option>
+                    <option value="prompt_confirm">{t("settings.identityProvidersPage.firstLoginPolicyPromptConfirm")}</option>
+                    <option value="auto_merge">{t("settings.identityProvidersPage.firstLoginPolicyAutoMerge")}</option>
+                  </select>
+                  <p className="text-xs text-[var(--text-secondary)]">{t("settings.identityProvidersPage.firstLoginPolicyHelp")}</p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="trustEmail">{t("settings.identityProvidersPage.trustEmail")}</Label>
+                  <Switch id="trustEmail" checked={formData.trustEmail} onCheckedChange={(checked: boolean) => setFormData((previous) => ({ ...previous, trustEmail: checked }))} />
+                </div>
+
+                {(formData.firstLoginPolicy === "auto_merge" || formData.trustEmail) && (
+                  <div className="rounded-md border border-[var(--accent-red)]/30 bg-[var(--accent-red)]/5 p-3 text-sm text-[var(--accent-red)]">
+                    {formData.firstLoginPolicy === "auto_merge" && <p>{t("settings.identityProvidersPage.autoMergeWarning")}</p>}
+                    {formData.trustEmail && <p className={formData.firstLoginPolicy === "auto_merge" ? "mt-2" : ""}>{t("settings.identityProvidersPage.trustEmailWarning")}</p>}
+                  </div>
                 )}
 
                 <div className="flex items-center justify-between">
