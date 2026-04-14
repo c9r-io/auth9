@@ -862,6 +862,23 @@ deploy_auth9() {
     # Step 2 & 3: Config-file non-interactive mode generates secrets and applies config
     if [ -n "$CONFIG_FILE" ] && [ "$INTERACTIVE" != "true" ]; then
         print_progress "2/7" "生成密钥并应用 ConfigMap"
+        # Load existing secrets from cluster so we don't rotate them on re-deploy.
+        # Config-file values (already in AUTH9_SECRETS) take precedence — only fill gaps.
+        if [ -z "$DRY_RUN" ] && kubectl get secret auth9-secrets -n "$NAMESPACE" &>/dev/null; then
+            local _loaded=0
+            for key in DATABASE_URL REDIS_URL JWT_SECRET JWT_PRIVATE_KEY JWT_PUBLIC_KEY \
+                       SESSION_SECRET SETTINGS_ENCRYPTION_KEY PASSWORD_RESET_HMAC_KEY \
+                       AUTH9_ADMIN_PASSWORD GRPC_API_KEYS AUTH9_ADMIN_EMAIL IDENTITY_WEBHOOK_SECRET; do
+                if [ -z "${AUTH9_SECRETS[$key]}" ]; then
+                    local _val=$(kubectl get secret auth9-secrets -n "$NAMESPACE" -o jsonpath="{.data.$key}" 2>/dev/null | base64 -d 2>/dev/null || echo "")
+                    if [ -n "$_val" ]; then
+                        AUTH9_SECRETS[$key]="$_val"
+                        _loaded=$((_loaded + 1))
+                    fi
+                fi
+            done
+            print_info "从现有 auth9-secrets 保留 $_loaded 个密钥（不重新生成）"
+        fi
         generate_secrets
         if [ -n "$DRY_RUN" ]; then
             print_info "[预演] 将应用 ConfigMap（跳过实际执行）"
