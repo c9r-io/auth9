@@ -164,7 +164,7 @@ Auth9 is a fully functional identity platform — the product that this methodol
 | **auth9-portal** | React Router 7 + TypeScript + Vite | Admin dashboard UI |
 | **Database** | TiDB (MySQL compatible) | Tenant, user, RBAC data |
 | **Cache** | Redis | Session, token caching |
-| **Auth Engine** | auth9-oidc (built-in) | OIDC provider |
+| **Auth Engine** | Built into auth9-core | OIDC provider, MFA, credential store |
 
 ### Features
 

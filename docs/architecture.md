@@ -2,11 +2,11 @@
 
 ## 1. 项目概述
 
-Auth9 是一个自托管的身份认证与访问管理平台，设计用于替代昂贵的 Auth0 等商业解决方案。系统内置 OIDC 引擎（auth9-oidc），提供多租户管理、SSO 单点登录和动态 RBAC 能力。
+Auth9 是一个自托管的身份认证与访问管理平台，设计用于替代昂贵的 Auth0 等商业解决方案。OIDC 引擎、MFA、账号存储全部由 auth9-core 内部实现，提供多租户管理、SSO 单点登录和动态 RBAC 能力。
 
 ### 1.1 核心理念
 
-- **内置 OIDC 引擎**: auth9-oidc 负责核心协议（OIDC）、MFA 和账号存储，无需外部身份提供商
+- **内置 OIDC 引擎**: auth9-core 直接承载 OIDC/OAuth 2.1 协议端点、MFA、账号存储，无需外部身份提供商也无需独立的身份引擎服务
 - **管理面与数据面合一**: Identity Service 承载管理 UI 及其对应的 API 服务
 - **Token 瘦身**: 通过 Token Exchange 策略，将庞大的租户/角色信息从初始登录 Token 中剥离，按需交换
 
@@ -56,7 +56,6 @@ flowchart TB
   - auth9-core: 8080 (HTTP) + 50051 (gRPC)，3-10 副本
   - TiDB: 集群现有，4000 端口
   - Redis: 集群，6379 端口
-  - auth9-oidc: 内置 OIDC 引擎（集成在 auth9-core 内）
 
 ## 3. 技术栈选择
 
@@ -125,7 +124,7 @@ auth9-core/
 │   ├── repository/                     # 数据访问层
 │   ├── service/                        # 兼容层（re-export 到 domains）
 │   ├── server/                         # Router 组装与启动
-│   ├── identity_engine/                # 身份引擎抽象层（auth9-oidc adapter）
+│   ├── identity_engine/                # 身份引擎抽象层 + 内置实现（adapter / models / repository）
 │   ├── jwt/                            # JWT 签发与验证
 │   ├── cache/                          # Redis 缓存层
 │   └── error/                          # 统一错误处理

@@ -52,15 +52,14 @@ cd auth9-portal && npm run dev
 
 Auth9 is a self-hosted identity and access management service (Auth0 alternative).
 
-**Core Concept**: Auth9 is a self-contained identity platform with built-in OIDC engine (auth9-oidc). Token Exchange flow: Identity Token → Tenant Access Token with roles/permissions.
+**Core Concept**: Auth9 is a self-contained identity platform. The OIDC engine, MFA, and credential store all live inside auth9-core — there is no separate identity backend service. Token Exchange flow: Identity Token → Tenant Access Token with roles/permissions.
 
 | Component | Stack | Purpose |
 |-----------|-------|---------|
-| auth9-core | Rust (axum, tonic, sqlx) | Backend API & gRPC |
+| auth9-core | Rust (axum, tonic, sqlx) | Backend API, gRPC, OIDC engine, credential store |
 | auth9-portal | React Router 7 + TypeScript + Vite | Admin dashboard |
-| Database | TiDB (MySQL compatible) | Tenant, user, RBAC data |
+| Database | TiDB (MySQL compatible) | Tenant, user, RBAC, credentials, OIDC state |
 | Cache | Redis | Session, token caching |
-| Auth Engine | auth9-oidc (built-in) | OIDC provider |
 
 ### Data Modeling Rules
 

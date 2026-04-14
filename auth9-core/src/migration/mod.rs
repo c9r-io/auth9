@@ -828,7 +828,7 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
         })
         .to_string();
 
-        // Replace existing password credential (table created by auth9-oidc migrations)
+        // Replace existing password credential (credentials table is owned by the identity engine)
         // credentials.user_id stores users.id UUID; also clean up any legacy identity_subject keys
         match sqlx::query(
             "DELETE FROM credentials WHERE (user_id = ? OR user_id = ?) AND credential_type = 'password'",
@@ -857,7 +857,7 @@ async fn seed_initial_data(config: &Config) -> Result<()> {
                 info!("Admin password credential set from AUTH9_ADMIN_PASSWORD");
             }
             Err(e) => {
-                warn!("Skipping admin password credential (credentials table not ready, will be set when auth9-oidc initializes): {}", e);
+                warn!("Skipping admin password credential (credentials table not ready yet — will be set on next startup): {}", e);
             }
         }
     }

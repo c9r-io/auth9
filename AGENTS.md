@@ -55,7 +55,7 @@ Rust test locations:
 
 ## Security & Configuration Notes
 - `auth9-core` requires `DATABASE_URL` and `JWT_SECRET`. Use `.env.example` files as starting points.
-- OIDC/MFA is handled by the built-in auth9-oidc engine; no external identity provider is required.
+- OIDC/MFA is handled inside auth9-core (under `domains/identity/api/auth/` for the protocol endpoints and `identity_engine/` for the credential/session store); no external identity provider is required.
 
 ## Authorization Model (Policy-First)
 - Central authorization lives in `auth9-core/src/policy/mod.rs`.

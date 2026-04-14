@@ -1,4 +1,4 @@
-> **本文档已废弃** — Auth9 已迁移至 auth9-oidc 内置 OIDC 引擎，不再使用 Keycloak 主题。此文档仅供历史参考。
+> **本文档已废弃** — OIDC 引擎已内嵌于 auth9-core，不再使用 Keycloak 主题。此文档仅供历史参考。
 
 ---
 

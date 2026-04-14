@@ -524,7 +524,6 @@ impl HasScimServices for AppState {
 
 /// Run the server
 pub async fn run(config: Config, prometheus_handle: Option<PrometheusHandle>) -> Result<()> {
-    info!("Identity backend: auth9_oidc");
     // Create database connection pool
     let db_pool = MySqlPoolOptions::new()
         .max_connections(config.database.max_connections)

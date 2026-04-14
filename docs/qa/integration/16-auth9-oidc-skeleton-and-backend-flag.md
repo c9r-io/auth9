@@ -1,79 +1,26 @@
-# 集成测试 - auth9-oidc 唯一后端验证
+# 集成测试 - auth9-oidc 骨架与 backend 开关（已归档）
 
+**状态**: ✅ 已归档 — 2026-04-15
 **模块**: 集成测试
-**测试范围**: `auth9-oidc` 作为唯一后端的正确性验证、健康检查
-**场景数**: 2
-**优先级**: 高
+**场景数**: 0（全部归档）
 
 ---
 
-## 背景说明
+## 归档说明
 
-> **迁移已完成**: `IDENTITY_BACKEND` 开关已移除，auth9-oidc 现在是唯一后端。原场景 1（默认 keycloak backend）、场景 2（切换 backend）、场景 4（非法 backend 校验）已归档，因功能已不存在。
+本用例的两个场景在 OIDC 引擎收敛回 auth9-core 后均已失效，故整体归档：
 
-本用例验证：
+- **场景 1（auth9-core 使用 auth9_oidc 后端启动成功）**: `IDENTITY_BACKEND` 环境变量与 `Identity backend: auth9_oidc` 启动日志已移除。OIDC 引擎现在固定内嵌于 auth9-core，无 backend 概念，无需断言。
+- **场景 2（auth9-oidc 独立服务 /health 返回成功）**: auth9-oidc 独立 crate / Pod / 镜像已删除，无独立 health 端点可测。
 
-- auth9-core 固定使用 `auth9_oidc` 后端
-- auth9-oidc 独立服务健康检查正常
-- State wiring、Session/Federation 注入链完整
+### 历史背景
 
----
+早期阶段为脱离 Keycloak、为将来可能的服务拆分预留边界，曾把 OIDC 相关数据模型与 health skeleton 放在独立的 `auth9-oidc` crate（仅暴露 `/health`，与 auth9-core 共享同一 TiDB 数据库）。skeleton 没有任何协议端点，所有 OIDC 协议代码始终在 auth9-core 内。
 
-## 场景 1：auth9-core 使用 auth9_oidc 后端启动成功
+经评估「半拆分」状态成本大于收益（双部署物 + 双镜像 + 双监控，零隔离收益），将 models / repository 合回 `auth9-core/src/identity_engine/` 下，删除独立 crate 与 K8s manifest。`IdentityEngine` trait 抽象保留，便于未来真正需要替换实现时仍可插拔。
 
-### 初始状态
-- `auth9-core`、`auth9-oidc`、`auth9-redis`、`auth9-tidb` 已启动
+### 替代验证
 
-### 目的
-验证 auth9-core 固定使用 auth9_oidc 后端，启动正常
-
-### 测试操作流程
-1. 查看 `auth9-core` 最近日志：
-   ```bash
-   docker logs auth9-core --tail 200
-   ```
-2. 调用健康检查：
-   ```bash
-   curl -sS http://localhost:8080/health
-   ```
-
-### 预期结果
-- 日志中出现 `Identity backend: auth9_oidc`
-- `/health` 返回 `200 OK`
-- 不出现 `missing identity engine`、`panic`
-
----
-
-## 场景 2：`auth9-oidc` 独立服务 `/health` 返回成功
-
-### 初始状态
-- `auth9-oidc` 已启动
-- TiDB 可访问
-
-### 目的
-验证独立服务骨架可启动、可连 DB、可对外提供 health probe。
-
-### 测试操作流程
-1. 启动服务：
-   ```bash
-   cargo run --manifest-path auth9-oidc/Cargo.toml 2>&1 | tee /tmp/auth9-oidc.log
-   ```
-2. 调用 health 端点：
-   ```bash
-   curl -sS http://localhost:8090/health
-   ```
-
-### 预期结果
-- 返回 `200 OK`
-- 响应 JSON 包含 `service = "auth9-oidc"`
-- 响应 JSON 包含 `identity_backend = "auth9_oidc"`
-- 响应 JSON 包含 `database = "up"`
-
----
-
-## 检查清单
-
-| # | 场景 | 状态 | 测试日期 | 测试人员 | 备注 |
-|---|------|------|----------|----------|------|
-| 1 | auth9-core 使用 auth9_oidc 后端启动成功 | ✅ | 2026-04-03 | QA | 日志显示 `Identity backend: auth9_oidc`，health 返回 200 |
-| 2 | `auth9-oidc` 独立服务 `/health` 返回成功 | ✅ | 2026-04-03 | QA | service/identity_backend/database 字段均正确 |
+- 协议端点功能 — 见 `docs/qa/auth/`（authorize / token / userinfo / discovery 等）
+- 凭据 / pending action / 邮箱验证存储 — 见 `docs/qa/integration/20-local-credential-store.md`
+- 身份引擎注入链路 — 见 `docs/qa/integration/13-identity-engine-state-injection.md`、`docs/qa/integration/17-identity-engine-capabilities-state-cleanup.md`
