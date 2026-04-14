@@ -31,6 +31,7 @@ INTERACTIVE="true"
 CONFIG_FILE=""
 OBSERVABILITY_MODE="auto"
 SKIP_VALIDATION=""
+GHCR_SOURCE_NAMESPACE="${GHCR_SOURCE_NAMESPACE:-}"
 
 # Associative arrays for configuration
 declare -A AUTH9_SECRETS
@@ -560,7 +561,7 @@ generate_secrets() {
         print_warning "已生成 AUTH9_ADMIN_PASSWORD - 请立即安全保存："
         echo -e "${GREEN}${AUTH9_SECRETS[AUTH9_ADMIN_PASSWORD]}${NC}"
         echo ""
-        read "?保存后按 Enter 继续..."
+        [ "$INTERACTIVE" = "true" ] && read "?保存后按 Enter 继续..."
     else
         AUTH9_ADMIN_PASSWORD="${AUTH9_SECRETS[AUTH9_ADMIN_PASSWORD]}"
         print_info "AUTH9_ADMIN_PASSWORD 已存在（不会重新生成）"
@@ -573,7 +574,7 @@ generate_secrets() {
         print_warning "已生成 JWT_SECRET - 请安全保存："
         echo -e "${GREEN}${AUTH9_SECRETS[JWT_SECRET]}${NC}"
         echo ""
-        read "?保存后按 Enter 继续..."
+        [ "$INTERACTIVE" = "true" ] && read "?保存后按 Enter 继续..."
     else
         print_info "JWT_SECRET 已存在（不会重新生成）"
     fi
@@ -585,7 +586,7 @@ generate_secrets() {
         print_warning "已生成 SESSION_SECRET - 请安全保存："
         echo -e "${GREEN}${AUTH9_SECRETS[SESSION_SECRET]}${NC}"
         echo ""
-        read "?保存后按 Enter 继续..."
+        [ "$INTERACTIVE" = "true" ] && read "?保存后按 Enter 继续..."
     else
         print_info "SESSION_SECRET 已存在（不会重新生成）"
     fi
@@ -597,7 +598,7 @@ generate_secrets() {
         print_warning "已生成 IDENTITY_WEBHOOK_SECRET - 请安全保存："
         echo -e "${GREEN}${AUTH9_SECRETS[IDENTITY_WEBHOOK_SECRET]}${NC}"
         echo ""
-        read "?保存后按 Enter 继续..."
+        [ "$INTERACTIVE" = "true" ] && read "?保存后按 Enter 继续..."
     else
         print_info "IDENTITY_WEBHOOK_SECRET 已存在（不会重新生成）"
     fi
@@ -609,7 +610,7 @@ generate_secrets() {
         print_warning "已生成 GRPC_API_KEYS - 请安全保存："
         echo -e "${GREEN}${AUTH9_SECRETS[GRPC_API_KEYS]}${NC}"
         echo ""
-        read "?保存后按 Enter 继续..."
+        [ "$INTERACTIVE" = "true" ] && read "?保存后按 Enter 继续..."
     else
         print_info "GRPC_API_KEYS 已存在（不会重新生成）"
     fi
@@ -621,7 +622,7 @@ generate_secrets() {
         print_warning "已生成 PASSWORD_RESET_HMAC_KEY - 请安全保存："
         echo -e "${GREEN}${AUTH9_SECRETS[PASSWORD_RESET_HMAC_KEY]}${NC}"
         echo ""
-        read "?保存后按 Enter 继续..."
+        [ "$INTERACTIVE" = "true" ] && read "?保存后按 Enter 继续..."
     else
         print_info "PASSWORD_RESET_HMAC_KEY 已存在（不会重新生成）"
     fi
@@ -633,7 +634,7 @@ generate_secrets() {
         print_warning "已生成 SETTINGS_ENCRYPTION_KEY - 请安全保存："
         echo -e "${GREEN}${AUTH9_SECRETS[SETTINGS_ENCRYPTION_KEY]}${NC}"
         echo ""
-        read "?保存后按 Enter 继续..."
+        [ "$INTERACTIVE" = "true" ] && read "?保存后按 Enter 继续..."
     else
         print_info "SETTINGS_ENCRYPTION_KEY 已存在（不会重新生成）"
     fi
@@ -651,7 +652,7 @@ generate_secrets() {
         echo ""
         print_warning "已生成 JWT RSA 密钥对"
         echo ""
-        read "?按 Enter 继续..."
+        [ "$INTERACTIVE" = "true" ] && read "?按 Enter 继续..."
     else
         print_info "JWT RSA 密钥对已存在（不会重新生成）"
     fi
@@ -859,26 +860,41 @@ deploy_auth9() {
     kubectl apply -f "$K8S_DIR/namespace.yaml" $DRY_RUN
     kubectl apply -f "$K8S_DIR/serviceaccount.yaml" $DRY_RUN
 
-    # Step 2: ConfigMap already applied in interactive setup (skip if interactive)
-    if [ "$INTERACTIVE" != "true" ]; then
+    # Step 2 & 3: Config-file non-interactive mode generates secrets and applies config
+    if [ -n "$CONFIG_FILE" ] && [ "$INTERACTIVE" != "true" ]; then
+        print_progress "2/7" "生成密钥并应用 ConfigMap"
+        generate_secrets
+        if [ -n "$DRY_RUN" ]; then
+            print_info "[预演] 将应用 ConfigMap（跳过实际执行）"
+        else
+            kubectl create namespace "$NAMESPACE" 2>/dev/null || true
+            apply_configmap
+            cleanup_legacy_auth9_configuration
+        fi
+
+        print_progress "3/7" "应用密钥"
+        if [ -n "$DRY_RUN" ]; then
+            local _secret_keys=(${(k)AUTH9_SECRETS})
+            print_info "[预演] 将创建/更新 auth9-secrets（${#_secret_keys} 个密钥，跳过实际执行）"
+        else
+            create_or_patch_secret "auth9-secrets" "$NAMESPACE" AUTH9_SECRETS
+        fi
+    elif [ "$INTERACTIVE" != "true" ]; then
         print_progress "2/7" "应用 ConfigMap"
         validate_static_configmap
         kubectl apply -f "$K8S_DIR/configmap.yaml" $DRY_RUN
         cleanup_legacy_auth9_configuration
-    else
-        print_progress "2/7" "ConfigMap 已应用"
-    fi
 
-    # Step 3: Secrets already applied in interactive setup (skip if interactive)
-    if [ "$INTERACTIVE" != "true" ]; then
         print_progress "3/7" "检查密钥"
         check_secrets_non_interactive
     else
+        print_progress "2/7" "ConfigMap 已应用"
         print_progress "3/7" "密钥已应用"
     fi
 
-    # Step 4: Deploy infrastructure (redis)
+    # Step 4: Deploy infrastructure (redis) — ensure ghcr-secret first
     print_progress "4/7" "部署基础设施"
+    ensure_ghcr_secret
     deploy_infrastructure
 
     # Step 5: Deploy auth9 applications
@@ -926,6 +942,55 @@ check_secrets_non_interactive() {
     fi
 }
 
+ensure_ghcr_secret() {
+    if kubectl get secret ghcr-secret -n "$NAMESPACE" &>/dev/null; then
+        print_success "ghcr-secret 已存在"
+        return 0
+    fi
+
+    # If GHCR_SOURCE_NAMESPACE is provided, copy from there
+    if [ -n "$GHCR_SOURCE_NAMESPACE" ]; then
+        if kubectl get secret ghcr-secret -n "$GHCR_SOURCE_NAMESPACE" &>/dev/null; then
+            print_info "从 $GHCR_SOURCE_NAMESPACE 命名空间复制 ghcr-secret..."
+            if [ -n "$DRY_RUN" ]; then
+                print_info "[预演] 将复制 ghcr-secret 到 $NAMESPACE"
+                return 0
+            fi
+            kubectl get secret ghcr-secret -n "$GHCR_SOURCE_NAMESPACE" -o json \
+                | jq 'del(.metadata.namespace, .metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp, .metadata.ownerReferences, .metadata.managedFields)' \
+                | kubectl apply -n "$NAMESPACE" -f -
+            print_success "ghcr-secret 已从 $GHCR_SOURCE_NAMESPACE 复制"
+            return 0
+        else
+            print_error "指定的源命名空间 $GHCR_SOURCE_NAMESPACE 中不存在 ghcr-secret"
+        fi
+    fi
+
+    # Auto-discover from any namespace with ghcr-secret
+    local src_ns=$(kubectl get secret -A --field-selector metadata.name=ghcr-secret -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null)
+    if [ -n "$src_ns" ] && [ "$src_ns" != "$NAMESPACE" ]; then
+        print_info "自动从 $src_ns 命名空间复制 ghcr-secret..."
+        if [ -n "$DRY_RUN" ]; then
+            print_info "[预演] 将从 $src_ns 复制 ghcr-secret 到 $NAMESPACE"
+            return 0
+        fi
+        kubectl get secret ghcr-secret -n "$src_ns" -o json \
+            | jq 'del(.metadata.namespace, .metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp, .metadata.ownerReferences, .metadata.managedFields)' \
+            | kubectl apply -n "$NAMESPACE" -f -
+        print_success "ghcr-secret 已从 $src_ns 复制"
+        return 0
+    fi
+
+    print_warning "未找到 ghcr-secret（私有镜像将无法拉取）"
+    print_info "手动创建示例："
+    echo "    kubectl create secret docker-registry ghcr-secret \\"
+    echo "      --docker-server=ghcr.io \\"
+    echo "      --docker-username=YOUR_GITHUB_USER \\"
+    echo "      --docker-password=YOUR_GITHUB_PAT \\"
+    echo "      -n $NAMESPACE"
+    echo "    或通过 --ghcr-source-namespace <NS> 从其他命名空间复制"
+}
+
 deploy_infrastructure() {
     print_info "正在部署 redis..."
     kubectl apply -f "$K8S_DIR/redis/" $DRY_RUN
@@ -939,9 +1004,6 @@ deploy_infrastructure() {
 deploy_auth9_apps() {
     print_info "正在部署 auth9-core..."
     kubectl apply -f "$K8S_DIR/auth9-core/" $DRY_RUN
-
-    print_info "正在部署 auth9-oidc..."
-    kubectl apply -f "$K8S_DIR/auth9-oidc/" $DRY_RUN
 
     print_info "正在部署 auth9-portal..."
     kubectl apply -f "$K8S_DIR/auth9-portal/" $DRY_RUN
@@ -996,9 +1058,6 @@ wait_for_auth9_apps() {
     print_info "等待 auth9-core..."
     kubectl rollout status deployment/auth9-core -n "$NAMESPACE" --timeout=300s || true
 
-    print_info "等待 auth9-oidc..."
-    kubectl rollout status deployment/auth9-oidc -n "$NAMESPACE" --timeout=300s || true
-
     print_info "等待 auth9-portal..."
     kubectl rollout status deployment/auth9-portal -n "$NAMESPACE" --timeout=300s || true
 
@@ -1032,12 +1091,9 @@ print_deployment_complete() {
         echo -e "    公网 URL:     ${YELLOW}${portal_url}${NC}"
         echo -e "    内部地址:     auth9-portal.$NAMESPACE.svc.cluster.local:3000"
         echo ""
-        echo -e "  ${GREEN}auth9-core（后端 API）:${NC}"
+        echo -e "  ${GREEN}auth9-core（后端 API + OIDC 身份引擎）:${NC}"
         echo -e "    公网 URL:     ${YELLOW}${core_url}${NC}"
         echo -e "    内部地址:     auth9-core.$NAMESPACE.svc.cluster.local:8080"
-        echo ""
-        echo -e "  ${GREEN}auth9-oidc（OIDC 身份引擎）:${NC}"
-        echo -e "    内部地址:     auth9-oidc.$NAMESPACE.svc.cluster.local:8090"
         echo ""
 
         # Display admin credentials if extracted
@@ -1058,6 +1114,75 @@ print_deployment_complete() {
             echo ""
         fi
     fi
+}
+
+################################################################################
+# Config File Loading
+################################################################################
+
+load_config_file() {
+    local file="$1"
+
+    if [ ! -f "$file" ]; then
+        print_error "配置文件不存在: $file"
+        exit 1
+    fi
+
+    print_info "从配置文件加载: $file"
+
+    # Map of env key → target array (S=AUTH9_SECRETS, C=CONFIGMAP_VALUES)
+    declare -A key_targets=(
+        [DATABASE_URL]=S [REDIS_URL]=S [AUTH9_ADMIN_EMAIL]=S
+        [AUTH9_CORE_PUBLIC_URL]=C [AUTH9_PORTAL_URL]=C [JWT_ISSUER]=C
+        [WEBAUTHN_RP_ID]=C [PLATFORM_ADMIN_EMAILS]=C [AUTH9_PORTAL_CLIENT_ID]=C
+    )
+
+    local loaded=0
+    while IFS= read -r line || [ -n "$line" ]; do
+        # Skip comments and empty lines
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line// }" ]] && continue
+
+        # Parse KEY=VALUE (strip surrounding quotes)
+        local key="${line%%=*}"
+        local value="${line#*=}"
+        key="${key// }"
+        value="${value#\"}" ; value="${value%\"}"
+        value="${value#\'}" ; value="${value%\'}"
+
+        if [ -z "$key" ] || [ -z "$value" ]; then
+            continue
+        fi
+
+        local target="${key_targets[$key]}"
+        if [ "$target" = "S" ]; then
+            AUTH9_SECRETS[$key]="$value"
+            loaded=$((loaded + 1))
+        elif [ "$target" = "C" ]; then
+            CONFIGMAP_VALUES[$key]="$value"
+            loaded=$((loaded + 1))
+        else
+            print_warning "未知配置键，已忽略: $key"
+        fi
+    done < "$file"
+
+    # Auto-derive JWT_ISSUER from AUTH9_CORE_PUBLIC_URL if not set
+    if [ -z "${CONFIGMAP_VALUES[JWT_ISSUER]}" ] && [ -n "${CONFIGMAP_VALUES[AUTH9_CORE_PUBLIC_URL]}" ]; then
+        CONFIGMAP_VALUES[JWT_ISSUER]="${CONFIGMAP_VALUES[AUTH9_CORE_PUBLIC_URL]}"
+    fi
+
+    # Auto-derive WEBAUTHN_RP_ID from AUTH9_PORTAL_URL if not set
+    if [ -z "${CONFIGMAP_VALUES[WEBAUTHN_RP_ID]}" ] && [ -n "${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]}" ]; then
+        local portal_host=$(echo "${CONFIGMAP_VALUES[AUTH9_PORTAL_URL]}" | sed -E 's|https?://||' | sed 's|/.*||' | sed 's|:.*||')
+        CONFIGMAP_VALUES[WEBAUTHN_RP_ID]=$(echo "$portal_host" | awk -F. '{if(NF>=2) print $(NF-1)"."$NF; else print $0}')
+    fi
+
+    # Sync PLATFORM_ADMIN_EMAILS from AUTH9_ADMIN_EMAIL if not set
+    if [ -z "${CONFIGMAP_VALUES[PLATFORM_ADMIN_EMAILS]}" ] && [ -n "${AUTH9_SECRETS[AUTH9_ADMIN_EMAIL]}" ]; then
+        CONFIGMAP_VALUES[PLATFORM_ADMIN_EMAILS]="${AUTH9_SECRETS[AUTH9_ADMIN_EMAIL]}"
+    fi
+
+    print_success "已加载 $loaded 个配置项"
 }
 
 ################################################################################
@@ -1099,6 +1224,10 @@ parse_arguments() {
                 SKIP_VALIDATION="true"
                 shift
                 ;;
+            --ghcr-source-namespace)
+                GHCR_SOURCE_NAMESPACE="$2"
+                shift 2
+                ;;
             *)
                 echo -e "${RED}未知选项: $1${NC}"
                 echo ""
@@ -1113,6 +1242,7 @@ parse_arguments() {
                 echo "  --with-observability    强制部署可观测性资源"
                 echo "  --without-observability 跳过可观测性资源部署"
                 echo "  --skip-validation       在非交互模式下跳过 ConfigMap 占位符检查"
+                echo "  --ghcr-source-namespace NS  从指定命名空间复制 ghcr-secret（用于私有镜像拉取）"
                 exit 1
                 ;;
         esac
@@ -1134,6 +1264,11 @@ main() {
         echo -e "${YELLOW}预演模式:${NC} 是"
     fi
     echo ""
+
+    # Load config file if provided
+    if [ -n "$CONFIG_FILE" ]; then
+        load_config_file "$CONFIG_FILE"
+    fi
 
     # Run interactive setup if enabled
     if [ "$INTERACTIVE" = "true" ] && [ -z "$DRY_RUN" ]; then

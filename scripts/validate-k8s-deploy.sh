@@ -198,7 +198,7 @@ check_deprecated_keycloak_state() {
     )"
 
     if [[ -n "$deprecated_resources" ]]; then
-        print_warning "仍检测到 Keycloak 旧资源（迁移到 auth9-oidc 后建议清理）"
+        print_warning "仍检测到 Keycloak 旧资源（OIDC 已收敛进 auth9-core，建议清理）"
         echo "$deprecated_resources" | sed 's/^/    /'
     else
         print_success "未发现 Keycloak 旧资源"

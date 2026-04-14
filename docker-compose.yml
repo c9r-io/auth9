@@ -110,28 +110,6 @@ services:
       - auth9-network
     restart: unless-stopped
 
-  # ==================== Auth9 OIDC Skeleton ====================
-  auth9-oidc:
-    build:
-      context: ./auth9-oidc
-      dockerfile: Dockerfile
-    container_name: auth9-oidc
-    command: ["auth9-oidc"]
-    ports:
-      - "8090:8090"
-    environment:
-      RUST_LOG: info
-      HTTP_HOST: 0.0.0.0
-      HTTP_PORT: 8090
-      DATABASE_URL: mysql://root@tidb:4000/auth9
-      IDENTITY_BACKEND: auth9_oidc
-    depends_on:
-      tidb:
-        condition: service_healthy
-    networks:
-      - auth9-network
-    restart: unless-stopped
-
   # ==================== gRPC TLS Termination (Nginx) ====================
   auth9-grpc-tls:
     image: nginx:1.25-alpine
