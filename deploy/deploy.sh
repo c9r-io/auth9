@@ -31,7 +31,6 @@ INTERACTIVE="true"
 CONFIG_FILE=""
 OBSERVABILITY_MODE="auto"
 SKIP_VALIDATION=""
-GHCR_SOURCE_NAMESPACE="${GHCR_SOURCE_NAMESPACE:-}"
 
 # Associative arrays for configuration
 declare -A AUTH9_SECRETS
@@ -892,9 +891,8 @@ deploy_auth9() {
         print_progress "3/7" "密钥已应用"
     fi
 
-    # Step 4: Deploy infrastructure (redis) — ensure ghcr-secret first
+    # Step 4: Deploy infrastructure (redis)
     print_progress "4/7" "部署基础设施"
-    ensure_ghcr_secret
     deploy_infrastructure
 
     # Step 5: Deploy auth9 applications
@@ -940,55 +938,6 @@ check_secrets_non_interactive() {
             print_warning "继续执行（缺少密钥可能导致部署失败）"
         fi
     fi
-}
-
-ensure_ghcr_secret() {
-    if kubectl get secret ghcr-secret -n "$NAMESPACE" &>/dev/null; then
-        print_success "ghcr-secret 已存在"
-        return 0
-    fi
-
-    # If GHCR_SOURCE_NAMESPACE is provided, copy from there
-    if [ -n "$GHCR_SOURCE_NAMESPACE" ]; then
-        if kubectl get secret ghcr-secret -n "$GHCR_SOURCE_NAMESPACE" &>/dev/null; then
-            print_info "从 $GHCR_SOURCE_NAMESPACE 命名空间复制 ghcr-secret..."
-            if [ -n "$DRY_RUN" ]; then
-                print_info "[预演] 将复制 ghcr-secret 到 $NAMESPACE"
-                return 0
-            fi
-            kubectl get secret ghcr-secret -n "$GHCR_SOURCE_NAMESPACE" -o json \
-                | jq 'del(.metadata.namespace, .metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp, .metadata.ownerReferences, .metadata.managedFields)' \
-                | kubectl apply -n "$NAMESPACE" -f -
-            print_success "ghcr-secret 已从 $GHCR_SOURCE_NAMESPACE 复制"
-            return 0
-        else
-            print_error "指定的源命名空间 $GHCR_SOURCE_NAMESPACE 中不存在 ghcr-secret"
-        fi
-    fi
-
-    # Auto-discover from any namespace with ghcr-secret
-    local src_ns=$(kubectl get secret -A --field-selector metadata.name=ghcr-secret -o jsonpath='{.items[0].metadata.namespace}' 2>/dev/null)
-    if [ -n "$src_ns" ] && [ "$src_ns" != "$NAMESPACE" ]; then
-        print_info "自动从 $src_ns 命名空间复制 ghcr-secret..."
-        if [ -n "$DRY_RUN" ]; then
-            print_info "[预演] 将从 $src_ns 复制 ghcr-secret 到 $NAMESPACE"
-            return 0
-        fi
-        kubectl get secret ghcr-secret -n "$src_ns" -o json \
-            | jq 'del(.metadata.namespace, .metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp, .metadata.ownerReferences, .metadata.managedFields)' \
-            | kubectl apply -n "$NAMESPACE" -f -
-        print_success "ghcr-secret 已从 $src_ns 复制"
-        return 0
-    fi
-
-    print_warning "未找到 ghcr-secret（私有镜像将无法拉取）"
-    print_info "手动创建示例："
-    echo "    kubectl create secret docker-registry ghcr-secret \\"
-    echo "      --docker-server=ghcr.io \\"
-    echo "      --docker-username=YOUR_GITHUB_USER \\"
-    echo "      --docker-password=YOUR_GITHUB_PAT \\"
-    echo "      -n $NAMESPACE"
-    echo "    或通过 --ghcr-source-namespace <NS> 从其他命名空间复制"
 }
 
 deploy_infrastructure() {
@@ -1224,10 +1173,6 @@ parse_arguments() {
                 SKIP_VALIDATION="true"
                 shift
                 ;;
-            --ghcr-source-namespace)
-                GHCR_SOURCE_NAMESPACE="$2"
-                shift 2
-                ;;
             *)
                 echo -e "${RED}未知选项: $1${NC}"
                 echo ""
@@ -1242,7 +1187,6 @@ parse_arguments() {
                 echo "  --with-observability    强制部署可观测性资源"
                 echo "  --without-observability 跳过可观测性资源部署"
                 echo "  --skip-validation       在非交互模式下跳过 ConfigMap 占位符检查"
-                echo "  --ghcr-source-namespace NS  从指定命名空间复制 ghcr-secret（用于私有镜像拉取）"
                 exit 1
                 ;;
         esac

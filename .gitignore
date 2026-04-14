@@ -18,6 +18,8 @@ Thumbs.db
 deploy/k8s/secrets.yaml
 deploy/k8s/ghcr-secret.yaml
 deploy/dev-certs/
+deploy/deploy.local.env
+deploy/deploy.env
 *.key
 *.pem
 
