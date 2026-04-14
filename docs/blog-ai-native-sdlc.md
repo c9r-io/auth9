@@ -14,6 +14,8 @@ I chose IAM (Identity and Access Management) as the test subject. This isn't sim
 
 The result is [Auth9](https://github.com/gpgkd906/auth9), a self-hosted alternative to Auth0 built with Rust, React Router 7, TiDB, and Keycloak. You can try the live instance at [auth9.c9r.io](https://auth9.c9r.io). Almost all code in this project was AI-generated, and almost every step was driven by skills — from the backend Rust services to frontend React components, from test cases to deployment scripts. But Auth9 is just the output. The real subject of the experiment is this development pipeline itself.
 
+![Auth9 admin dashboard — multi-tenant overview, activity log, RBAC entrypoints](images/blog/auth9-dashboard.png)
+
 ## The Real Challenge: Verifiability
 
 AI coding tools do make you write code faster. GitHub Copilot, Cursor, Claude Code — they all deliver on that promise.
@@ -240,6 +242,8 @@ Want to try it? Clone the repo and run `scripts/run-qa-tests.sh` — the agent w
 Alternatively, start opencode (or claude-code), then tell your agent: `execute all QA/security/UIUX tests` — and watch what happens. By the way, Gemini works well too.
 
 The entire pipeline is open source: [github.com/gpgkd906/auth9](https://github.com/gpgkd906/auth9)
+
+![Auth9 audit log — every authentication and token exchange recorded](images/blog/auth9-audit-logs.png)
 
 The methodology isn't specific to identity platforms. It's a way of thinking about AI-led development: **don't just use AI to write code faster — use it to close the loop between planning, testing, fixing, and deploying.**
 
