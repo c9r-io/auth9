@@ -41,9 +41,8 @@ impl CredentialRepositoryImpl {
     fn row_to_credential(&self, row: &sqlx::mysql::MySqlRow) -> Result<Credential> {
         use sqlx::Row;
         let type_str: String = row.try_get("credential_type")?;
-        let credential_type = CredentialType::from_str_value(&type_str).ok_or_else(|| {
-            AppError::Internal(anyhow!("unknown credential type: {}", type_str))
-        })?;
+        let credential_type = CredentialType::from_str_value(&type_str)
+            .ok_or_else(|| AppError::Internal(anyhow!("unknown credential type: {}", type_str)))?;
         let is_active: i8 = row.try_get("is_active")?;
 
         Ok(Credential {
@@ -78,9 +77,9 @@ impl CredentialRepository for CredentialRepositoryImpl {
         .execute(&self.pool)
         .await?;
 
-        self.find_by_id(&id)
-            .await?
-            .ok_or_else(|| AppError::Internal(anyhow!("failed to read back credential after insert")))
+        self.find_by_id(&id).await?.ok_or_else(|| {
+            AppError::Internal(anyhow!("failed to read back credential after insert"))
+        })
     }
 
     async fn find_by_id(&self, id: &str) -> Result<Option<Credential>> {
@@ -121,10 +120,7 @@ impl CredentialRepository for CredentialRepositoryImpl {
             .await?;
 
         if result.rows_affected() == 0 {
-            return Err(AppError::NotFound(format!(
-                "credential '{}' not found",
-                id
-            )));
+            return Err(AppError::NotFound(format!("credential '{}' not found", id)));
         }
         Ok(())
     }
@@ -136,10 +132,7 @@ impl CredentialRepository for CredentialRepositoryImpl {
             .await?;
 
         if result.rows_affected() == 0 {
-            return Err(AppError::NotFound(format!(
-                "credential '{}' not found",
-                id
-            )));
+            return Err(AppError::NotFound(format!("credential '{}' not found", id)));
         }
         Ok(())
     }
@@ -151,10 +144,7 @@ impl CredentialRepository for CredentialRepositoryImpl {
             .await?;
 
         if result.rows_affected() == 0 {
-            return Err(AppError::NotFound(format!(
-                "credential '{}' not found",
-                id
-            )));
+            return Err(AppError::NotFound(format!("credential '{}' not found", id)));
         }
         Ok(())
     }
@@ -166,10 +156,7 @@ impl CredentialRepository for CredentialRepositoryImpl {
             .await?;
 
         if result.rows_affected() == 0 {
-            return Err(AppError::NotFound(format!(
-                "credential '{}' not found",
-                id
-            )));
+            return Err(AppError::NotFound(format!("credential '{}' not found", id)));
         }
         Ok(())
     }
@@ -224,7 +211,8 @@ mod tests {
         };
         let expected_clone = expected.clone();
 
-        mock.expect_create().returning(move |_| Ok(expected_clone.clone()));
+        mock.expect_create()
+            .returning(move |_| Ok(expected_clone.clone()));
 
         let input = CreateCredentialInput {
             user_id: "user-1".to_string(),
@@ -242,8 +230,7 @@ mod tests {
         assert_eq!(result.credential_type, CredentialType::Password);
         assert!(result.is_active);
 
-        let pwd: PasswordCredentialData =
-            serde_json::from_value(result.credential_data).unwrap();
+        let pwd: PasswordCredentialData = serde_json::from_value(result.credential_data).unwrap();
         assert_eq!(pwd.algorithm, "argon2id");
         assert!(!pwd.temporary);
     }

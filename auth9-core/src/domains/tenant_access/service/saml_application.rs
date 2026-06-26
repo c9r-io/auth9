@@ -868,14 +868,12 @@ mod tests {
             &[],
         );
 
-        assert!(kc
+        assert!(!kc
             .attributes
-            .get("saml_single_logout_service_url_redirect")
-            .is_none());
-        assert!(kc
+            .contains_key("saml_single_logout_service_url_redirect"));
+        assert!(!kc
             .attributes
-            .get("saml_single_logout_service_url_post")
-            .is_none());
+            .contains_key("saml_single_logout_service_url_post"));
     }
 
     #[test]
