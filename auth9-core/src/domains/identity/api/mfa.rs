@@ -455,7 +455,7 @@ pub async fn revoke_all_trusted_devices<S: HasServices + HasTrustedDevices>(
 
     let count = state.trusted_device_service().revoke_all(user_id).await?;
 
-    Ok(Json(MessageResponse::new(&format!(
+    Ok(Json(MessageResponse::new(format!(
         "Revoked {} trusted device(s).",
         count
     ))))

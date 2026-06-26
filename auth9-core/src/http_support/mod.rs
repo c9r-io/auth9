@@ -194,6 +194,7 @@ pub async fn write_audit_log_generic<S: HasServices>(
 }
 
 /// Write an audit log entry with an explicit actor ID (for unauthenticated flows like hosted login)
+#[allow(clippy::too_many_arguments)]
 pub async fn write_audit_log_with_actor<S: HasServices>(
     state: &S,
     headers: &HeaderMap,

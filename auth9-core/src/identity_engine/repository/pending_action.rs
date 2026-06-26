@@ -83,9 +83,7 @@ impl PendingActionRepository for PendingActionRepositoryImpl {
         .fetch_all(&self.pool)
         .await?;
 
-        rows.iter()
-            .map(|r| self.row_to_pending_action(r))
-            .collect()
+        rows.iter().map(|r| self.row_to_pending_action(r)).collect()
     }
 
     async fn complete(&self, id: &str) -> Result<()> {
@@ -151,7 +149,8 @@ mod tests {
         };
         let action_clone = action.clone();
 
-        mock.expect_create().returning(move |_| Ok(action_clone.clone()));
+        mock.expect_create()
+            .returning(move |_| Ok(action_clone.clone()));
 
         mock.expect_find_pending_by_user()
             .withf(|uid| uid == "user-1")
