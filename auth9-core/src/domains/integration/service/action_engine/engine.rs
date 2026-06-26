@@ -252,6 +252,9 @@ impl<R: ActionRepository + 'static> ActionEngine<R> {
     }
 
     /// Execute a single action
+    // Err variant is intentionally large (carries rich action-engine error context);
+    // boxing it here would ripple through the whole engine error type.
+    #[allow(clippy::result_large_err)]
     pub(super) async fn execute_action(
         &self,
         action: &Action,
