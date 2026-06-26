@@ -35,6 +35,12 @@ pub trait LdapAuthenticator: Send + Sync {
 
 pub struct DefaultLdapAuthenticator;
 
+impl Default for DefaultLdapAuthenticator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DefaultLdapAuthenticator {
     pub fn new() -> Self {
         Self
