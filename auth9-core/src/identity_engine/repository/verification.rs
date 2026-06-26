@@ -15,10 +15,7 @@ pub trait VerificationRepository: Send + Sync {
         &self,
         input: &CreateVerificationTokenInput,
     ) -> Result<EmailVerificationToken>;
-    async fn find_valid_token(
-        &self,
-        token_hash: &str,
-    ) -> Result<Option<EmailVerificationToken>>;
+    async fn find_valid_token(&self, token_hash: &str) -> Result<Option<EmailVerificationToken>>;
     async fn mark_token_used(&self, id: &str) -> Result<()>;
     async fn delete_expired_tokens(&self) -> Result<u64>;
     async fn invalidate_user_tokens(&self, user_id: &str) -> Result<u64>;
@@ -78,11 +75,7 @@ impl VerificationRepository for VerificationRepositoryImpl {
     }
 
     async fn set_email_verified(&self, user_id: &str, verified: bool) -> Result<()> {
-        let email_verified_at = if verified {
-            "NOW()"
-        } else {
-            "NULL"
-        };
+        let email_verified_at = if verified { "NOW()" } else { "NULL" };
 
         let query = format!(
             "UPDATE user_verification_status SET email_verified = ?, email_verified_at = {} WHERE user_id = ?",
@@ -133,10 +126,7 @@ impl VerificationRepository for VerificationRepositoryImpl {
         self.row_to_token(&row)
     }
 
-    async fn find_valid_token(
-        &self,
-        token_hash: &str,
-    ) -> Result<Option<EmailVerificationToken>> {
+    async fn find_valid_token(&self, token_hash: &str) -> Result<Option<EmailVerificationToken>> {
         let row = sqlx::query(
             "SELECT id, user_id, token_hash, expires_at, used_at, created_at FROM email_verification_tokens WHERE token_hash = ? AND used_at IS NULL AND expires_at > NOW()",
         )
@@ -333,8 +323,7 @@ mod tests {
     async fn delete_expired_tokens() {
         let mut mock = MockVerificationRepository::new();
 
-        mock.expect_delete_expired_tokens()
-            .returning(|| Ok(5));
+        mock.expect_delete_expired_tokens().returning(|| Ok(5));
 
         let count = mock.delete_expired_tokens().await.unwrap();
         assert_eq!(count, 5);
