@@ -99,21 +99,12 @@ impl Default for HibpConfig {
 }
 
 /// GeoIP geolocation configuration
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct GeoIpConfig {
     /// Whether GeoIP resolution is enabled
     pub enabled: bool,
     /// Path to MaxMind GeoLite2-City.mmdb database file
     pub database_path: Option<String>,
-}
-
-impl Default for GeoIpConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            database_path: None,
-        }
-    }
 }
 
 /// CAPTCHA bot protection configuration
