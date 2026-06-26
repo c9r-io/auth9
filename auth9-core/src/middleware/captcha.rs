@@ -557,6 +557,7 @@ mod tests {
     use tower::ServiceExt;
 
     /// Helper to build a test request (axum::http::Request<Body>)
+    #[allow(dead_code)]
     fn test_request(method: &str, uri: &str) -> axum::http::Request<Body> {
         axum::http::Request::builder()
             .method(method)

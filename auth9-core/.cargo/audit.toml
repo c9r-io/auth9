@@ -7,4 +7,16 @@ ignore = [
     # No fixed version available upstream. Transitive dep via sqlx-mysql.
     # auth9-core uses rsa only for public key parsing, not PKCS#1 v1.5 decryption.
     "RUSTSEC-2023-0071",
+
+    # rustls-webpki 0.101.7: pulled ONLY transitively via the AWS SDK
+    # (aws-sdk-sesv2 / aws-config -> aws-smithy-http-client -> rustls 0.21.12 -> rustls-webpki 0.101.7).
+    # auth9-core's own rustls path (reqwest/lettre) is already on rustls-webpki 0.103.13 (patched).
+    # The AWS SDK has not yet moved its default HTTPS client off rustls 0.21, so this version cannot
+    # be upgraded from auth9-core's Cargo.toml without replacing the AWS SDK's TLS stack.
+    # Risk is limited: this client only speaks TLS to AWS's own API endpoints (SES/STS), and all three
+    # advisories require a malicious / mis-issued *server* certificate to trigger — not a realistic
+    # threat against AWS's pinned endpoints. Tracked upstream (awslabs/aws-sdk-rust).
+    "RUSTSEC-2026-0104", # Reachable panic in CRL parsing
+    "RUSTSEC-2026-0099", # Name constraints accepted for wildcard-name certs
+    "RUSTSEC-2026-0098", # Name constraints for URI names incorrectly accepted
 ]
