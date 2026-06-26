@@ -740,7 +740,7 @@ mod tests {
 
         let expected = vec!["pending", "accepted", "expired", "revoked"];
 
-        for (status, expected_str) in statuses.into_iter().zip(expected.into_iter()) {
+        for (status, expected_str) in statuses.into_iter().zip(expected) {
             let json = serde_json::to_string(&status).unwrap();
             assert!(json.contains(expected_str));
         }
