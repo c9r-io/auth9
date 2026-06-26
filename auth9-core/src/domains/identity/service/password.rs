@@ -1808,10 +1808,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_check_password_history_disabled_when_count_zero() {
-        use argon2::password_hash::rand_core::OsRng;
-        use argon2::password_hash::{PasswordHasher, SaltString};
-
-        let mut password_reset_mock = MockPasswordResetRepository::new();
+        let password_reset_mock = MockPasswordResetRepository::new();
         let user_mock = MockUserRepository::new();
 
         // No expectations on get_password_history — it should not be called
@@ -1908,7 +1905,7 @@ mod tests {
         let user_mock = MockUserRepository::new();
 
         // Create hashes for multiple old passwords
-        let old_passwords = vec!["OldPass111!", "OldPass222!", "OldPass333!"];
+        let old_passwords = ["OldPass111!", "OldPass222!", "OldPass333!"];
         let hashes: Vec<String> = old_passwords
             .iter()
             .map(|p| {
