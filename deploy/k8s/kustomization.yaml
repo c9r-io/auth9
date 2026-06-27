@@ -1,0 +1,8 @@
+# Flux GitOps scope: only the workload Deployments are continuously reconciled
+# and image-automated. Config (configmap) and secrets stay environment-specific
+# and out-of-band (managed by deploy.sh); init-job is one-time and excluded.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - auth9-core/deployment.yaml
+  - auth9-portal/deployment.yaml

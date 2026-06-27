@@ -106,6 +106,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.CORE_IMAGE_NAME }}
           tags: |
             type=sha,prefix=
+            type=raw,value={{date 'YYYYMMDDHHmmss'}}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
 
@@ -216,6 +217,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ env.PORTAL_IMAGE_NAME }}
           tags: |
             type=sha,prefix=
+            type=raw,value={{date 'YYYYMMDDHHmmss'}}
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
 
