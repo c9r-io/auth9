@@ -38,6 +38,11 @@ if (typeof window !== "undefined" && !window.PointerEvent) {
   window.PointerEvent = MockPointerEvent as typeof PointerEvent;
 }
 
+// Polyfill window.confirm (happy-dom does not implement it; tests spy on it)
+if (typeof window !== "undefined" && typeof window.confirm !== "function") {
+  window.confirm = () => false;
+}
+
 const i18nResources = Object.fromEntries(
   SUPPORTED_LOCALES.map((locale) => [locale, { translation: resources[locale] }])
 );
