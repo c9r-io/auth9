@@ -38,7 +38,7 @@ spec:
       containers:
         - name: auth9-core
           # Image tag is overridden at deploy time via: kubectl set image deployment/auth9-core auth9-core=ghcr.io/c9r-io/auth9-core@sha256:<digest>
-          image: ghcr.io/c9r-io/auth9-core:latest
+          image: ghcr.io/c9r-io/auth9-core:780405b # {"$imagepolicy": "flux-system:auth9-core"}
           imagePullPolicy: Always
           command: ["auth9-core", "serve"]
           ports:
