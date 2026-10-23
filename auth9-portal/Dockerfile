@@ -3,19 +3,21 @@
 # Build context: repo root (for file: dependency on @auth9/core)
 
 # ==================== SDK Build Stage ====================
-FROM node:20-alpine AS sdk-builder
+FROM node:22.23.4-alpine AS sdk-builder
 
-WORKDIR /app/sdk/packages/core
+WORKDIR /app/sdk
 
 # Install SDK dependencies and build
-COPY sdk/packages/core/package.json ./
-RUN --mount=type=cache,target=/root/.npm \
-    npm install
-COPY sdk/packages/core/ ./
-RUN npm run build
+COPY sdk/package.json sdk/pnpm-lock.yaml sdk/pnpm-workspace.yaml sdk/tsconfig.base.json ./
+COPY sdk/packages/core/package.json packages/core/
+RUN corepack enable && corepack prepare pnpm@10.29.2 --activate
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --filter @auth9/core
+COPY sdk/packages/core/ packages/core/
+RUN pnpm --filter @auth9/core build
 
 # ==================== Portal Builder Stage ====================
-FROM node:20-alpine AS builder
+FROM node:22.23.4-alpine AS builder
 
 WORKDIR /app
 
@@ -38,7 +40,7 @@ COPY auth9-portal/ .
 RUN npm run build
 
 # ==================== Runtime Stage ====================
-FROM node:20-alpine
+FROM node:22.23.4-alpine
 
 # Apply security patches and create non-root user
 RUN apk upgrade --no-cache && \
