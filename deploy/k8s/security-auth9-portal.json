@@ -19,27 +19,27 @@
             "env": [
               {
                 "name": "SSL_CERT_FILE",
-                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+                "value": "/etc/emudhra-ca/v2-db65079b52/ca-dafd329258ce.pem"
               },
               {
                 "name": "CURL_CA_BUNDLE",
-                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+                "value": "/etc/emudhra-ca/v2-db65079b52/ca-dafd329258ce.pem"
               },
               {
                 "name": "REQUESTS_CA_BUNDLE",
-                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+                "value": "/etc/emudhra-ca/v2-db65079b52/ca-dafd329258ce.pem"
               },
               {
                 "name": "AWS_CA_BUNDLE",
-                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+                "value": "/etc/emudhra-ca/v2-db65079b52/ca-dafd329258ce.pem"
               },
               {
                 "name": "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH",
-                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+                "value": "/etc/emudhra-ca/v2-db65079b52/ca-dafd329258ce.pem"
               },
               {
                 "name": "SSL_CERT_DIR",
-                "value": "/etc/emudhra-ca/db65079b52/empty"
+                "value": "/etc/emudhra-ca/v2-db65079b52/empty"
               },
               {
                 "name": "NODE_OPTIONS",
@@ -48,14 +48,14 @@
             ],
             "volumeMounts": [
               {
-                "name": "emudhra-ca-20261023-db65079b52",
-                "mountPath": "/etc/emudhra-ca/db65079b52",
+                "name": "emudhra-ca-20261023-v2-db65079b52",
+                "mountPath": "/etc/emudhra-ca/v2-db65079b52",
                 "readOnly": true
               },
               {
-                "name": "emudhra-ca-20261023-db65079b52",
+                "name": "emudhra-ca-20261023-v2-db65079b52",
                 "mountPath": "/etc/ssl/certs/ca-certificates.crt",
-                "subPath": "ca-1eba6bbf9102.pem",
+                "subPath": "ca-dafd329258ce.pem",
                 "readOnly": true
               }
             ]
@@ -63,9 +63,9 @@
         ],
         "volumes": [
           {
-            "name": "emudhra-ca-20261023-db65079b52",
+            "name": "emudhra-ca-20261023-v2-db65079b52",
             "configMap": {
-              "name": "emudhra-ca-20261023-db65079b52",
+              "name": "emudhra-ca-20261023-v2-db65079b52",
               "defaultMode": 292
             }
           }
