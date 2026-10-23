@@ -1,0 +1,76 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "auth9-portal",
+    "namespace": "auth9"
+  },
+  "spec": {
+    "template": {
+      "metadata": {
+        "annotations": {
+          "security.gitski.work/emudhra-remediation": "2026-10-23"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "auth9-portal",
+            "env": [
+              {
+                "name": "SSL_CERT_FILE",
+                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+              },
+              {
+                "name": "CURL_CA_BUNDLE",
+                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+              },
+              {
+                "name": "REQUESTS_CA_BUNDLE",
+                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+              },
+              {
+                "name": "AWS_CA_BUNDLE",
+                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+              },
+              {
+                "name": "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH",
+                "value": "/etc/emudhra-ca/db65079b52/ca-1eba6bbf9102.pem"
+              },
+              {
+                "name": "SSL_CERT_DIR",
+                "value": "/etc/emudhra-ca/db65079b52/empty"
+              },
+              {
+                "name": "NODE_OPTIONS",
+                "value": "--use-openssl-ca"
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "emudhra-ca-20261023-db65079b52",
+                "mountPath": "/etc/emudhra-ca/db65079b52",
+                "readOnly": true
+              },
+              {
+                "name": "emudhra-ca-20261023-db65079b52",
+                "mountPath": "/etc/ssl/certs/ca-certificates.crt",
+                "subPath": "ca-1eba6bbf9102.pem",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "emudhra-ca-20261023-db65079b52",
+            "configMap": {
+              "name": "emudhra-ca-20261023-db65079b52",
+              "defaultMode": 292
+            }
+          }
+        ]
+      }
+    }
+  }
+}

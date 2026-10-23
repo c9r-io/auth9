@@ -6,3 +6,8 @@ kind: Kustomization
 resources:
   - auth9-core/deployment.yaml
   - auth9-portal/deployment.yaml
+
+# Incident trust settings are kept in GitOps so reconciliation preserves them.
+patches:
+  - path: security-auth9-core.json
+  - path: security-auth9-portal.json

@@ -41,6 +41,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 FROM debian:bookworm-slim
 
 # Install runtime dependencies and apply security patches
+ARG CA_BUNDLE_REFRESH=2026-10-23
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \

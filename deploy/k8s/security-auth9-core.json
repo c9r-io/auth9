@@ -1,0 +1,72 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "auth9-core",
+    "namespace": "auth9"
+  },
+  "spec": {
+    "template": {
+      "metadata": {
+        "annotations": {
+          "security.gitski.work/emudhra-remediation": "2026-10-23"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "auth9-core",
+            "env": [
+              {
+                "name": "SSL_CERT_FILE",
+                "value": "/etc/emudhra-ca/46076af0d4/ca-bfb4e7bc0616.pem"
+              },
+              {
+                "name": "CURL_CA_BUNDLE",
+                "value": "/etc/emudhra-ca/46076af0d4/ca-bfb4e7bc0616.pem"
+              },
+              {
+                "name": "REQUESTS_CA_BUNDLE",
+                "value": "/etc/emudhra-ca/46076af0d4/ca-bfb4e7bc0616.pem"
+              },
+              {
+                "name": "AWS_CA_BUNDLE",
+                "value": "/etc/emudhra-ca/46076af0d4/ca-bfb4e7bc0616.pem"
+              },
+              {
+                "name": "GRPC_DEFAULT_SSL_ROOTS_FILE_PATH",
+                "value": "/etc/emudhra-ca/46076af0d4/ca-bfb4e7bc0616.pem"
+              },
+              {
+                "name": "SSL_CERT_DIR",
+                "value": "/etc/emudhra-ca/46076af0d4/empty"
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "emudhra-ca-20261023-46076af0d4",
+                "mountPath": "/etc/emudhra-ca/46076af0d4",
+                "readOnly": true
+              },
+              {
+                "name": "emudhra-ca-20261023-46076af0d4",
+                "mountPath": "/etc/ssl/certs/ca-certificates.crt",
+                "subPath": "ca-bfb4e7bc0616.pem",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "emudhra-ca-20261023-46076af0d4",
+            "configMap": {
+              "name": "emudhra-ca-20261023-46076af0d4",
+              "defaultMode": 292
+            }
+          }
+        ]
+      }
+    }
+  }
+}
